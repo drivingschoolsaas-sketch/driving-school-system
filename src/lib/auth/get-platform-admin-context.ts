@@ -66,18 +66,22 @@ export async function getPlatformAdminContext(): Promise<PlatformAdminContext> {
       client
     );
 
-    // Allow platform_admin and localhost (dev)
-    if (resolved.kind !== 'platform') {
+    // Allow platform_admin hostname, or localhost in development
+    const isLocalDev =
+      process.env.NODE_ENV === 'development' &&
+      (hostname === 'localhost' || hostname.startsWith('localhost:'));
+
+    if (resolved.kind === 'platform') {
+      const platformType = resolved.platform.type;
+      if (platformType !== 'platform_admin' && platformType !== 'localhost') {
+        redirect('/auth/sign-in');
+      }
+    } else if (!isLocalDev) {
       logger.warn('Platform admin access from non-admin hostname', {
         feature: 'platform_admin',
         operation: 'get_platform_admin_context',
         hostname,
       });
-      redirect('/auth/sign-in');
-    }
-
-    const platformType = resolved.platform.type;
-    if (platformType !== 'platform_admin' && platformType !== 'localhost') {
       redirect('/auth/sign-in');
     }
 
