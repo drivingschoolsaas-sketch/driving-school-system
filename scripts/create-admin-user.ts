@@ -10,13 +10,27 @@
 // If org-slug is omitted, uses 'sydney-driving-academy' (the demo org).
 
 import { createClient } from '@supabase/supabase-js';
-import { config } from 'dotenv';
+import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
-config({ path: resolve(__dirname, '../.env.local') });
+// Parse .env.local manually (no dotenv dependency)
+function loadEnv(filePath: string): Record<string, string> {
+  const env: Record<string, string> = {};
+  try {
+    for (const line of readFileSync(filePath, 'utf-8').split('\n')) {
+      const t = line.trim();
+      if (!t || t.startsWith('#')) continue;
+      const eq = t.indexOf('=');
+      if (eq === -1) continue;
+      env[t.slice(0, eq).trim()] = t.slice(eq + 1).trim();
+    }
+  } catch { /* file not found */ }
+  return env;
+}
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const env = loadEnv(resolve(__dirname, '../.env.local'));
+const SUPABASE_URL = env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SERVICE_ROLE_KEY = env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
   console.error('❌ Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');

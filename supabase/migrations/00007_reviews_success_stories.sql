@@ -83,11 +83,11 @@ CREATE INDEX idx_success_stories_status ON success_stories(organization_id, stat
 
 CREATE TRIGGER set_updated_at_reviews
   BEFORE UPDATE ON reviews
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER set_updated_at_success_stories
   BEFORE UPDATE ON success_stories
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ==========================================
 -- 5. RLS Policies
@@ -98,26 +98,26 @@ ALTER TABLE success_stories ENABLE ROW LEVEL SECURITY;
 
 -- Reviews: members can view all, admins can manage
 CREATE POLICY reviews_select ON reviews
-  FOR SELECT USING (is_org_member(organization_id));
+  FOR SELECT USING (is_org_member(organization_id, auth.uid()));
 
 CREATE POLICY reviews_insert ON reviews
-  FOR INSERT WITH CHECK (is_org_member(organization_id));
+  FOR INSERT WITH CHECK (is_org_member(organization_id, auth.uid()));
 
 CREATE POLICY reviews_update ON reviews
-  FOR UPDATE USING (is_org_admin(organization_id));
+  FOR UPDATE USING (is_org_admin(organization_id, auth.uid()));
 
 CREATE POLICY reviews_delete ON reviews
-  FOR DELETE USING (is_org_admin(organization_id));
+  FOR DELETE USING (is_org_admin(organization_id, auth.uid()));
 
 -- Success Stories: members can view, admins can manage
 CREATE POLICY success_stories_select ON success_stories
-  FOR SELECT USING (is_org_member(organization_id));
+  FOR SELECT USING (is_org_member(organization_id, auth.uid()));
 
 CREATE POLICY success_stories_insert ON success_stories
-  FOR INSERT WITH CHECK (is_org_admin(organization_id));
+  FOR INSERT WITH CHECK (is_org_admin(organization_id, auth.uid()));
 
 CREATE POLICY success_stories_update ON success_stories
-  FOR UPDATE USING (is_org_admin(organization_id));
+  FOR UPDATE USING (is_org_admin(organization_id, auth.uid()));
 
 CREATE POLICY success_stories_delete ON success_stories
-  FOR DELETE USING (is_org_admin(organization_id));
+  FOR DELETE USING (is_org_admin(organization_id, auth.uid()));

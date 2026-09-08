@@ -268,31 +268,31 @@ CREATE INDEX idx_school_settings_org ON school_settings(organization_id);
 
 CREATE TRIGGER set_instructors_updated_at
   BEFORE UPDATE ON instructors
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER set_students_updated_at
   BEFORE UPDATE ON students
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER set_vehicles_updated_at
   BEFORE UPDATE ON vehicles
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER set_service_areas_updated_at
   BEFORE UPDATE ON service_areas
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER set_lesson_types_updated_at
   BEFORE UPDATE ON lesson_types
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER set_lesson_packages_updated_at
   BEFORE UPDATE ON lesson_packages
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER set_school_settings_updated_at
   BEFORE UPDATE ON school_settings
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ==================================================
 -- Row Level Security
@@ -309,19 +309,19 @@ ALTER TABLE school_settings ENABLE ROW LEVEL SECURITY;
 
 -- All Phase 5 tables: members can SELECT
 CREATE POLICY instructors_select ON instructors
-  FOR SELECT USING (is_org_member(organization_id));
+  FOR SELECT USING (is_org_member(organization_id, auth.uid()));
 CREATE POLICY students_select ON students
-  FOR SELECT USING (is_org_member(organization_id));
+  FOR SELECT USING (is_org_member(organization_id, auth.uid()));
 CREATE POLICY vehicles_select ON vehicles
-  FOR SELECT USING (is_org_member(organization_id));
+  FOR SELECT USING (is_org_member(organization_id, auth.uid()));
 CREATE POLICY service_areas_select ON service_areas
-  FOR SELECT USING (is_org_member(organization_id));
+  FOR SELECT USING (is_org_member(organization_id, auth.uid()));
 CREATE POLICY lesson_types_select ON lesson_types
-  FOR SELECT USING (is_org_member(organization_id));
+  FOR SELECT USING (is_org_member(organization_id, auth.uid()));
 CREATE POLICY lesson_packages_select ON lesson_packages
-  FOR SELECT USING (is_org_member(organization_id));
+  FOR SELECT USING (is_org_member(organization_id, auth.uid()));
 CREATE POLICY school_settings_select ON school_settings
-  FOR SELECT USING (is_org_member(organization_id));
+  FOR SELECT USING (is_org_member(organization_id, auth.uid()));
 
 -- Public access for lesson types and packages (visible on booking page)
 CREATE POLICY lesson_types_public_select ON lesson_types
@@ -335,45 +335,45 @@ CREATE POLICY instructor_areas_select ON instructor_service_areas
     EXISTS (
       SELECT 1 FROM instructors
       WHERE instructors.id = instructor_service_areas.instructor_id
-      AND is_org_member(instructors.organization_id)
+      AND is_org_member(instructors.organization_id, auth.uid())
     )
   );
 
 -- Admins can INSERT/UPDATE/DELETE
 CREATE POLICY instructors_insert ON instructors
-  FOR INSERT WITH CHECK (is_org_admin(organization_id));
+  FOR INSERT WITH CHECK (is_org_admin(organization_id, auth.uid()));
 CREATE POLICY instructors_update ON instructors
-  FOR UPDATE USING (is_org_admin(organization_id));
+  FOR UPDATE USING (is_org_admin(organization_id, auth.uid()));
 CREATE POLICY instructors_delete ON instructors
-  FOR DELETE USING (is_org_admin(organization_id));
+  FOR DELETE USING (is_org_admin(organization_id, auth.uid()));
 
 CREATE POLICY students_insert ON students
-  FOR INSERT WITH CHECK (is_org_admin(organization_id));
+  FOR INSERT WITH CHECK (is_org_admin(organization_id, auth.uid()));
 CREATE POLICY students_update ON students
-  FOR UPDATE USING (is_org_admin(organization_id));
+  FOR UPDATE USING (is_org_admin(organization_id, auth.uid()));
 CREATE POLICY students_delete ON students
-  FOR DELETE USING (is_org_admin(organization_id));
+  FOR DELETE USING (is_org_admin(organization_id, auth.uid()));
 
 CREATE POLICY vehicles_insert ON vehicles
-  FOR INSERT WITH CHECK (is_org_admin(organization_id));
+  FOR INSERT WITH CHECK (is_org_admin(organization_id, auth.uid()));
 CREATE POLICY vehicles_update ON vehicles
-  FOR UPDATE USING (is_org_admin(organization_id));
+  FOR UPDATE USING (is_org_admin(organization_id, auth.uid()));
 CREATE POLICY vehicles_delete ON vehicles
-  FOR DELETE USING (is_org_admin(organization_id));
+  FOR DELETE USING (is_org_admin(organization_id, auth.uid()));
 
 CREATE POLICY service_areas_insert ON service_areas
-  FOR INSERT WITH CHECK (is_org_admin(organization_id));
+  FOR INSERT WITH CHECK (is_org_admin(organization_id, auth.uid()));
 CREATE POLICY service_areas_update ON service_areas
-  FOR UPDATE USING (is_org_admin(organization_id));
+  FOR UPDATE USING (is_org_admin(organization_id, auth.uid()));
 CREATE POLICY service_areas_delete ON service_areas
-  FOR DELETE USING (is_org_admin(organization_id));
+  FOR DELETE USING (is_org_admin(organization_id, auth.uid()));
 
 CREATE POLICY instructor_areas_insert ON instructor_service_areas
   FOR INSERT WITH CHECK (
     EXISTS (
       SELECT 1 FROM instructors
       WHERE instructors.id = instructor_service_areas.instructor_id
-      AND is_org_admin(instructors.organization_id)
+      AND is_org_admin(instructors.organization_id, auth.uid())
     )
   );
 CREATE POLICY instructor_areas_delete ON instructor_service_areas
@@ -381,25 +381,25 @@ CREATE POLICY instructor_areas_delete ON instructor_service_areas
     EXISTS (
       SELECT 1 FROM instructors
       WHERE instructors.id = instructor_service_areas.instructor_id
-      AND is_org_admin(instructors.organization_id)
+      AND is_org_admin(instructors.organization_id, auth.uid())
     )
   );
 
 CREATE POLICY lesson_types_insert ON lesson_types
-  FOR INSERT WITH CHECK (is_org_admin(organization_id));
+  FOR INSERT WITH CHECK (is_org_admin(organization_id, auth.uid()));
 CREATE POLICY lesson_types_update ON lesson_types
-  FOR UPDATE USING (is_org_admin(organization_id));
+  FOR UPDATE USING (is_org_admin(organization_id, auth.uid()));
 CREATE POLICY lesson_types_delete ON lesson_types
-  FOR DELETE USING (is_org_admin(organization_id));
+  FOR DELETE USING (is_org_admin(organization_id, auth.uid()));
 
 CREATE POLICY lesson_packages_insert ON lesson_packages
-  FOR INSERT WITH CHECK (is_org_admin(organization_id));
+  FOR INSERT WITH CHECK (is_org_admin(organization_id, auth.uid()));
 CREATE POLICY lesson_packages_update ON lesson_packages
-  FOR UPDATE USING (is_org_admin(organization_id));
+  FOR UPDATE USING (is_org_admin(organization_id, auth.uid()));
 CREATE POLICY lesson_packages_delete ON lesson_packages
-  FOR DELETE USING (is_org_admin(organization_id));
+  FOR DELETE USING (is_org_admin(organization_id, auth.uid()));
 
 CREATE POLICY school_settings_insert ON school_settings
-  FOR INSERT WITH CHECK (is_org_admin(organization_id));
+  FOR INSERT WITH CHECK (is_org_admin(organization_id, auth.uid()));
 CREATE POLICY school_settings_update ON school_settings
-  FOR UPDATE USING (is_org_admin(organization_id));
+  FOR UPDATE USING (is_org_admin(organization_id, auth.uid()));

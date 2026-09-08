@@ -60,7 +60,7 @@ CREATE INDEX idx_availability_rules_lookup ON availability_rules(organization_id
 
 CREATE TRIGGER set_availability_rules_updated_at
   BEFORE UPDATE ON availability_rules
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ==================================================
 -- Availability Exceptions
@@ -96,7 +96,7 @@ CREATE INDEX idx_availability_exceptions_lookup ON availability_exceptions(organ
 
 CREATE TRIGGER set_availability_exceptions_updated_at
   BEFORE UPDATE ON availability_exceptions
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ==================================================
 -- Blocked Times
@@ -125,7 +125,7 @@ CREATE INDEX idx_blocked_times_range ON blocked_times(organization_id, instructo
 
 CREATE TRIGGER set_blocked_times_updated_at
   BEFORE UPDATE ON blocked_times
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ==================================================
 -- RLS Policies
@@ -137,39 +137,39 @@ ALTER TABLE blocked_times ENABLE ROW LEVEL SECURITY;
 
 -- Availability Rules: members can read, admins can write
 CREATE POLICY availability_rules_select ON availability_rules
-  FOR SELECT USING (is_org_member(organization_id));
+  FOR SELECT USING (is_org_member(organization_id, auth.uid()));
 
 CREATE POLICY availability_rules_insert ON availability_rules
-  FOR INSERT WITH CHECK (is_org_admin(organization_id));
+  FOR INSERT WITH CHECK (is_org_admin(organization_id, auth.uid()));
 
 CREATE POLICY availability_rules_update ON availability_rules
-  FOR UPDATE USING (is_org_admin(organization_id));
+  FOR UPDATE USING (is_org_admin(organization_id, auth.uid()));
 
 CREATE POLICY availability_rules_delete ON availability_rules
-  FOR DELETE USING (is_org_admin(organization_id));
+  FOR DELETE USING (is_org_admin(organization_id, auth.uid()));
 
 -- Availability Exceptions: members can read, admins can write
 CREATE POLICY availability_exceptions_select ON availability_exceptions
-  FOR SELECT USING (is_org_member(organization_id));
+  FOR SELECT USING (is_org_member(organization_id, auth.uid()));
 
 CREATE POLICY availability_exceptions_insert ON availability_exceptions
-  FOR INSERT WITH CHECK (is_org_admin(organization_id));
+  FOR INSERT WITH CHECK (is_org_admin(organization_id, auth.uid()));
 
 CREATE POLICY availability_exceptions_update ON availability_exceptions
-  FOR UPDATE USING (is_org_admin(organization_id));
+  FOR UPDATE USING (is_org_admin(organization_id, auth.uid()));
 
 CREATE POLICY availability_exceptions_delete ON availability_exceptions
-  FOR DELETE USING (is_org_admin(organization_id));
+  FOR DELETE USING (is_org_admin(organization_id, auth.uid()));
 
 -- Blocked Times: members can read, admins can write
 CREATE POLICY blocked_times_select ON blocked_times
-  FOR SELECT USING (is_org_member(organization_id));
+  FOR SELECT USING (is_org_member(organization_id, auth.uid()));
 
 CREATE POLICY blocked_times_insert ON blocked_times
-  FOR INSERT WITH CHECK (is_org_admin(organization_id));
+  FOR INSERT WITH CHECK (is_org_admin(organization_id, auth.uid()));
 
 CREATE POLICY blocked_times_update ON blocked_times
-  FOR UPDATE USING (is_org_admin(organization_id));
+  FOR UPDATE USING (is_org_admin(organization_id, auth.uid()));
 
 CREATE POLICY blocked_times_delete ON blocked_times
-  FOR DELETE USING (is_org_admin(organization_id));
+  FOR DELETE USING (is_org_admin(organization_id, auth.uid()));

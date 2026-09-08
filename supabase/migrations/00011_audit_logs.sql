@@ -54,7 +54,7 @@ CREATE TABLE feature_flags (
 
 CREATE TRIGGER set_feature_flags_updated_at
   BEFORE UPDATE ON feature_flags
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ---------------------------------------------------
 -- RLS Policies

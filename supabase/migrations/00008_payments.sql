@@ -97,7 +97,7 @@ CREATE UNIQUE INDEX idx_payments_stripe_pi_unique ON payments(stripe_payment_int
 -- Updated_at trigger
 CREATE TRIGGER set_payments_updated_at
   BEFORE UPDATE ON payments
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ---------------------------------------------------
 -- Refunds
@@ -130,7 +130,7 @@ CREATE INDEX idx_refunds_stripe ON refunds(stripe_refund_id) WHERE stripe_refund
 
 CREATE TRIGGER set_refunds_updated_at
   BEFORE UPDATE ON refunds
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ---------------------------------------------------
 -- Webhook Events (idempotent processing)
@@ -165,7 +165,7 @@ CREATE INDEX idx_webhook_events_org ON webhook_events(organization_id) WHERE org
 
 CREATE TRIGGER set_webhook_events_updated_at
   BEFORE UPDATE ON webhook_events
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ---------------------------------------------------
 -- RLS Policies

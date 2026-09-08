@@ -99,15 +99,15 @@ CREATE INDEX idx_student_packages_status ON student_package_purchases(status);
 
 CREATE TRIGGER set_updated_at_driving_skills
   BEFORE UPDATE ON driving_skills
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER set_updated_at_student_progress
   BEFORE UPDATE ON student_progress
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER set_updated_at_student_package_purchases
   BEFORE UPDATE ON student_package_purchases
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ==========================================
 -- 6. RLS Policies
@@ -119,39 +119,39 @@ ALTER TABLE student_package_purchases ENABLE ROW LEVEL SECURITY;
 
 -- Driving Skills: members can view, admins can manage
 CREATE POLICY driving_skills_select ON driving_skills
-  FOR SELECT USING (is_org_member(organization_id));
+  FOR SELECT USING (is_org_member(organization_id, auth.uid()));
 
 CREATE POLICY driving_skills_insert ON driving_skills
-  FOR INSERT WITH CHECK (is_org_admin(organization_id));
+  FOR INSERT WITH CHECK (is_org_admin(organization_id, auth.uid()));
 
 CREATE POLICY driving_skills_update ON driving_skills
-  FOR UPDATE USING (is_org_admin(organization_id));
+  FOR UPDATE USING (is_org_admin(organization_id, auth.uid()));
 
 CREATE POLICY driving_skills_delete ON driving_skills
-  FOR DELETE USING (is_org_admin(organization_id));
+  FOR DELETE USING (is_org_admin(organization_id, auth.uid()));
 
 -- Student Progress: members can view, admins can manage
 CREATE POLICY student_progress_select ON student_progress
-  FOR SELECT USING (is_org_member(organization_id));
+  FOR SELECT USING (is_org_member(organization_id, auth.uid()));
 
 CREATE POLICY student_progress_insert ON student_progress
-  FOR INSERT WITH CHECK (is_org_admin(organization_id));
+  FOR INSERT WITH CHECK (is_org_admin(organization_id, auth.uid()));
 
 CREATE POLICY student_progress_update ON student_progress
-  FOR UPDATE USING (is_org_admin(organization_id));
+  FOR UPDATE USING (is_org_admin(organization_id, auth.uid()));
 
 CREATE POLICY student_progress_delete ON student_progress
-  FOR DELETE USING (is_org_admin(organization_id));
+  FOR DELETE USING (is_org_admin(organization_id, auth.uid()));
 
 -- Student Package Purchases: members can view, admins can manage
 CREATE POLICY student_package_purchases_select ON student_package_purchases
-  FOR SELECT USING (is_org_member(organization_id));
+  FOR SELECT USING (is_org_member(organization_id, auth.uid()));
 
 CREATE POLICY student_package_purchases_insert ON student_package_purchases
-  FOR INSERT WITH CHECK (is_org_admin(organization_id));
+  FOR INSERT WITH CHECK (is_org_admin(organization_id, auth.uid()));
 
 CREATE POLICY student_package_purchases_update ON student_package_purchases
-  FOR UPDATE USING (is_org_admin(organization_id));
+  FOR UPDATE USING (is_org_admin(organization_id, auth.uid()));
 
 CREATE POLICY student_package_purchases_delete ON student_package_purchases
-  FOR DELETE USING (is_org_admin(organization_id));
+  FOR DELETE USING (is_org_admin(organization_id, auth.uid()));

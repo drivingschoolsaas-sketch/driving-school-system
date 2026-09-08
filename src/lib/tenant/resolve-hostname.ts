@@ -61,6 +61,15 @@ export async function resolveHostname(
   });
 
   // Non-tenant hostnames resolve to platform contexts
+  // In development, localhost resolves to the first active tenant
+  if (classification.type === 'localhost' && process.env.NODE_ENV === 'development' && client) {
+    logger.debug('Localhost dev fallback: resolving to first tenant', {
+      feature: 'tenant',
+      operation: 'resolve_hostname',
+    });
+    return resolveLocalhostDevFallback(client);
+  }
+
   if (classification.type !== 'tenant') {
     return {
       kind: 'platform',
@@ -187,6 +196,52 @@ async function resolveTenantFromDatabase(
       hostname,
       timezone: org.timezone,
       currency: org.currency,
+    },
+  };
+}
+
+/**
+ * Development-only fallback: resolve localhost to the first active organization.
+ * This avoids requiring hosts file edits for local development.
+ */
+async function resolveLocalhostDevFallback(
+  client: SupabaseClient
+): Promise<ResolvedContext> {
+  const { data: org, error } = await client
+    .from('organizations')
+    .select('*')
+    .in('status', ['active', 'trial'])
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .single();
+
+  if (error || !org) {
+    logger.debug('No active organization found for localhost fallback', {
+      feature: 'tenant',
+      operation: 'resolve_localhost_dev_fallback',
+    });
+    throw DomainErrors.unknownHost('localhost');
+  }
+
+  const organization = org as Organization;
+
+  logger.debug('Localhost resolved to dev tenant', {
+    feature: 'tenant',
+    operation: 'resolve_localhost_dev_fallback',
+    organizationId: organization.id,
+    organizationSlug: organization.slug,
+  });
+
+  return {
+    kind: 'tenant',
+    tenant: {
+      organizationId: organization.id,
+      organizationName: organization.name,
+      organizationSlug: organization.slug,
+      organizationStatus: organization.status,
+      hostname: 'localhost',
+      timezone: organization.timezone,
+      currency: organization.currency,
     },
   };
 }

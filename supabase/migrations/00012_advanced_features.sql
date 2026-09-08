@@ -54,7 +54,7 @@ CREATE INDEX idx_waitlist_status ON waitlist_entries(status) WHERE status = 'wai
 
 CREATE TRIGGER set_waitlist_entries_updated_at
   BEFORE UPDATE ON waitlist_entries
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ---------------------------------------------------
 -- Custom Themes
@@ -93,7 +93,7 @@ CREATE TABLE custom_themes (
 
 CREATE TRIGGER set_custom_themes_updated_at
   BEFORE UPDATE ON custom_themes
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ---------------------------------------------------
 -- RLS Policies

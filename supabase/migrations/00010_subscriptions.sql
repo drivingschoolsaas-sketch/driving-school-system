@@ -69,7 +69,7 @@ CREATE TABLE plans (
 
 CREATE TRIGGER set_plans_updated_at
   BEFORE UPDATE ON plans
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ---------------------------------------------------
 -- Subscriptions
@@ -115,7 +115,7 @@ CREATE INDEX idx_subscriptions_stripe ON subscriptions(stripe_subscription_id)
 
 CREATE TRIGGER set_subscriptions_updated_at
   BEFORE UPDATE ON subscriptions
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ---------------------------------------------------
 -- Usage Tracking
@@ -148,7 +148,7 @@ CREATE INDEX idx_usage_subscription ON subscription_usage(subscription_id);
 
 CREATE TRIGGER set_subscription_usage_updated_at
   BEFORE UPDATE ON subscription_usage
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ---------------------------------------------------
 -- RLS Policies

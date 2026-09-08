@@ -90,7 +90,7 @@ CREATE INDEX idx_bookings_date_range ON bookings(organization_id, start_datetime
 
 CREATE TRIGGER set_bookings_updated_at
   BEFORE UPDATE ON bookings
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ==================================================
 -- Booking Status History
@@ -119,16 +119,16 @@ ALTER TABLE booking_status_history ENABLE ROW LEVEL SECURITY;
 
 -- Bookings: members can read, admins can write
 CREATE POLICY bookings_select ON bookings
-  FOR SELECT USING (is_org_member(organization_id));
+  FOR SELECT USING (is_org_member(organization_id, auth.uid()));
 
 CREATE POLICY bookings_insert ON bookings
-  FOR INSERT WITH CHECK (is_org_member(organization_id));
+  FOR INSERT WITH CHECK (is_org_member(organization_id, auth.uid()));
 
 CREATE POLICY bookings_update ON bookings
-  FOR UPDATE USING (is_org_admin(organization_id));
+  FOR UPDATE USING (is_org_admin(organization_id, auth.uid()));
 
 CREATE POLICY bookings_delete ON bookings
-  FOR DELETE USING (is_org_admin(organization_id));
+  FOR DELETE USING (is_org_admin(organization_id, auth.uid()));
 
 -- Booking status history: members can read, members can insert (via service)
 CREATE POLICY booking_status_history_select ON booking_status_history
@@ -136,7 +136,7 @@ CREATE POLICY booking_status_history_select ON booking_status_history
     EXISTS (
       SELECT 1 FROM bookings b
       WHERE b.id = booking_status_history.booking_id
-      AND is_org_member(b.organization_id)
+      AND is_org_member(b.organization_id, auth.uid())
     )
   );
 
@@ -145,6 +145,6 @@ CREATE POLICY booking_status_history_insert ON booking_status_history
     EXISTS (
       SELECT 1 FROM bookings b
       WHERE b.id = booking_status_history.booking_id
-      AND is_org_member(b.organization_id)
+      AND is_org_member(b.organization_id, auth.uid())
     )
   );

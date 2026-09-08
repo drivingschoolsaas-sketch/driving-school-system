@@ -64,7 +64,7 @@ CREATE INDEX idx_notification_templates_org
 
 CREATE TRIGGER set_notification_templates_updated_at
   BEFORE UPDATE ON notification_templates
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ---------------------------------------------------
 -- Notifications (delivery log)
@@ -115,7 +115,7 @@ CREATE INDEX idx_notifications_type ON notifications(organization_id, notificati
 
 CREATE TRIGGER set_notifications_updated_at
   BEFORE UPDATE ON notifications
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ---------------------------------------------------
 -- Notification Preferences (per-user opt-out)
@@ -142,7 +142,7 @@ CREATE INDEX idx_notification_prefs_user
 
 CREATE TRIGGER set_notification_preferences_updated_at
   BEFORE UPDATE ON notification_preferences
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ---------------------------------------------------
 -- RLS Policies

@@ -57,7 +57,7 @@ export async function signInAction(formData: FormData): Promise<AuthActionResult
 
   // Redirect to the returnTo URL or default
   const returnTo = formData.get('returnTo') as string | null;
-  const safeUrl = validateRedirectUrl(returnTo, '/');
+  const safeUrl = validateRedirectUrl(returnTo, '/dashboard');
   redirect(safeUrl);
 }
 
