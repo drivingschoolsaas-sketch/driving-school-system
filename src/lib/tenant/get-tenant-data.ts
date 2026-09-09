@@ -7,7 +7,7 @@
 
 import { headers } from 'next/headers';
 import type { Organization, SchoolSettings, LessonType, LessonPackage, Instructor, ServiceArea, Review } from '@/types/database';
-import { createServerSupabaseClient } from '@/lib/database';
+import { getAdminClient } from '@/lib/database/supabase-admin';
 import { resolveHostname } from './resolve-hostname';
 import { getServerEnv } from '@/config/env';
 import { logger } from '@/lib/logging';
@@ -35,12 +35,16 @@ export async function getTenantData(): Promise<TenantData | null> {
     const env = getServerEnv();
     const headerStore = await headers();
     const hostname = headerStore.get('host') ?? 'localhost';
-    const client = await createServerSupabaseClient();
+
+    // Use admin client for public tenant resolution — RLS blocks
+    // unauthenticated reads on organizations/settings tables, but
+    // public website visitors are never authenticated.
+    const adminClient = getAdminClient();
 
     const resolved = await resolveHostname(hostname, {
       platformDomain: env.NEXT_PUBLIC_PLATFORM_DOMAIN,
       adminSubdomain: env.NEXT_PUBLIC_PLATFORM_ADMIN_SUBDOMAIN,
-    }, client);
+    }, adminClient);
 
     if (resolved.kind !== 'tenant') {
       return null;
@@ -49,7 +53,7 @@ export async function getTenantData(): Promise<TenantData | null> {
     const orgId = resolved.tenant.organizationId;
 
     // Load organization
-    const { data: org } = await client
+    const { data: org } = await adminClient
       .from('organizations')
       .select('*')
       .eq('id', orgId)
@@ -58,7 +62,7 @@ export async function getTenantData(): Promise<TenantData | null> {
     if (!org) return null;
 
     // Load settings
-    const { data: settings } = await client
+    const { data: settings } = await adminClient
       .from('school_settings')
       .select('*')
       .eq('organization_id', orgId)
@@ -86,11 +90,12 @@ export async function getTenantPageData(): Promise<TenantPageData | null> {
     const tenantData = await getTenantData();
     if (!tenantData) return null;
 
-    const client = await createServerSupabaseClient();
+    // Use admin client — public website visitors are unauthenticated
+    const adminClient = getAdminClient();
     const orgId = tenantData.organization.id;
 
     const [lessonTypesRes, packagesRes, instructorsRes, areasRes, reviewsRes] = await Promise.all([
-      client
+      adminClient
         .from('lesson_types')
         .select('*')
         .eq('organization_id', orgId)
@@ -98,7 +103,7 @@ export async function getTenantPageData(): Promise<TenantPageData | null> {
         .eq('is_public', true)
         .order('sort_order')
         .order('name'),
-      client
+      adminClient
         .from('lesson_packages')
         .select('*')
         .eq('organization_id', orgId)
@@ -106,19 +111,19 @@ export async function getTenantPageData(): Promise<TenantPageData | null> {
         .eq('is_public', true)
         .order('sort_order')
         .order('name'),
-      client
+      adminClient
         .from('instructors')
         .select('*')
         .eq('organization_id', orgId)
         .eq('is_active', true)
         .order('display_name'),
-      client
+      adminClient
         .from('service_areas')
         .select('*')
         .eq('organization_id', orgId)
         .eq('is_active', true)
         .order('name'),
-      client
+      adminClient
         .from('reviews')
         .select('*')
         .eq('organization_id', orgId)
