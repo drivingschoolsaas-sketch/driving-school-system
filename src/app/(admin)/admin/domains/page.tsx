@@ -5,7 +5,8 @@
 
 import { getPlatformAdminContext } from '@/lib/auth';
 import { getAdminClient } from '@/lib/database';
-import { getDomainHealth } from '@/services/platform-admin-service';
+import { getDomainHealth, listOrganizations } from '@/services/platform-admin-service';
+import { AddDomainForm } from './add-domain-form';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -50,22 +51,31 @@ export default async function DomainsPage({ searchParams }: PageProps) {
   const client = getAdminClient();
   const params = await searchParams;
 
-  const { data: domains, total } = await getDomainHealth(client, {
-    status: params.status,
-    limit: 50,
-  });
+  const [domainsResult, orgsResult] = await Promise.all([
+    getDomainHealth(client, { status: params.status, limit: 50 }),
+    listOrganizations(client, { limit: 200 }),
+  ]);
+  const { data: domains, total } = domainsResult;
+  const orgOptions = orgsResult.data.map((o) => ({
+    id: o.id,
+    name: o.name,
+    slug: o.slug,
+  }));
 
   const statusFilter = params.status ?? 'all';
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Domain Health
-        </h1>
-        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-          {total} domain{total !== 1 ? 's' : ''} across all organizations
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Domain Health
+          </h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            {total} domain{total !== 1 ? 's' : ''} across all organizations
+          </p>
+        </div>
+        <AddDomainForm organizations={orgOptions} />
       </div>
 
       {/* Filters */}

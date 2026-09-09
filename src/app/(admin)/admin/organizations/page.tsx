@@ -6,6 +6,7 @@
 import { getPlatformAdminContext } from '@/lib/auth';
 import { getAdminClient } from '@/lib/database';
 import { listOrganizations } from '@/services/platform-admin-service';
+import { AddSchoolForm } from './add-school-form';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -50,13 +51,16 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Organizations
-        </h1>
-        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-          {total} organization{total !== 1 ? 's' : ''} total
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Organizations
+          </h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            {total} organization{total !== 1 ? 's' : ''} total
+          </p>
+        </div>
+        <AddSchoolForm />
       </div>
 
       {/* Filters */}

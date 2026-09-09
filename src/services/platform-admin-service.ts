@@ -227,6 +227,273 @@ export async function updateOrganizationStatus(
 }
 
 // --------------------------------------------------
+// Create Organization (Add New School)
+// --------------------------------------------------
+
+export interface CreateOrganizationInput {
+  name: string;
+  slug: string;
+  ownerEmail: string;
+  ownerPassword: string;
+  ownerName: string;
+  email?: string;
+  phone?: string;
+  timezone?: string;
+  country?: string;
+  status?: string;
+}
+
+export interface CreateOrganizationResult {
+  organization: Organization;
+  ownerUserId: string;
+}
+
+/**
+ * Create a new organization with an owner user.
+ *
+ * Steps:
+ * 1. Create the organization record
+ * 2. Create a Supabase Auth user for the owner
+ * 3. Create an organization_members entry with role 'school_owner'
+ * 4. Create default school_settings
+ * 5. Audit-log the action
+ */
+export async function createOrganization(
+  client: SupabaseClient,
+  input: CreateOrganizationInput,
+  adminUserId: string
+): Promise<CreateOrganizationResult> {
+  // 1. Check slug uniqueness
+  const { data: existing } = await client
+    .from('organizations')
+    .select('id')
+    .eq('slug', input.slug)
+    .maybeSingle();
+
+  if (existing) {
+    throw new Error(`Organization slug "${input.slug}" is already taken`);
+  }
+
+  // 2. Create the organization
+  const { data: org, error: orgError } = await client
+    .from('organizations')
+    .insert({
+      name: input.name,
+      slug: input.slug,
+      status: input.status ?? 'trial',
+      email: input.email ?? null,
+      phone: input.phone ?? null,
+      timezone: input.timezone ?? 'Australia/Sydney',
+      country: input.country ?? 'AU',
+      currency: 'AUD',
+      subscription_status: 'trialing',
+    })
+    .select()
+    .single();
+
+  if (orgError) throw orgError;
+
+  // 3. Create the owner auth user
+  let ownerUserId: string;
+  const { data: authUser, error: authErr } =
+    await client.auth.admin.createUser({
+      email: input.ownerEmail,
+      password: input.ownerPassword,
+      email_confirm: true,
+      user_metadata: { full_name: input.ownerName },
+    });
+
+  if (authErr) {
+    if (authErr.message.includes('already been registered')) {
+      // User exists — find their ID
+      const { data: listData } = await client.auth.admin.listUsers();
+      const found = listData?.users?.find(
+        (u) => u.email === input.ownerEmail
+      );
+      if (!found) {
+        throw new Error(
+          `Owner email ${input.ownerEmail} is registered but could not be found`
+        );
+      }
+      ownerUserId = found.id;
+    } else {
+      // Rollback: delete the org
+      await client.from('organizations').delete().eq('id', org.id);
+      throw authErr;
+    }
+  } else {
+    ownerUserId = authUser.user.id;
+  }
+
+  // 4. Create org membership
+  const { error: memberErr } = await client
+    .from('organization_members')
+    .insert({
+      organization_id: org.id,
+      user_id: ownerUserId,
+      role: 'school_owner',
+      status: 'active',
+    });
+
+  if (memberErr) {
+    logger.error('Failed to create owner membership', {
+      organizationId: org.id,
+      ownerUserId,
+      error: memberErr.message,
+    });
+  }
+
+  // 5. Create default school_settings
+  const { error: settingsErr } = await client
+    .from('school_settings')
+    .insert({
+      organization_id: org.id,
+      school_name: input.name,
+      primary_color: '#2563eb',
+      secondary_color: '#1e40af',
+    });
+
+  if (settingsErr) {
+    logger.error('Failed to create default settings', {
+      organizationId: org.id,
+      error: settingsErr.message,
+    });
+  }
+
+  // 6. Audit log
+  await createAuditLog(client, {
+    organizationId: org.id,
+    userId: adminUserId,
+    action: 'organization.created',
+    resourceType: 'organization',
+    resourceId: org.id,
+    details: {
+      name: input.name,
+      slug: input.slug,
+      owner_email: input.ownerEmail,
+    },
+  });
+
+  logger.info('Organization created by platform admin', {
+    organizationId: org.id,
+    slug: input.slug,
+    adminUserId,
+  });
+
+  return { organization: org as Organization, ownerUserId };
+}
+
+// --------------------------------------------------
+// Add Domain to Organization
+// --------------------------------------------------
+
+export interface AddDomainInput {
+  organizationId: string;
+  hostname: string;
+  domainType: 'platform_subdomain' | 'custom_root' | 'custom_subdomain';
+  isPrimary?: boolean;
+}
+
+/**
+ * Add a domain (hostname) to an organization.
+ *
+ * Platform admin assigns domains — they are marked verified immediately
+ * since the admin is trusted.
+ */
+export async function addDomainToOrganization(
+  client: SupabaseClient,
+  input: AddDomainInput,
+  adminUserId: string
+): Promise<DomainHealthRecord> {
+  const normalizedHostname = input.hostname.toLowerCase().trim();
+
+  // 1. Check hostname uniqueness
+  const { data: existingDomain } = await client
+    .from('organization_domains')
+    .select('id')
+    .eq('hostname', normalizedHostname)
+    .maybeSingle();
+
+  if (existingDomain) {
+    throw new Error(
+      `Hostname "${normalizedHostname}" is already assigned to another organization`
+    );
+  }
+
+  // 2. Verify the organization exists
+  const { data: org } = await client
+    .from('organizations')
+    .select('id, name')
+    .eq('id', input.organizationId)
+    .single();
+
+  if (!org) {
+    throw new Error('Organization not found');
+  }
+
+  // 3. If setting as primary, unset current primary for this org
+  if (input.isPrimary) {
+    await client
+      .from('organization_domains')
+      .update({ is_primary: false })
+      .eq('organization_id', input.organizationId)
+      .eq('is_primary', true);
+  }
+
+  // 4. Insert the domain — admin-assigned so mark as verified
+  const now = new Date().toISOString();
+  const { data: domain, error: domainErr } = await client
+    .from('organization_domains')
+    .insert({
+      organization_id: input.organizationId,
+      hostname: normalizedHostname,
+      domain_type: input.domainType,
+      status: 'verified',
+      is_primary: input.isPrimary ?? false,
+      ssl_status: 'pending',
+      verified_at: now,
+    })
+    .select()
+    .single();
+
+  if (domainErr) throw domainErr;
+
+  // 5. Audit log
+  await createAuditLog(client, {
+    organizationId: input.organizationId,
+    userId: adminUserId,
+    action: 'domain.added',
+    resourceType: 'organization_domain',
+    resourceId: domain.id as string,
+    details: {
+      hostname: normalizedHostname,
+      domain_type: input.domainType,
+      is_primary: input.isPrimary ?? false,
+      organization_name: (org as { name: string }).name,
+    },
+  });
+
+  logger.info('Domain added by platform admin', {
+    organizationId: input.organizationId,
+    hostname: normalizedHostname,
+    adminUserId,
+  });
+
+  return {
+    id: domain.id as string,
+    organization_id: domain.organization_id as string,
+    hostname: domain.hostname as string,
+    domain_type: domain.domain_type as string,
+    status: domain.status as string,
+    is_primary: domain.is_primary as boolean,
+    ssl_status: domain.ssl_status as string | null,
+    last_checked_at: domain.last_checked_at as string | null,
+    verified_at: domain.verified_at as string | null,
+    organization_name: (org as { name: string }).name,
+  };
+}
+
+// --------------------------------------------------
 // Domain Health
 // --------------------------------------------------
 
