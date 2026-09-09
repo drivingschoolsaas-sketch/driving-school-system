@@ -6,7 +6,7 @@
 // needed by the tenant website pages.
 
 import { headers } from 'next/headers';
-import type { Organization, SchoolSettings, LessonType, LessonPackage, Instructor, ServiceArea } from '@/types/database';
+import type { Organization, SchoolSettings, LessonType, LessonPackage, Instructor, ServiceArea, Review } from '@/types/database';
 import { createServerSupabaseClient } from '@/lib/database';
 import { resolveHostname } from './resolve-hostname';
 import { getServerEnv } from '@/config/env';
@@ -22,6 +22,7 @@ export interface TenantPageData extends TenantData {
   lessonPackages: LessonPackage[];
   instructors: Instructor[];
   serviceAreas: ServiceArea[];
+  reviews: Review[];
 }
 
 /**
@@ -88,7 +89,7 @@ export async function getTenantPageData(): Promise<TenantPageData | null> {
     const client = await createServerSupabaseClient();
     const orgId = tenantData.organization.id;
 
-    const [lessonTypesRes, packagesRes, instructorsRes, areasRes] = await Promise.all([
+    const [lessonTypesRes, packagesRes, instructorsRes, areasRes, reviewsRes] = await Promise.all([
       client
         .from('lesson_types')
         .select('*')
@@ -117,6 +118,13 @@ export async function getTenantPageData(): Promise<TenantPageData | null> {
         .eq('organization_id', orgId)
         .eq('is_active', true)
         .order('name'),
+      client
+        .from('reviews')
+        .select('*')
+        .eq('organization_id', orgId)
+        .in('status', ['approved', 'featured'])
+        .order('created_at', { ascending: false })
+        .limit(10),
     ]);
 
     return {
@@ -125,6 +133,7 @@ export async function getTenantPageData(): Promise<TenantPageData | null> {
       lessonPackages: (packagesRes.data ?? []) as LessonPackage[],
       instructors: (instructorsRes.data ?? []) as Instructor[],
       serviceAreas: (areasRes.data ?? []) as ServiceArea[],
+      reviews: (reviewsRes.data ?? []) as Review[],
     };
   } catch (error) {
     logger.error('Failed to get tenant page data', error instanceof Error ? error : new Error(String(error)), {
