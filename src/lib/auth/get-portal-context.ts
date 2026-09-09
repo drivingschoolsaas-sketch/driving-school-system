@@ -7,6 +7,7 @@
 
 import { redirect } from 'next/navigation';
 import { createServerSupabaseClient } from '@/lib/database';
+import { getAdminClient } from '@/lib/database/supabase-admin';
 import { resolveHostname } from '@/lib/tenant/resolve-hostname';
 import { getServerEnv } from '@/config/env';
 import { logger } from '@/lib/logging';
@@ -44,7 +45,7 @@ export async function getPortalContext(): Promise<PortalContext> {
     const resolved = await resolveHostname(hostname, {
       platformDomain: env.NEXT_PUBLIC_PLATFORM_DOMAIN,
       adminSubdomain: env.NEXT_PUBLIC_PLATFORM_ADMIN_SUBDOMAIN,
-    }, client);
+    }, getAdminClient());
 
     if (resolved.kind !== 'tenant') {
       redirect('/auth/sign-in');
@@ -98,7 +99,7 @@ export async function getPortalContext(): Promise<PortalContext> {
     return {
       auth,
       organization: orgRes.data as Organization,
-      settings: (settingsRes.data as SchoolSettings) ?? null,
+      settings: settingsRes.data ? (settingsRes.data as SchoolSettings) : null,
       student: studentRes.data as Student,
     };
   } catch (error) {

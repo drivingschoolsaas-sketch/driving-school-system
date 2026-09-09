@@ -70,7 +70,7 @@ export async function getTenantData(): Promise<TenantData | null> {
 
     return {
       organization: org as Organization,
-      settings: (settings as SchoolSettings) ?? null,
+      settings: settings ? (settings as SchoolSettings) : null,
     };
   } catch (error) {
     logger.error('Failed to get tenant data', error instanceof Error ? error : new Error(String(error)), {

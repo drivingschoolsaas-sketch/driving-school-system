@@ -9,6 +9,7 @@ import { getDashboardContext } from '@/lib/auth';
 import { isAtLeastRole, isOrgAdminRole } from '@/permissions/roles';
 import { USER_ROLES, type UserRole } from '@/config/constants';
 import type { Metadata } from 'next';
+import { SignOutButton } from './components/sign-out-button';
 
 export const metadata: Metadata = {
   title: 'Dashboard',
@@ -103,16 +104,20 @@ export default async function DashboardLayout({
                   {auth.role.charAt(0).toUpperCase()}
                 </span>
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="text-xs font-medium text-gray-900 dark:text-white capitalize truncate">
                   {auth.role.replace('_', ' ')}
                 </p>
-                <Link
-                  href="/"
-                  className="text-xs text-gray-500 dark:text-gray-400 hover:underline"
-                >
-                  View website →
-                </Link>
+                <div className="flex items-center gap-2">
+                  <Link
+                    href="/"
+                    className="text-xs text-gray-500 dark:text-gray-400 hover:underline"
+                  >
+                    View site
+                  </Link>
+                  <span className="text-xs text-gray-300 dark:text-gray-600">|</span>
+                  <SignOutButton />
+                </div>
               </div>
             </div>
           </div>
@@ -120,16 +125,19 @@ export default async function DashboardLayout({
       </aside>
 
       {/* Mobile header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-10 flex items-center h-14 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4">
-        <span
-          className="flex h-7 w-7 items-center justify-center rounded-lg text-white text-xs font-bold"
-          style={{ backgroundColor: primaryColor }}
-        >
-          {organization.name.charAt(0)}
-        </span>
-        <span className="ml-2 text-sm font-semibold text-gray-900 dark:text-white truncate">
-          {organization.name}
-        </span>
+      <div className="md:hidden fixed top-0 left-0 right-0 z-10 flex items-center justify-between h-14 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4">
+        <div className="flex items-center min-w-0">
+          <span
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-white text-xs font-bold shrink-0"
+            style={{ backgroundColor: primaryColor }}
+          >
+            {organization.name.charAt(0)}
+          </span>
+          <span className="ml-2 text-sm font-semibold text-gray-900 dark:text-white truncate">
+            {organization.name}
+          </span>
+        </div>
+        <SignOutButton />
       </div>
 
       {/* Mobile bottom nav */}

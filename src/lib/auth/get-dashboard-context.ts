@@ -7,6 +7,7 @@
 
 import { redirect } from 'next/navigation';
 import { createServerSupabaseClient } from '@/lib/database';
+import { getAdminClient } from '@/lib/database/supabase-admin';
 import { resolveHostname } from '@/lib/tenant/resolve-hostname';
 import { getServerEnv } from '@/config/env';
 import { logger } from '@/lib/logging';
@@ -40,12 +41,16 @@ export async function getDashboardContext(): Promise<DashboardContext> {
     }
 
     // 2. Resolve tenant from hostname
+    // Use admin client for hostname resolution — the localhost dev
+    // fallback queries organizations without user context, and RLS
+    // may block the anon client when the user isn't a member of the
+    // first org returned.
     const headerStore = await headers();
     const hostname = headerStore.get('host') ?? 'localhost';
     const resolved = await resolveHostname(hostname, {
       platformDomain: env.NEXT_PUBLIC_PLATFORM_DOMAIN,
       adminSubdomain: env.NEXT_PUBLIC_PLATFORM_ADMIN_SUBDOMAIN,
-    }, client);
+    }, getAdminClient());
 
     if (resolved.kind !== 'tenant') {
       redirect('/auth/sign-in');
@@ -87,7 +92,7 @@ export async function getDashboardContext(): Promise<DashboardContext> {
     return {
       auth,
       organization: orgRes.data as Organization,
-      settings: (settingsRes.data as SchoolSettings) ?? null,
+      settings: settingsRes.data ? (settingsRes.data as SchoolSettings) : null,
     };
   } catch (error) {
     // authorizeForOrganization throws AppError on failure

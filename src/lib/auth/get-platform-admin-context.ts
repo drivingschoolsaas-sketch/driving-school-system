@@ -11,6 +11,7 @@
 
 import { redirect } from 'next/navigation';
 import { createServerSupabaseClient } from '@/lib/database';
+import { getAdminClient } from '@/lib/database/supabase-admin';
 import { resolveHostname } from '@/lib/tenant/resolve-hostname';
 import { getServerEnv } from '@/config/env';
 import { logger } from '@/lib/logging';
@@ -63,7 +64,7 @@ export async function getPlatformAdminContext(): Promise<PlatformAdminContext> {
         platformDomain: env.NEXT_PUBLIC_PLATFORM_DOMAIN,
         adminSubdomain: env.NEXT_PUBLIC_PLATFORM_ADMIN_SUBDOMAIN,
       },
-      client
+      getAdminClient()
     );
 
     // Allow platform_admin hostname, or localhost in development

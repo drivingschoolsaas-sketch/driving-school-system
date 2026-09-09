@@ -79,7 +79,9 @@ export async function middleware(request: NextRequest) {
   // Route protection: redirect unauthenticated users from /admin and /portal
   const pathname = request.nextUrl.pathname;
   const isProtectedRoute =
-    pathname.startsWith('/admin') || pathname.startsWith('/portal');
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/portal') ||
+    pathname.startsWith('/dashboard');
 
   if (isProtectedRoute) {
     // Check for the Supabase auth cookie presence
