@@ -46,6 +46,7 @@ export type DomainType = (typeof DOMAIN_TYPES)[keyof typeof DOMAIN_TYPES];
  */
 export const DOMAIN_STATUS = {
   PENDING: 'pending',
+  PENDING_VERIFICATION: 'pending_verification',
   VERIFYING: 'verifying',
   VERIFIED: 'verified',
   FAILED: 'failed',
@@ -58,13 +59,13 @@ export type DomainStatus = (typeof DOMAIN_STATUS)[keyof typeof DOMAIN_STATUS];
  * Booking lifecycle status values.
  */
 export const BOOKING_STATUS = {
-  PENDING: 'pending',
-  AWAITING_PAYMENT: 'awaiting_payment',
+  NEW_REQUEST: 'new_request',
+  CONTACTED: 'contacted',
   CONFIRMED: 'confirmed',
   COMPLETED: 'completed',
   CANCELLED: 'cancelled',
+  REJECTED: 'rejected',
   NO_SHOW: 'no_show',
-  RESCHEDULED: 'rescheduled',
 } as const;
 
 export type BookingStatus =

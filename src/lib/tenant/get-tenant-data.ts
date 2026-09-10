@@ -5,6 +5,7 @@
 // from the request hostname and loads public data
 // needed by the tenant website pages.
 
+import 'server-only';
 import { headers } from 'next/headers';
 import type { Organization, SchoolSettings, LessonType, LessonPackage, Instructor, ServiceArea, Review } from '@/types/database';
 import { getAdminClient } from '@/lib/database/supabase-admin';

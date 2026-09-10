@@ -27,7 +27,7 @@ export default async function PortalPaymentsPage() {
       .select('*')
       .eq('organization_id', orgId)
       .eq('student_id', student.id)
-      .in('status', ['completed', 'confirmed', 'awaiting_payment'])
+      .in('status', ['completed', 'confirmed'])
       .order('start_datetime', { ascending: false })
       .limit(50),
     // Package purchases

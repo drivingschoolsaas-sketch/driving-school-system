@@ -22,8 +22,8 @@ const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_RO
 });
 
 async function run() {
-  const email = 'instructor@driveflow.test';
-  const password = 'Instructor123';
+  const email = process.argv[2] || 'instructor@driveflow.test';
+  const password = process.argv[3] || require('crypto').randomBytes(16).toString('base64url');
 
   const { data: org } = await admin
     .from('organizations')

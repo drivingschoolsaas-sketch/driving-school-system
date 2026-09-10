@@ -10,9 +10,9 @@ describe('normalizeHostname', () => {
     expect(normalizeHostname('DriveFlow.COM.AU')).toBe('driveflow.com.au');
   });
 
-  it('removes www prefix', () => {
-    expect(normalizeHostname('www.example.com')).toBe('example.com');
-    expect(normalizeHostname('WWW.EXAMPLE.COM')).toBe('example.com');
+  it('preserves www prefix (www and non-www are separate domains)', () => {
+    expect(normalizeHostname('www.example.com')).toBe('www.example.com');
+    expect(normalizeHostname('WWW.EXAMPLE.COM')).toBe('www.example.com');
   });
 
   it('removes port numbers', () => {
@@ -25,7 +25,7 @@ describe('normalizeHostname', () => {
   });
 
   it('handles combined normalization', () => {
-    expect(normalizeHostname('  WWW.Example.COM:3000  ')).toBe('example.com');
+    expect(normalizeHostname('  WWW.Example.COM:3000  ')).toBe('www.example.com');
   });
 });
 
@@ -56,10 +56,13 @@ describe('classifyHostname', () => {
     expect(result.normalized).toBe('driveflow.com.au');
   });
 
-  it('classifies platform root domain with www', () => {
+  it('classifies www.platform as tenant (www is a separate domain)', () => {
     const result = classifyHostname('www.driveflow.com.au', platformDomain, adminSubdomain);
-    expect(result.type).toBe('platform_website');
-    expect(result.normalized).toBe('driveflow.com.au');
+    // www.driveflow.com.au is NOT the same as driveflow.com.au
+    // It ends with .driveflow.com.au so it's classified as a tenant subdomain
+    expect(result.type).toBe('tenant');
+    expect(result.normalized).toBe('www.driveflow.com.au');
+    expect(result.subdomain).toBe('www');
   });
 
   it('classifies Vercel preview deployments', () => {

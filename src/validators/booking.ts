@@ -5,13 +5,13 @@ import { z } from 'zod';
 // ==================================================
 
 const BOOKING_STATUSES = [
-  'pending',
-  'awaiting_payment',
+  'new_request',
+  'contacted',
   'confirmed',
   'completed',
   'cancelled',
+  'rejected',
   'no_show',
-  'rescheduled',
 ] as const;
 
 /**

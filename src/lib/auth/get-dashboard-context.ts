@@ -5,6 +5,7 @@
 // user's context for the admin dashboard. Used by all
 // dashboard pages to get the AuthorizedContext.
 
+import 'server-only';
 import { redirect } from 'next/navigation';
 import { createServerSupabaseClient } from '@/lib/database';
 import { getAdminClient } from '@/lib/database/supabase-admin';

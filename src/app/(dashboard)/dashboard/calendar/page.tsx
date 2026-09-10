@@ -25,13 +25,13 @@ interface CalendarPageProps {
 }
 
 const STATUS_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  new_request: { bg: 'bg-yellow-50 dark:bg-yellow-900/30', text: 'text-yellow-800 dark:text-yellow-200', border: 'border-l-yellow-500' },
+  contacted: { bg: 'bg-orange-50 dark:bg-orange-900/30', text: 'text-orange-800 dark:text-orange-200', border: 'border-l-orange-500' },
   confirmed: { bg: 'bg-green-50 dark:bg-green-900/30', text: 'text-green-800 dark:text-green-200', border: 'border-l-green-500' },
-  pending: { bg: 'bg-yellow-50 dark:bg-yellow-900/30', text: 'text-yellow-800 dark:text-yellow-200', border: 'border-l-yellow-500' },
-  awaiting_payment: { bg: 'bg-orange-50 dark:bg-orange-900/30', text: 'text-orange-800 dark:text-orange-200', border: 'border-l-orange-500' },
   completed: { bg: 'bg-blue-50 dark:bg-blue-900/30', text: 'text-blue-800 dark:text-blue-200', border: 'border-l-blue-500' },
   cancelled: { bg: 'bg-gray-50 dark:bg-gray-800/50', text: 'text-gray-500 dark:text-gray-400', border: 'border-l-gray-400' },
+  rejected: { bg: 'bg-red-50 dark:bg-red-900/30', text: 'text-red-800 dark:text-red-200', border: 'border-l-red-500' },
   no_show: { bg: 'bg-red-50 dark:bg-red-900/30', text: 'text-red-800 dark:text-red-200', border: 'border-l-red-500' },
-  rescheduled: { bg: 'bg-purple-50 dark:bg-purple-900/30', text: 'text-purple-800 dark:text-purple-200', border: 'border-l-purple-500' },
 };
 
 export default async function CalendarPage({ searchParams }: CalendarPageProps) {

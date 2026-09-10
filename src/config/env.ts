@@ -20,6 +20,9 @@ const serverEnvSchema = z.object({
   // App
   NEXT_PUBLIC_APP_URL: z.string().url('NEXT_PUBLIC_APP_URL must be a valid URL'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+
+  // Development only — explicit tenant slug for localhost
+  DEV_TENANT_SLUG: z.string().optional(),
 });
 
 const clientEnvSchema = z.object({

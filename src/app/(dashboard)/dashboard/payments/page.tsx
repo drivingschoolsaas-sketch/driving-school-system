@@ -4,9 +4,12 @@
 // View and manage payments, refunds, and transaction
 // history. Admin-only.
 
+import { redirect } from 'next/navigation';
 import { getDashboardContext, requirePermission } from '@/lib/auth';
 import { PERMISSIONS } from '@/permissions/roles';
 import { createServerSupabaseClient } from '@/lib/database';
+import { getAdminClient } from '@/lib/database/supabase-admin';
+import { isFeatureFlagEnabled } from '@/services/platform-admin-service';
 import { getPayments } from '@/services/payment-service';
 import type { Metadata } from 'next';
 
@@ -65,6 +68,13 @@ export default async function PaymentsPage(props: {
   const searchParams = await props.searchParams;
   const { auth } = await getDashboardContext();
   requirePermission(auth, PERMISSIONS.PAYMENT_VIEW);
+
+  // P1-8: Payments are non-MVP — gated behind feature flag
+  const adminClient = getAdminClient();
+  const paymentsEnabled = await isFeatureFlagEnabled(adminClient, 'payments', auth.organizationId);
+  if (!paymentsEnabled) {
+    redirect('/dashboard');
+  }
 
   const client = await createServerSupabaseClient();
   const statusFilter = searchParams.status;

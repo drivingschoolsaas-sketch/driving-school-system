@@ -11,9 +11,12 @@
  *
  * Handles:
  * - lowercase conversion
- * - www prefix removal
  * - port removal (for local development)
  * - whitespace trimming
+ *
+ * NOTE: www. is NOT stripped. www.example.com and example.com are
+ * treated as separate explicit domains. A school must register
+ * each variant they want to use. (Spec Section 9)
  *
  * @param rawHostname - The raw Host header or hostname string
  * @returns Normalized hostname suitable for database lookup
@@ -25,11 +28,6 @@ export function normalizeHostname(rawHostname: string): string {
   const colonIndex = hostname.indexOf(':');
   if (colonIndex !== -1) {
     hostname = hostname.substring(0, colonIndex);
-  }
-
-  // Remove www prefix
-  if (hostname.startsWith('www.')) {
-    hostname = hostname.substring(4);
   }
 
   return hostname;

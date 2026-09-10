@@ -24,6 +24,7 @@ interface CreateOrgFormState {
   success: boolean;
   error?: string;
   organizationId?: string;
+  inviteSent?: boolean;
 }
 
 export async function createOrganizationAction(
@@ -37,7 +38,6 @@ export async function createOrganizationAction(
     const name = formData.get('name') as string;
     const slug = formData.get('slug') as string;
     const ownerEmail = formData.get('ownerEmail') as string;
-    const ownerPassword = formData.get('ownerPassword') as string;
     const ownerName = formData.get('ownerName') as string;
     const email = formData.get('email') as string;
     const phone = formData.get('phone') as string;
@@ -58,12 +58,6 @@ export async function createOrganizationAction(
     if (!ownerEmail?.trim()) {
       return { success: false, error: 'Owner email is required' };
     }
-    if (!ownerPassword || ownerPassword.length < 8) {
-      return {
-        success: false,
-        error: 'Owner password must be at least 8 characters',
-      };
-    }
     if (!ownerName?.trim()) {
       return { success: false, error: 'Owner name is required' };
     }
@@ -74,7 +68,6 @@ export async function createOrganizationAction(
         name: name.trim(),
         slug: slug.trim().toLowerCase(),
         ownerEmail: ownerEmail.trim(),
-        ownerPassword,
         ownerName: ownerName.trim(),
         email: email?.trim() || undefined,
         phone: phone?.trim() || undefined,
@@ -86,6 +79,7 @@ export async function createOrganizationAction(
     return {
       success: true,
       organizationId: result.organization.id,
+      inviteSent: result.inviteSent,
     };
   } catch (error) {
     const message =

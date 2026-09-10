@@ -36,7 +36,7 @@ export default async function DashboardOverviewPage() {
       .eq('organization_id', orgId)
       .gte('start_datetime', todayStart)
       .lt('start_datetime', todayEnd)
-      .not('status', 'in', '("cancelled","rescheduled")'),
+      .not('status', 'in', '("cancelled","rejected")'),
     // Active instructors
     client
       .from('instructors')
@@ -49,7 +49,7 @@ export default async function DashboardOverviewPage() {
       .select('*')
       .eq('organization_id', orgId)
       .gte('start_datetime', now.toISOString())
-      .not('status', 'in', '("cancelled","rescheduled")')
+      .not('status', 'in', '("cancelled","rejected")')
       .order('start_datetime')
       .limit(5),
   ]);
@@ -224,10 +224,11 @@ function BookingCard({
   const end = new Date(booking.end_datetime);
 
   const statusColors: Record<string, string> = {
-    pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+    new_request: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+    contacted: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
     confirmed: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-    awaiting_payment: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
     completed: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+    rejected: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
     no_show: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
   };
 

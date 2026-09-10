@@ -14,24 +14,24 @@ import type { AuthorizedContext } from '@/lib/auth/authorization';
 import type {
   CreateBookingInput,
   UpdateBookingInput,
-  RescheduleBookingInput,
   CancelBookingInput,
 } from '@/validators/booking';
 import { BookingErrors } from '@/lib/errors';
 import { logger } from '@/lib/logging';
+import { audit } from '@/lib/audit';
 
 // --------------------------------------------------
 // Valid status transitions
 // --------------------------------------------------
 
 const VALID_TRANSITIONS: Record<BookingStatus, BookingStatus[]> = {
-  pending: ['awaiting_payment', 'confirmed', 'cancelled'],
-  awaiting_payment: ['confirmed', 'cancelled'],
-  confirmed: ['completed', 'cancelled', 'no_show', 'rescheduled'],
+  new_request: ['contacted', 'confirmed', 'rejected', 'cancelled'],
+  contacted: ['confirmed', 'rejected', 'cancelled'],
+  confirmed: ['completed', 'cancelled', 'no_show'],
   completed: [],
   cancelled: [],
+  rejected: [],
   no_show: [],
-  rescheduled: [],
 };
 
 /**
@@ -172,7 +172,7 @@ export async function createBooking(
   }
 
   // Record initial status in history
-  await recordStatusChange(client, data.id, null, 'pending', context.userId, 'Booking created');
+  await recordStatusChange(client, data.id, null, 'new_request', context.userId, 'Booking request submitted');
 
   logger.info('Booking created', {
     feature: 'bookings',
@@ -181,6 +181,14 @@ export async function createBooking(
     entityId: data.id,
     instructorId: input.instructor_id,
     studentId: input.student_id,
+  });
+
+  // P2-5: Audit log
+  await audit(client, context, {
+    action: 'booking.created',
+    resourceType: 'booking',
+    resourceId: data.id as string,
+    details: { instructor_id: input.instructor_id, student_id: input.student_id },
   });
 
   return data as Booking;
@@ -279,6 +287,13 @@ export async function transitionBookingStatus(
     to: newStatus,
   });
 
+  await audit(client, context, {
+    action: 'booking.status_changed',
+    resourceType: 'booking',
+    resourceId: bookingId,
+    details: { from: current.status, to: newStatus, reason },
+  });
+
   return data as Booking;
 }
 
@@ -343,6 +358,13 @@ export async function cancelBooking(
     cancelledBy: context.userId,
   });
 
+  await audit(client, context, {
+    action: 'booking.cancelled',
+    resourceType: 'booking',
+    resourceId: bookingId,
+    details: { reason: input.reason, from: current.status },
+  });
+
   return data as Booking;
 }
 
@@ -351,121 +373,15 @@ export async function cancelBooking(
 // --------------------------------------------------
 
 /**
- * Reschedule a booking — marks the original as 'rescheduled'
- * and creates a new booking at the new time. The exclusion
- * constraint prevents conflicts on the new booking.
+ * Reject a booking request. Only admins/instructors should call this.
  */
-export async function rescheduleBooking(
+export async function rejectBooking(
   client: SupabaseClient,
   context: AuthorizedContext,
   bookingId: string,
-  input: RescheduleBookingInput
+  reason?: string | null
 ): Promise<Booking> {
-  const current = await getBooking(client, context, bookingId);
-  if (!current) {
-    throw BookingErrors.notFound({ bookingId });
-  }
-
-  if (!isValidTransition(current.status, 'rescheduled')) {
-    throw BookingErrors.invalidStatusTransition(current.status, 'rescheduled');
-  }
-
-  // Mark original as rescheduled
-  const { error: updateError } = await client
-    .from('bookings')
-    .update({ status: 'rescheduled' })
-    .eq('id', bookingId)
-    .eq('organization_id', context.organizationId);
-
-  if (updateError) {
-    logger.error('Failed to mark booking as rescheduled', updateError, {
-      feature: 'bookings',
-      operation: 'reschedule',
-      organizationId: context.organizationId,
-      entityId: bookingId,
-    });
-    throw new Error('Failed to reschedule booking.');
-  }
-
-  await recordStatusChange(
-    client,
-    bookingId,
-    current.status,
-    'rescheduled',
-    context.userId,
-    input.reason
-  );
-
-  // Create new booking at the new time
-  const instructorId = input.new_instructor_id ?? current.instructor_id;
-
-  const { data: newBooking, error: insertError } = await client
-    .from('bookings')
-    .insert({
-      organization_id: context.organizationId,
-      instructor_id: instructorId,
-      student_id: current.student_id,
-      lesson_type_id: current.lesson_type_id,
-      vehicle_id: current.vehicle_id,
-      start_datetime: input.new_start_datetime,
-      end_datetime: input.new_end_datetime,
-      status: 'confirmed',
-      pickup_address: current.pickup_address,
-      pickup_suburb: current.pickup_suburb,
-      pickup_postcode: current.pickup_postcode,
-      service_area_id: current.service_area_id,
-      price_cents: current.price_cents,
-      notes: current.notes,
-      admin_notes: current.admin_notes,
-      rescheduled_from_id: bookingId,
-      created_by: context.userId,
-    })
-    .select()
-    .single();
-
-  if (insertError) {
-    if (isConflictError(insertError)) {
-      // Revert original booking status
-      await client
-        .from('bookings')
-        .update({ status: current.status })
-        .eq('id', bookingId)
-        .eq('organization_id', context.organizationId);
-
-      throw BookingErrors.slotUnavailable({
-        instructorId,
-        startDatetime: input.new_start_datetime,
-        endDatetime: input.new_end_datetime,
-      });
-    }
-
-    logger.error('Failed to create rescheduled booking', insertError, {
-      feature: 'bookings',
-      operation: 'reschedule',
-      organizationId: context.organizationId,
-      entityId: bookingId,
-    });
-    throw new Error('Failed to reschedule booking.');
-  }
-
-  await recordStatusChange(
-    client,
-    newBooking.id,
-    null,
-    'confirmed',
-    context.userId,
-    `Rescheduled from booking ${bookingId}`
-  );
-
-  logger.info('Booking rescheduled', {
-    feature: 'bookings',
-    operation: 'reschedule',
-    organizationId: context.organizationId,
-    originalBookingId: bookingId,
-    newBookingId: newBooking.id,
-  });
-
-  return newBooking as Booking;
+  return transitionBookingStatus(client, context, bookingId, 'rejected', reason);
 }
 
 // --------------------------------------------------

@@ -7,6 +7,13 @@
 // CRITICAL: This endpoint uses the raw request body
 // for signature verification. Do not parse JSON before
 // verification.
+//
+// NON-MVP NOTE (P1-8): Payments are gated behind the
+// 'payments' feature flag at the UI/checkout level. This
+// webhook route is NOT gated — Stripe retries on non-200
+// responses, so rejecting events here would cause infinite
+// retries. The UI gate prevents new payments from being
+// created, which is the correct enforcement point.
 
 import { NextRequest, NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';

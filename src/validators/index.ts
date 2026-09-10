@@ -143,7 +143,6 @@ export type {
 export {
   createBookingSchema,
   updateBookingSchema,
-  rescheduleBookingSchema,
   cancelBookingSchema,
   transitionBookingStatusSchema,
 } from './booking';
@@ -154,3 +153,6 @@ export type {
   CancelBookingInput,
   TransitionBookingStatusInput,
 } from './booking';
+
+// Note: rescheduleBookingSchema kept in booking.ts for backward compat
+// but no longer re-exported from index — it's not part of the MVP flow.

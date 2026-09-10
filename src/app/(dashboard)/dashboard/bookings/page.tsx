@@ -88,13 +88,13 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
   const lessonTypeMap = new Map(lessonTypes.map((lt) => [lt.id, lt]));
 
   const statusColors: Record<string, string> = {
-    pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+    new_request: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+    contacted: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
     confirmed: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-    awaiting_payment: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
     completed: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
     cancelled: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
+    rejected: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
     no_show: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-    rescheduled: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
   };
 
   return (
@@ -116,13 +116,13 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
           className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white"
         >
           <option value="all">All statuses</option>
-          <option value="pending">Pending</option>
+          <option value="new_request">New Request</option>
+          <option value="contacted">Contacted</option>
           <option value="confirmed">Confirmed</option>
-          <option value="awaiting_payment">Awaiting Payment</option>
           <option value="completed">Completed</option>
           <option value="cancelled">Cancelled</option>
+          <option value="rejected">Rejected</option>
           <option value="no_show">No Show</option>
-          <option value="rescheduled">Rescheduled</option>
         </select>
 
         {isAdmin && (

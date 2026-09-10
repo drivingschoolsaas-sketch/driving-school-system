@@ -5,7 +5,10 @@
 // bottom navigation. Spec: Section 11 — STUDENT PORTAL.
 
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { getPortalContext } from '@/lib/auth';
+import { isFeatureFlagEnabled } from '@/services/platform-admin-service';
+import { getAdminClient } from '@/lib/database/supabase-admin';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -32,6 +35,14 @@ export default async function PortalLayout({
   children: React.ReactNode;
 }) {
   const { organization, settings, student } = await getPortalContext();
+
+  // P1-7: Student portal is non-MVP — gated behind feature flag
+  const adminClient = getAdminClient();
+  const portalEnabled = await isFeatureFlagEnabled(adminClient, 'student_portal', organization.id);
+  if (!portalEnabled) {
+    redirect('/');
+  }
+
   const primaryColor = settings?.primary_color ?? '#2563eb';
 
   return (

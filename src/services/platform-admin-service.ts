@@ -234,7 +234,6 @@ export interface CreateOrganizationInput {
   name: string;
   slug: string;
   ownerEmail: string;
-  ownerPassword: string;
   ownerName: string;
   email?: string;
   phone?: string;
@@ -246,14 +245,21 @@ export interface CreateOrganizationInput {
 export interface CreateOrganizationResult {
   organization: Organization;
   ownerUserId: string;
+  /** True if an invitation email was sent (new user). False if existing user was added. */
+  inviteSent: boolean;
 }
 
 /**
  * Create a new organization with an owner user.
  *
+ * P1-5: Uses invitation-based onboarding instead of setting passwords
+ * directly. New users receive a Supabase Auth invite email with a
+ * magic link to set their own password. Existing users are simply
+ * added as school_owner members.
+ *
  * Steps:
  * 1. Create the organization record
- * 2. Create a Supabase Auth user for the owner
+ * 2. Invite the owner via Supabase Auth (or find existing user)
  * 3. Create an organization_members entry with role 'school_owner'
  * 4. Create default school_settings
  * 5. Audit-log the action
@@ -263,7 +269,17 @@ export async function createOrganization(
   input: CreateOrganizationInput,
   adminUserId: string
 ): Promise<CreateOrganizationResult> {
-  // 1. Check slug uniqueness
+  // 1a. Block reserved platform slugs (P2-3)
+  const RESERVED_SLUGS = [
+    'admin', 'api', 'app', 'www', 'mail', 'status', 'docs',
+    'help', 'support', 'billing', 'auth', 'cdn', 'static',
+    'portal', 'dashboard', 'login', 'signup', 'register',
+  ];
+  if (RESERVED_SLUGS.includes(input.slug)) {
+    throw new Error(`"${input.slug}" is a reserved platform slug and cannot be used`);
+  }
+
+  // 1b. Check slug uniqueness
   const { data: existing } = await client
     .from('organizations')
     .select('id')
@@ -293,19 +309,20 @@ export async function createOrganization(
 
   if (orgError) throw orgError;
 
-  // 3. Create the owner auth user
+  // 3. Invite the owner via Supabase Auth
+  //    inviteUserByEmail sends a magic link email. If the user already
+  //    exists, we fall back to looking them up and adding the membership.
   let ownerUserId: string;
-  const { data: authUser, error: authErr } =
-    await client.auth.admin.createUser({
-      email: input.ownerEmail,
-      password: input.ownerPassword,
-      email_confirm: true,
-      user_metadata: { full_name: input.ownerName },
+  let inviteSent = false;
+
+  const { data: inviteData, error: inviteErr } =
+    await client.auth.admin.inviteUserByEmail(input.ownerEmail, {
+      data: { full_name: input.ownerName },
     });
 
-  if (authErr) {
-    if (authErr.message.includes('already been registered')) {
-      // User exists — find their ID
+  if (inviteErr) {
+    if (inviteErr.message.includes('already been registered')) {
+      // User exists — find their ID and add them as owner
       const { data: listData } = await client.auth.admin.listUsers();
       const found = listData?.users?.find(
         (u) => u.email === input.ownerEmail
@@ -316,13 +333,15 @@ export async function createOrganization(
         );
       }
       ownerUserId = found.id;
+      inviteSent = false;
     } else {
       // Rollback: delete the org
       await client.from('organizations').delete().eq('id', org.id);
-      throw authErr;
+      throw inviteErr;
     }
   } else {
-    ownerUserId = authUser.user.id;
+    ownerUserId = inviteData.user.id;
+    inviteSent = true;
   }
 
   // 4. Create org membership
@@ -371,16 +390,18 @@ export async function createOrganization(
       name: input.name,
       slug: input.slug,
       owner_email: input.ownerEmail,
+      invite_sent: inviteSent,
     },
   });
 
   logger.info('Organization created by platform admin', {
     organizationId: org.id,
     slug: input.slug,
+    inviteSent,
     adminUserId,
   });
 
-  return { organization: org as Organization, ownerUserId };
+  return { organization: org as Organization, ownerUserId, inviteSent };
 }
 
 // --------------------------------------------------
@@ -397,8 +418,9 @@ export interface AddDomainInput {
 /**
  * Add a domain (hostname) to an organization.
  *
- * Platform admin assigns domains — they are marked verified immediately
- * since the admin is trusted.
+ * Platform subdomains (*.driveflow.com.au) are auto-verified since
+ * they are under platform control. Custom domains are inserted as
+ * 'pending_verification' — real DNS verification is required.
  */
 export async function addDomainToOrganization(
   client: SupabaseClient,
@@ -407,7 +429,19 @@ export async function addDomainToOrganization(
 ): Promise<DomainHealthRecord> {
   const normalizedHostname = input.hostname.toLowerCase().trim();
 
-  // 1. Check hostname uniqueness
+  // 1. Block reserved platform hostnames for subdomains
+  if (input.domainType === 'platform_subdomain') {
+    const reservedSlugs = [
+      'admin', 'api', 'app', 'www', 'mail', 'status', 'docs',
+      'help', 'support', 'billing', 'auth', 'cdn', 'static',
+    ];
+    const subdomain = normalizedHostname.split('.')[0];
+    if (reservedSlugs.includes(subdomain)) {
+      throw new Error(`"${subdomain}" is a reserved platform hostname and cannot be used`);
+    }
+  }
+
+  // 2. Check hostname uniqueness
   const { data: existingDomain } = await client
     .from('organization_domains')
     .select('id')
@@ -420,7 +454,7 @@ export async function addDomainToOrganization(
     );
   }
 
-  // 2. Verify the organization exists
+  // 3. Verify the organization exists
   const { data: org } = await client
     .from('organizations')
     .select('id, name')
@@ -431,8 +465,18 @@ export async function addDomainToOrganization(
     throw new Error('Organization not found');
   }
 
-  // 3. If setting as primary, unset current primary for this org
-  if (input.isPrimary) {
+  // 4. Determine initial status:
+  //    - Platform subdomains are auto-verified (we control DNS)
+  //    - Custom domains require DNS TXT record verification
+  const isAutoVerified = input.domainType === 'platform_subdomain';
+  const now = new Date().toISOString();
+  const verificationToken = isAutoVerified
+    ? null
+    : `driveflow-verify-${require('crypto').randomBytes(16).toString('hex')}`;
+
+  // 5. If setting as primary, unset current primary for this org
+  //    (only if auto-verified — pending domains can't be primary)
+  if (input.isPrimary && isAutoVerified) {
     await client
       .from('organization_domains')
       .update({ is_primary: false })
@@ -440,25 +484,25 @@ export async function addDomainToOrganization(
       .eq('is_primary', true);
   }
 
-  // 4. Insert the domain — admin-assigned so mark as verified
-  const now = new Date().toISOString();
+  // 6. Insert the domain
   const { data: domain, error: domainErr } = await client
     .from('organization_domains')
     .insert({
       organization_id: input.organizationId,
       hostname: normalizedHostname,
       domain_type: input.domainType,
-      status: 'verified',
-      is_primary: input.isPrimary ?? false,
+      status: isAutoVerified ? 'verified' : 'pending_verification',
+      is_primary: isAutoVerified ? (input.isPrimary ?? false) : false,
       ssl_status: 'pending',
-      verified_at: now,
+      verified_at: isAutoVerified ? now : null,
+      verification_token: verificationToken,
     })
     .select()
     .single();
 
   if (domainErr) throw domainErr;
 
-  // 5. Audit log
+  // 7. Audit log
   await createAuditLog(client, {
     organizationId: input.organizationId,
     userId: adminUserId,
@@ -468,7 +512,8 @@ export async function addDomainToOrganization(
     details: {
       hostname: normalizedHostname,
       domain_type: input.domainType,
-      is_primary: input.isPrimary ?? false,
+      is_primary: isAutoVerified ? (input.isPrimary ?? false) : false,
+      auto_verified: isAutoVerified,
       organization_name: (org as { name: string }).name,
     },
   });
@@ -476,8 +521,18 @@ export async function addDomainToOrganization(
   logger.info('Domain added by platform admin', {
     organizationId: input.organizationId,
     hostname: normalizedHostname,
+    status: isAutoVerified ? 'verified' : 'pending_verification',
     adminUserId,
   });
+
+  // If custom domain, log DNS verification instructions
+  if (!isAutoVerified) {
+    logger.info('Custom domain requires DNS verification', {
+      organizationId: input.organizationId,
+      hostname: normalizedHostname,
+      verificationRecord: `_driveflow-verify.${normalizedHostname} TXT ${verificationToken}`,
+    });
+  }
 
   return {
     id: domain.id as string,

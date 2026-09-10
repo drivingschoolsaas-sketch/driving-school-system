@@ -118,7 +118,7 @@ async function run() {
 
   console.log('\n🎉 Platform Admin is ready!');
   console.log(`   Email:    ${email}`);
-  console.log(`   Password: MyPassword123`);
+  console.log(`   Password: (use your existing password)`);
   console.log(`   Admin:    http://localhost:3000/admin`);
   console.log('\n   This user can now:');
   console.log('   • View/manage all driving schools');

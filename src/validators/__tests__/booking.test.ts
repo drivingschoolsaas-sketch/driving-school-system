@@ -147,13 +147,13 @@ describe('cancelBookingSchema', () => {
 describe('transitionBookingStatusSchema', () => {
   it('accepts valid status', () => {
     const statuses = [
-      'pending',
-      'awaiting_payment',
+      'new_request',
+      'contacted',
       'confirmed',
       'completed',
       'cancelled',
+      'rejected',
       'no_show',
-      'rescheduled',
     ];
     for (const status of statuses) {
       const result = transitionBookingStatusSchema.safeParse({ status });
@@ -166,6 +166,13 @@ describe('transitionBookingStatusSchema', () => {
       status: 'deleted',
     });
     expect(result.success).toBe(false);
+  });
+
+  it('rejects old non-MVP statuses', () => {
+    for (const status of ['pending', 'awaiting_payment', 'rescheduled']) {
+      const result = transitionBookingStatusSchema.safeParse({ status });
+      expect(result.success).toBe(false);
+    }
   });
 
   it('accepts status with reason', () => {

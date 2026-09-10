@@ -10,6 +10,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Plan, Subscription } from '@/types/database';
+import { SubscriptionErrors } from '@/lib/errors';
 import { logger } from '@/lib/logging';
 
 /**
@@ -189,4 +190,51 @@ export async function checkUsageLimit(
   }
 
   return { allowed, limit, current };
+}
+
+// --------------------------------------------------
+// Enforcement guards — throw if not allowed
+// --------------------------------------------------
+
+type FeatureFlag = keyof Pick<
+  Entitlements,
+  | 'customDomainEnabled'
+  | 'smsEnabled'
+  | 'studentProgressEnabled'
+  | 'advancedReportsEnabled'
+  | 'waitlistEnabled'
+  | 'customBrandingEnabled'
+  | 'apiAccessEnabled'
+>;
+
+/**
+ * Require a feature to be enabled for the organization.
+ * Throws SUBSCRIPTION_001_FEATURE_NOT_ALLOWED if not.
+ */
+export async function requireFeature(
+  client: SupabaseClient,
+  organizationId: string,
+  feature: FeatureFlag
+): Promise<void> {
+  const enabled = await isFeatureEnabled(client, organizationId, feature);
+  if (!enabled) {
+    throw SubscriptionErrors.featureNotAllowed(feature);
+  }
+}
+
+/**
+ * Require that adding one more of a resource won't exceed the plan limit.
+ * Throws SUBSCRIPTION_001_FEATURE_NOT_ALLOWED if the limit is reached.
+ */
+export async function requireUsageLimit(
+  client: SupabaseClient,
+  organizationId: string,
+  resource: 'instructors' | 'students' | 'locations' | 'vehicles' | 'bookings_per_month'
+): Promise<void> {
+  const result = await checkUsageLimit(client, organizationId, resource);
+  if (!result.allowed) {
+    throw SubscriptionErrors.featureNotAllowed(
+      `${resource} (limit: ${result.limit}, current: ${result.current})`
+    );
+  }
 }

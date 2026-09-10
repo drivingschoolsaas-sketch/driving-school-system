@@ -22,8 +22,8 @@ const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_RO
 });
 
 async function run() {
-  const email = 'schoolowner1@driveflow.test';
-  const password = 'SW12345';
+  const email = process.argv[2] || 'schoolowner1@driveflow.test';
+  const password = process.argv[3] || require('crypto').randomBytes(16).toString('base64url');
 
   console.log(`\n🔑 Creating School Owner: ${email}\n`);
 

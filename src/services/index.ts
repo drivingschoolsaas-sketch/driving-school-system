@@ -91,6 +91,10 @@ export {
   getSchoolSettings,
   getPublicSchoolSettings,
   updateSchoolSettings,
+  saveDraftContent,
+  publishDraftContent,
+  discardDraft,
+  getPreviewSettings,
 } from './school-settings-service';
 
 export {
@@ -133,7 +137,7 @@ export {
   updateBooking,
   transitionBookingStatus,
   cancelBooking,
-  rescheduleBooking,
+  rejectBooking,
   getBookingHistory,
   isValidTransition,
 } from './booking-service';
@@ -191,6 +195,8 @@ export {
   getEntitlements,
   isFeatureEnabled,
   checkUsageLimit,
+  requireFeature,
+  requireUsageLimit,
 } from './entitlement-service';
 
 export {
@@ -245,3 +251,12 @@ export {
   deleteCustomTheme,
   themeToCSS,
 } from './custom-theme-service';
+
+export {
+  getMediaAssets,
+  getMediaAsset,
+  uploadMediaAsset,
+  updateMediaAsset,
+  deleteMediaAsset,
+  getMediaFolders,
+} from './media-library-service';

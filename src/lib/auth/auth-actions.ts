@@ -10,10 +10,18 @@
 // calls safely, never exposing secrets to the client.
 
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { createServerSupabaseClient } from '@/lib/database/supabase-server';
 import { validateRedirectUrl } from './redirect-url';
 import { signInSchema, signUpSchema, forgotPasswordSchema, resetPasswordSchema } from '@/validators/auth';
 import { logger } from '@/lib/logging';
+import { authLimiter, RateLimitError } from '@/lib/rate-limit';
+
+/** Extract client IP from request headers for rate limiting. */
+async function getClientIp(): Promise<string> {
+  const hdrs = await headers();
+  return hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+}
 
 /**
  * Standard result type for auth actions.
@@ -29,6 +37,16 @@ export interface AuthActionResult {
  * Sign in with email and password.
  */
 export async function signInAction(formData: FormData): Promise<AuthActionResult> {
+  // P2-2: Rate limit auth attempts
+  try {
+    const ip = await getClientIp();
+    authLimiter.check(`sign-in:${ip}`);
+  } catch (err) {
+    if (err instanceof RateLimitError) {
+      return { error: 'Too many sign-in attempts. Please try again later.' };
+    }
+  }
+
   const raw = {
     email: formData.get('email'),
     password: formData.get('password'),
@@ -65,6 +83,15 @@ export async function signInAction(formData: FormData): Promise<AuthActionResult
  * Sign up with email, password, and full name.
  */
 export async function signUpAction(formData: FormData): Promise<AuthActionResult> {
+  try {
+    const ip = await getClientIp();
+    authLimiter.check(`sign-up:${ip}`);
+  } catch (err) {
+    if (err instanceof RateLimitError) {
+      return { error: 'Too many sign-up attempts. Please try again later.' };
+    }
+  }
+
   const raw = {
     email: formData.get('email'),
     password: formData.get('password'),
@@ -117,6 +144,15 @@ export async function signUpAction(formData: FormData): Promise<AuthActionResult
  * Send a password reset email.
  */
 export async function forgotPasswordAction(formData: FormData): Promise<AuthActionResult> {
+  try {
+    const ip = await getClientIp();
+    authLimiter.check(`forgot:${ip}`);
+  } catch (err) {
+    if (err instanceof RateLimitError) {
+      return { error: 'Too many requests. Please try again later.' };
+    }
+  }
+
   const raw = { email: formData.get('email') };
 
   const parsed = forgotPasswordSchema.safeParse(raw);

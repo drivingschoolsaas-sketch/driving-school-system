@@ -9,6 +9,7 @@
 // They use the admin client (service role) to query
 // across all organizations.
 
+import 'server-only';
 import { redirect } from 'next/navigation';
 import { createServerSupabaseClient } from '@/lib/database';
 import { getAdminClient } from '@/lib/database/supabase-admin';

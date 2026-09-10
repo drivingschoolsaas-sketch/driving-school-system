@@ -108,7 +108,6 @@ describe('Tenant Isolation — Full Security Model', () => {
     it('Hostname normalization is consistent for the same domain', () => {
       const variations = [
         'SydneySmart.DriveFlow.COM.AU',
-        'www.sydneysmart.driveflow.com.au',
         'sydneysmart.driveflow.com.au:443',
         '  sydneysmart.driveflow.com.au  ',
       ];
@@ -116,6 +115,11 @@ describe('Tenant Isolation — Full Security Model', () => {
       const normalized = variations.map(normalizeHostname);
       const expected = 'sydneysmart.driveflow.com.au';
       normalized.forEach((n) => expect(n).toBe(expected));
+
+      // www. is NOT stripped — it's a separate domain
+      expect(normalizeHostname('www.sydneysmart.driveflow.com.au')).toBe(
+        'www.sydneysmart.driveflow.com.au'
+      );
     });
   });
 

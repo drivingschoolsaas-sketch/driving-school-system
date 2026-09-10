@@ -60,14 +60,22 @@ export async function resolveHostname(
     hostname: classification.normalized,
   });
 
-  // Non-tenant hostnames resolve to platform contexts
-  // In development, localhost resolves to the first active tenant
+  // In development, localhost resolves to the tenant specified
+  // by DEV_TENANT_SLUG env var. Never silently pick a random org.
   if (classification.type === 'localhost' && process.env.NODE_ENV === 'development' && client) {
-    logger.debug('Localhost dev fallback: resolving to first tenant', {
-      feature: 'tenant',
-      operation: 'resolve_hostname',
-    });
-    return resolveLocalhostDevFallback(client);
+    const devSlug = process.env.DEV_TENANT_SLUG;
+    if (!devSlug) {
+      logger.error(
+        'DEV_TENANT_SLUG env var required for localhost development. ' +
+        'Set it to the slug of the organization you want to develop against.',
+        {
+          feature: 'tenant',
+          operation: 'resolve_hostname',
+        }
+      );
+      throw DomainErrors.unknownHost('localhost');
+    }
+    return resolveDevTenantBySlug(client, devSlug);
   }
 
   if (classification.type !== 'tenant') {
@@ -201,33 +209,34 @@ async function resolveTenantFromDatabase(
 }
 
 /**
- * Development-only fallback: resolve localhost to the first active organization.
- * This avoids requiring hosts file edits for local development.
+ * Development-only: resolve localhost to the organization specified
+ * by the DEV_TENANT_SLUG env var. Explicit is better than silent.
  */
-async function resolveLocalhostDevFallback(
-  client: SupabaseClient
+async function resolveDevTenantBySlug(
+  client: SupabaseClient,
+  slug: string
 ): Promise<ResolvedContext> {
   const { data: org, error } = await client
     .from('organizations')
     .select('*')
+    .eq('slug', slug)
     .in('status', ['active', 'trial'])
-    .order('created_at', { ascending: true })
-    .limit(1)
     .single();
 
   if (error || !org) {
-    logger.debug('No active organization found for localhost fallback', {
+    logger.error(`DEV_TENANT_SLUG "${slug}" not found or not active`, {
       feature: 'tenant',
-      operation: 'resolve_localhost_dev_fallback',
+      operation: 'resolve_dev_tenant_by_slug',
+      slug,
     });
     throw DomainErrors.unknownHost('localhost');
   }
 
   const organization = org as Organization;
 
-  logger.debug('Localhost resolved to dev tenant', {
+  logger.debug('Localhost resolved to dev tenant via DEV_TENANT_SLUG', {
     feature: 'tenant',
-    operation: 'resolve_localhost_dev_fallback',
+    operation: 'resolve_dev_tenant_by_slug',
     organizationId: organization.id,
     organizationSlug: organization.slug,
   });

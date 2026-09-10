@@ -8,6 +8,7 @@ import type { SchoolSettings } from '@/types/database';
 import type { AuthorizedContext } from '@/lib/auth/authorization';
 import type { UpdateSchoolSettingsInput } from '@/validators/school-settings';
 import { logger } from '@/lib/logging';
+import { audit } from '@/lib/audit';
 
 /**
  * Get school settings for an organization.
@@ -98,7 +99,189 @@ export async function updateSchoolSettings(
     organizationId: context.organizationId,
   });
 
+  await audit(client, context, {
+    action: 'school_settings.updated',
+    resourceType: 'school_settings',
+    details: { fields: Object.keys(input) },
+  });
+
   return data as SchoolSettings;
+}
+
+// --------------------------------------------------
+// Content Workflow: Draft / Preview / Publish
+// --------------------------------------------------
+
+/** Content fields that participate in the draft/publish workflow. */
+const CONTENT_FIELDS = [
+  'hero_title', 'hero_subtitle', 'about_text',
+  'primary_color', 'secondary_color',
+  'logo_url', 'favicon_url',
+  'meta_title', 'meta_description',
+  'sections_enabled',
+  'social_facebook', 'social_instagram', 'social_tiktok', 'social_google_review',
+] as const;
+
+export type ContentFieldKey = typeof CONTENT_FIELDS[number];
+
+/**
+ * Save a draft of website content changes.
+ * Merges into any existing draft (doesn't replace).
+ */
+export async function saveDraftContent(
+  client: SupabaseClient,
+  context: AuthorizedContext,
+  changes: Record<string, unknown>
+): Promise<SchoolSettings> {
+  // Only keep content fields
+  const filtered: Record<string, unknown> = {};
+  for (const key of CONTENT_FIELDS) {
+    if (key in changes) {
+      filtered[key] = changes[key];
+    }
+  }
+
+  if (Object.keys(filtered).length === 0) {
+    throw new Error('No content fields to save as draft.');
+  }
+
+  // Fetch current settings to merge into existing draft
+  const current = await getSchoolSettings(client, context);
+  const existingDraft = (current.draft_content ?? {}) as Record<string, unknown>;
+  const mergedDraft = { ...existingDraft, ...filtered };
+
+  const { data, error } = await client
+    .from('school_settings')
+    .update({ draft_content: mergedDraft })
+    .eq('organization_id', context.organizationId)
+    .select()
+    .single();
+
+  if (error) {
+    logger.error('Failed to save draft content', error, {
+      feature: 'school-settings',
+      operation: 'save_draft',
+      organizationId: context.organizationId,
+    });
+    throw new Error('Failed to save draft.');
+  }
+
+  logger.info('Draft content saved', {
+    feature: 'school-settings',
+    operation: 'save_draft',
+    organizationId: context.organizationId,
+    fields: Object.keys(filtered),
+  });
+
+  return data as SchoolSettings;
+}
+
+/**
+ * Publish draft content: copies draft fields over the live columns
+ * and clears the draft.
+ */
+export async function publishDraftContent(
+  client: SupabaseClient,
+  context: AuthorizedContext
+): Promise<SchoolSettings> {
+  const current = await getSchoolSettings(client, context);
+
+  if (!current.draft_content || Object.keys(current.draft_content).length === 0) {
+    throw new Error('No draft content to publish.');
+  }
+
+  // Build update: copy each draft field into its live column
+  const updates: Record<string, unknown> = {};
+  for (const key of CONTENT_FIELDS) {
+    if (key in current.draft_content) {
+      updates[key] = current.draft_content[key];
+    }
+  }
+
+  // Clear draft and set published timestamp
+  updates.draft_content = null;
+  updates.content_published_at = new Date().toISOString();
+
+  const { data, error } = await client
+    .from('school_settings')
+    .update(updates)
+    .eq('organization_id', context.organizationId)
+    .select()
+    .single();
+
+  if (error) {
+    logger.error('Failed to publish draft content', error, {
+      feature: 'school-settings',
+      operation: 'publish_draft',
+      organizationId: context.organizationId,
+    });
+    throw new Error('Failed to publish content.');
+  }
+
+  logger.info('Draft content published', {
+    feature: 'school-settings',
+    operation: 'publish_draft',
+    organizationId: context.organizationId,
+    fields: Object.keys(current.draft_content),
+  });
+
+  await audit(client, context, {
+    action: 'school_settings.content_published',
+    resourceType: 'school_settings',
+    details: { fields: Object.keys(current.draft_content) },
+  });
+
+  return data as SchoolSettings;
+}
+
+/**
+ * Discard the current draft, reverting to the published content.
+ */
+export async function discardDraft(
+  client: SupabaseClient,
+  context: AuthorizedContext
+): Promise<SchoolSettings> {
+  const { data, error } = await client
+    .from('school_settings')
+    .update({ draft_content: null })
+    .eq('organization_id', context.organizationId)
+    .select()
+    .single();
+
+  if (error) {
+    logger.error('Failed to discard draft', error, {
+      feature: 'school-settings',
+      operation: 'discard_draft',
+      organizationId: context.organizationId,
+    });
+    throw new Error('Failed to discard draft.');
+  }
+
+  logger.info('Draft content discarded', {
+    feature: 'school-settings',
+    operation: 'discard_draft',
+    organizationId: context.organizationId,
+  });
+
+  return data as SchoolSettings;
+}
+
+/**
+ * Get a preview of what the settings would look like if the draft
+ * were published. Merges draft over live settings.
+ */
+export function getPreviewSettings(settings: SchoolSettings): SchoolSettings {
+  if (!settings.draft_content || Object.keys(settings.draft_content).length === 0) {
+    return settings;
+  }
+
+  const preview = { ...settings };
+  for (const key of CONTENT_FIELDS) {
+    if (key in settings.draft_content) {
+      (preview as Record<string, unknown>)[key] = settings.draft_content[key];
+    }
+  }
+  return preview;
 }
 
 /**

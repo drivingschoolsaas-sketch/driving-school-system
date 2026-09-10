@@ -77,6 +77,15 @@ export function AddSchoolForm() {
               </div>
             )}
 
+            {state.success && (
+              <div className="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                School created successfully.
+                {state.inviteSent
+                  ? ' An invitation email has been sent to the owner.'
+                  : ' The owner (existing user) has been added as school owner.'}
+              </div>
+            )}
+
             <form action={formAction} className="space-y-4">
               {/* School Info */}
               <fieldset className="space-y-3">
@@ -177,20 +186,9 @@ export function AddSchoolForm() {
                     placeholder="owner@school.com"
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                   />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Owner Password *
-                  </label>
-                  <input
-                    name="ownerPassword"
-                    type="password"
-                    required
-                    minLength={8}
-                    placeholder="Min 8 characters"
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                  />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    An invitation email will be sent to set up their password.
+                  </p>
                 </div>
               </fieldset>
 

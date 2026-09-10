@@ -25,7 +25,7 @@ export default async function PortalDashboardPage() {
       .eq('organization_id', orgId)
       .eq('student_id', student.id)
       .gte('start_datetime', now.toISOString())
-      .not('status', 'in', '("cancelled","rescheduled")')
+      .not('status', 'in', '("cancelled","rejected")')
       .order('start_datetime')
       .limit(3),
     // Active packages

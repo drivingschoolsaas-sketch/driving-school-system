@@ -5,6 +5,7 @@
 // Resolves authenticated user → tenant → student record.
 // Similar to getDashboardContext but adds the Student record.
 
+import 'server-only';
 import { redirect } from 'next/navigation';
 import { createServerSupabaseClient } from '@/lib/database';
 import { getAdminClient } from '@/lib/database/supabase-admin';

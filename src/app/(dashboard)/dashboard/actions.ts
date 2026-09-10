@@ -283,3 +283,89 @@ async function uploadPhoto(
 
   return urlData.publicUrl;
 }
+
+// --------------------------------------------------
+// Content Workflow: Draft / Publish / Discard (P1-3)
+// --------------------------------------------------
+
+import {
+  saveDraftContent,
+  publishDraftContent,
+  discardDraft,
+} from '@/services/school-settings-service';
+
+export async function saveDraftAction(formData: FormData) {
+  const { auth } = await getDashboardContext();
+  requireRole(auth, USER_ROLES.SCHOOL_OWNER);
+
+  const client = await createServerSupabaseClient();
+
+  // Extract content fields from form data
+  const changes: Record<string, unknown> = {};
+  const textFields = [
+    'hero_title', 'hero_subtitle', 'about_text',
+    'meta_title', 'meta_description',
+    'social_facebook', 'social_instagram', 'social_tiktok', 'social_google_review',
+    'primary_color', 'secondary_color',
+  ];
+
+  for (const field of textFields) {
+    if (formData.has(field)) {
+      const val = (formData.get(field) as string).trim();
+      changes[field] = val || null;
+    }
+  }
+
+  // Sections enabled
+  if (formData.has('sections_enabled')) {
+    const sectionsRaw = formData.get('sections_enabled') as string;
+    changes.sections_enabled = sectionsRaw.split(',').map(s => s.trim()).filter(Boolean);
+  }
+
+  // Logo upload
+  const logoFile = formData.get('logo') as File | null;
+  if (logoFile && logoFile.size > 0) {
+    changes.logo_url = await uploadPhoto(logoFile, auth.organizationId, 'logos');
+  } else if (formData.get('remove_logo') === 'true') {
+    changes.logo_url = null;
+  }
+
+  try {
+    await saveDraftContent(client, auth, changes);
+    revalidatePath('/dashboard/settings');
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to save draft' };
+  }
+}
+
+export async function publishContentAction() {
+  const { auth } = await getDashboardContext();
+  requireRole(auth, USER_ROLES.SCHOOL_OWNER);
+
+  const client = await createServerSupabaseClient();
+
+  try {
+    await publishDraftContent(client, auth);
+    revalidatePath('/dashboard/settings');
+    revalidatePath('/'); // Revalidate public site with new content
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to publish' };
+  }
+}
+
+export async function discardDraftAction() {
+  const { auth } = await getDashboardContext();
+  requireRole(auth, USER_ROLES.SCHOOL_OWNER);
+
+  const client = await createServerSupabaseClient();
+
+  try {
+    await discardDraft(client, auth);
+    revalidatePath('/dashboard/settings');
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to discard draft' };
+  }
+}

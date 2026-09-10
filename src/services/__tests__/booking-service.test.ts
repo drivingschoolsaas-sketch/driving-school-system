@@ -4,27 +4,35 @@ import type { BookingStatus } from '@/config/constants';
 
 describe('isValidTransition', () => {
   // --------------------------------------------------
-  // Valid transitions
+  // Valid transitions (booking-as-request model)
   // --------------------------------------------------
 
-  it('allows pending → awaiting_payment', () => {
-    expect(isValidTransition('pending', 'awaiting_payment')).toBe(true);
+  it('allows new_request → contacted', () => {
+    expect(isValidTransition('new_request', 'contacted')).toBe(true);
   });
 
-  it('allows pending → confirmed', () => {
-    expect(isValidTransition('pending', 'confirmed')).toBe(true);
+  it('allows new_request → confirmed', () => {
+    expect(isValidTransition('new_request', 'confirmed')).toBe(true);
   });
 
-  it('allows pending → cancelled', () => {
-    expect(isValidTransition('pending', 'cancelled')).toBe(true);
+  it('allows new_request → rejected', () => {
+    expect(isValidTransition('new_request', 'rejected')).toBe(true);
   });
 
-  it('allows awaiting_payment → confirmed', () => {
-    expect(isValidTransition('awaiting_payment', 'confirmed')).toBe(true);
+  it('allows new_request → cancelled', () => {
+    expect(isValidTransition('new_request', 'cancelled')).toBe(true);
   });
 
-  it('allows awaiting_payment → cancelled', () => {
-    expect(isValidTransition('awaiting_payment', 'cancelled')).toBe(true);
+  it('allows contacted → confirmed', () => {
+    expect(isValidTransition('contacted', 'confirmed')).toBe(true);
+  });
+
+  it('allows contacted → rejected', () => {
+    expect(isValidTransition('contacted', 'rejected')).toBe(true);
+  });
+
+  it('allows contacted → cancelled', () => {
+    expect(isValidTransition('contacted', 'cancelled')).toBe(true);
   });
 
   it('allows confirmed → completed', () => {
@@ -39,22 +47,18 @@ describe('isValidTransition', () => {
     expect(isValidTransition('confirmed', 'no_show')).toBe(true);
   });
 
-  it('allows confirmed → rescheduled', () => {
-    expect(isValidTransition('confirmed', 'rescheduled')).toBe(true);
-  });
-
   // --------------------------------------------------
   // Invalid transitions (terminal states)
   // --------------------------------------------------
 
   it('disallows completed → anything', () => {
     const targets: BookingStatus[] = [
-      'pending',
-      'awaiting_payment',
+      'new_request',
+      'contacted',
       'confirmed',
       'cancelled',
+      'rejected',
       'no_show',
-      'rescheduled',
     ];
     for (const to of targets) {
       expect(isValidTransition('completed', to)).toBe(false);
@@ -63,43 +67,43 @@ describe('isValidTransition', () => {
 
   it('disallows cancelled → anything', () => {
     const targets: BookingStatus[] = [
-      'pending',
-      'awaiting_payment',
+      'new_request',
+      'contacted',
       'confirmed',
       'completed',
+      'rejected',
       'no_show',
-      'rescheduled',
     ];
     for (const to of targets) {
       expect(isValidTransition('cancelled', to)).toBe(false);
     }
   });
 
-  it('disallows no_show → anything', () => {
+  it('disallows rejected → anything', () => {
     const targets: BookingStatus[] = [
-      'pending',
-      'awaiting_payment',
-      'confirmed',
-      'completed',
-      'cancelled',
-      'rescheduled',
-    ];
-    for (const to of targets) {
-      expect(isValidTransition('no_show', to)).toBe(false);
-    }
-  });
-
-  it('disallows rescheduled → anything', () => {
-    const targets: BookingStatus[] = [
-      'pending',
-      'awaiting_payment',
+      'new_request',
+      'contacted',
       'confirmed',
       'completed',
       'cancelled',
       'no_show',
     ];
     for (const to of targets) {
-      expect(isValidTransition('rescheduled', to)).toBe(false);
+      expect(isValidTransition('rejected', to)).toBe(false);
+    }
+  });
+
+  it('disallows no_show → anything', () => {
+    const targets: BookingStatus[] = [
+      'new_request',
+      'contacted',
+      'confirmed',
+      'completed',
+      'cancelled',
+      'rejected',
+    ];
+    for (const to of targets) {
+      expect(isValidTransition('no_show', to)).toBe(false);
     }
   });
 
@@ -107,35 +111,31 @@ describe('isValidTransition', () => {
   // Invalid transitions (skip states)
   // --------------------------------------------------
 
-  it('disallows pending → completed (must go through confirmed)', () => {
-    expect(isValidTransition('pending', 'completed')).toBe(false);
+  it('disallows new_request → completed (must go through confirmed)', () => {
+    expect(isValidTransition('new_request', 'completed')).toBe(false);
   });
 
-  it('disallows pending → no_show', () => {
-    expect(isValidTransition('pending', 'no_show')).toBe(false);
+  it('disallows new_request → no_show', () => {
+    expect(isValidTransition('new_request', 'no_show')).toBe(false);
   });
 
-  it('disallows pending → rescheduled', () => {
-    expect(isValidTransition('pending', 'rescheduled')).toBe(false);
+  it('disallows contacted → completed', () => {
+    expect(isValidTransition('contacted', 'completed')).toBe(false);
   });
 
-  it('disallows awaiting_payment → completed', () => {
-    expect(isValidTransition('awaiting_payment', 'completed')).toBe(false);
-  });
-
-  it('disallows awaiting_payment → no_show', () => {
-    expect(isValidTransition('awaiting_payment', 'no_show')).toBe(false);
+  it('disallows contacted → no_show', () => {
+    expect(isValidTransition('contacted', 'no_show')).toBe(false);
   });
 
   it('disallows self-transitions', () => {
     const statuses: BookingStatus[] = [
-      'pending',
-      'awaiting_payment',
+      'new_request',
+      'contacted',
       'confirmed',
       'completed',
       'cancelled',
+      'rejected',
       'no_show',
-      'rescheduled',
     ];
     for (const s of statuses) {
       expect(isValidTransition(s, s)).toBe(false);

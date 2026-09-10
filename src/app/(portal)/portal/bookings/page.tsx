@@ -35,7 +35,7 @@ export default async function PortalBookingsPage({ searchParams }: BookingsPageP
   if (tab === 'upcoming') {
     query = query
       .gte('start_datetime', now)
-      .not('status', 'in', '("cancelled","rescheduled")')
+      .not('status', 'in', '("cancelled","rejected")')
       .order('start_datetime', { ascending: true });
   } else if (tab === 'past') {
     query = query
@@ -65,13 +65,13 @@ export default async function PortalBookingsPage({ searchParams }: BookingsPageP
   ];
 
   const statusColors: Record<string, string> = {
-    pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+    new_request: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+    contacted: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
     confirmed: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-    awaiting_payment: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
     completed: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
     cancelled: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400',
+    rejected: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
     no_show: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-    rescheduled: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
   };
 
   return (

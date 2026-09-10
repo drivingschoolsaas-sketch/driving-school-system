@@ -265,6 +265,31 @@ export interface SchoolSettings {
   default_travel_buffer_minutes: number;
   default_transmission: TransmissionType;
   sections_enabled: string[];
+  /** Pending draft content changes (partial JSON of content fields). Null = no draft. */
+  draft_content: Record<string, unknown> | null;
+  /** When website content was last published (draft→live). */
+  content_published_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// --- Media Assets ---
+
+export interface MediaAsset {
+  id: string;
+  organization_id: string;
+  storage_path: string;
+  public_url: string;
+  bucket_name: string;
+  filename: string;
+  alt_text: string | null;
+  mime_type: string;
+  file_size_bytes: number;
+  width: number | null;
+  height: number | null;
+  folder: string;
+  tags: string[];
+  uploaded_by: string | null;
   created_at: string;
   updated_at: string;
 }

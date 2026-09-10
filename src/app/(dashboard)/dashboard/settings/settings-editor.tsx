@@ -2,17 +2,29 @@
 
 import { useState, useTransition } from 'react';
 import type { Organization, SchoolSettings } from '@/types/database';
-import { updateSchoolSettingsAction, updateOrganizationAction } from '../actions';
+import {
+  updateSchoolSettingsAction,
+  updateOrganizationAction,
+  saveDraftAction,
+  publishContentAction,
+  discardDraftAction,
+} from '../actions';
 
 interface Props {
   organization: Organization;
   settings: SchoolSettings | null;
 }
 
+/** Tabs that hold website content (draft/publish workflow). */
+const CONTENT_TABS = new Set<string>(['branding', 'seo', 'social']);
+
 export function SettingsEditor({ organization, settings }: Props) {
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [activeTab, setActiveTab] = useState<'branding' | 'contact' | 'booking' | 'seo' | 'social'>('branding');
+  const [hasDraft, setHasDraft] = useState(
+    settings?.draft_content != null && Object.keys(settings.draft_content).length > 0
+  );
 
   const handleOrgSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -26,17 +38,59 @@ export function SettingsEditor({ organization, settings }: Props) {
     });
   };
 
+  /** For operational tabs (contact, booking) — save immediately to live. */
   const handleSettingsSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     startTransition(async () => {
       const result = await updateSchoolSettingsAction(formData);
       setMessage(result.success
-        ? { type: 'success', text: 'Settings saved! Changes are live on your website.' }
+        ? { type: 'success', text: 'Settings saved! Changes are live.' }
         : { type: 'error', text: result.error ?? 'Save failed.' }
       );
     });
   };
+
+  /** For content tabs (branding, SEO, social) — save as draft. */
+  const handleDraftSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    startTransition(async () => {
+      const result = await saveDraftAction(formData);
+      if (result.success) {
+        setHasDraft(true);
+        setMessage({ type: 'success', text: 'Draft saved. Preview your changes, then publish when ready.' });
+      } else {
+        setMessage({ type: 'error', text: result.error ?? 'Failed to save draft.' });
+      }
+    });
+  };
+
+  const handlePublish = () => {
+    startTransition(async () => {
+      const result = await publishContentAction();
+      if (result.success) {
+        setHasDraft(false);
+        setMessage({ type: 'success', text: '✅ Content published! Changes are now live on your website.' });
+      } else {
+        setMessage({ type: 'error', text: result.error ?? 'Failed to publish.' });
+      }
+    });
+  };
+
+  const handleDiscard = () => {
+    startTransition(async () => {
+      const result = await discardDraftAction();
+      if (result.success) {
+        setHasDraft(false);
+        setMessage({ type: 'success', text: 'Draft discarded. Your live content is unchanged.' });
+      } else {
+        setMessage({ type: 'error', text: result.error ?? 'Failed to discard draft.' });
+      }
+    });
+  };
+
+  const isContentTab = CONTENT_TABS.has(activeTab);
 
   const tabs = [
     { id: 'branding' as const, label: 'Branding', icon: '🎨' },
@@ -51,7 +105,7 @@ export function SettingsEditor({ organization, settings }: Props) {
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Settings</h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Manage your school&apos;s configuration. Changes are reflected on your public website immediately.
+          Manage your school&apos;s configuration. Content changes (branding, SEO, social) are saved as drafts — publish when you&apos;re ready.
         </p>
       </div>
 
@@ -65,6 +119,36 @@ export function SettingsEditor({ organization, settings }: Props) {
           }`}
         >
           {message.text}
+        </div>
+      )}
+
+      {/* Draft Banner */}
+      {hasDraft && (
+        <div className="rounded-lg border-2 border-amber-300 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-amber-600 dark:text-amber-400 text-lg">📝</span>
+            <span className="font-medium text-amber-800 dark:text-amber-300">
+              You have unpublished content changes.
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleDiscard}
+              disabled={isPending}
+              className="rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
+            >
+              Discard
+            </button>
+            <button
+              type="button"
+              onClick={handlePublish}
+              disabled={isPending}
+              className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-green-700 disabled:opacity-50 transition-colors"
+            >
+              {isPending ? 'Publishing…' : 'Publish Now'}
+            </button>
+          </div>
         </div>
       )}
 
@@ -113,7 +197,7 @@ export function SettingsEditor({ organization, settings }: Props) {
           </div>
         </div>
 
-        <form onSubmit={handleSettingsSubmit} className="p-5 space-y-5">
+        <form onSubmit={isContentTab ? handleDraftSubmit : handleSettingsSubmit} className="p-5 space-y-5">
           {/* Branding */}
           {activeTab === 'branding' && (
             <>
@@ -253,8 +337,20 @@ export function SettingsEditor({ organization, settings }: Props) {
             </>
           )}
 
-          <div className="flex justify-end pt-2">
-            <SaveButton isPending={isPending} />
+          <div className="flex justify-end gap-3 pt-2">
+            {isContentTab ? (
+              <>
+                <button
+                  type="submit"
+                  disabled={isPending}
+                  className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  {isPending ? 'Saving…' : '💾 Save as Draft'}
+                </button>
+              </>
+            ) : (
+              <SaveButton isPending={isPending} />
+            )}
           </div>
         </form>
       </section>
