@@ -28,7 +28,7 @@ export default async function DashboardOverviewPage() {
   const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
 
   // Fetch today's data in parallel
-  const [bookingsRes, instructorsRes, upcomingRes] = await Promise.all([
+  const [bookingsRes, instructorsRes, upcomingRes, studentsRes] = await Promise.all([
     // Today's bookings (non-cancelled)
     client
       .from('bookings')
@@ -52,11 +52,18 @@ export default async function DashboardOverviewPage() {
       .not('status', 'in', '("cancelled","rejected")')
       .order('start_datetime')
       .limit(5),
+    // Total active students
+    client
+      .from('students')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', orgId)
+      .eq('is_active', true),
   ]);
 
   const todaysBookings = (bookingsRes.data ?? []) as Booking[];
   const instructors = (instructorsRes.data ?? []) as Instructor[];
   const upcomingBookings = (upcomingRes.data ?? []) as Booking[];
+  const totalStudents = studentsRes.count ?? 0;
 
   // Calculate stats
   const instructorIdsToday = new Set(todaysBookings.map((b) => b.instructor_id));
@@ -111,7 +118,7 @@ export default async function DashboardOverviewPage() {
         <StatCard
           icon="📊"
           label="Total Students"
-          value="—"
+          value={totalStudents.toString()}
           primaryColor={primaryColor}
         />
       </div>
@@ -122,7 +129,8 @@ export default async function DashboardOverviewPage() {
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             Quick Actions
           </h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+            <QuickAction href="/dashboard/today" icon="🎯" label="Today Mode" />
             <QuickAction href="/dashboard/bookings" icon="➕" label="Add Booking" />
             <QuickAction href="/dashboard/students" icon="🎓" label="Add Student" />
             <QuickAction href="/dashboard/availability" icon="🚫" label="Block Time" />

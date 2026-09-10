@@ -11,6 +11,7 @@ import { getAdminClient } from '@/lib/database/supabase-admin';
 import { PERMISSIONS } from '@/permissions/roles';
 import { createInstructor, updateInstructor, deleteInstructor } from '@/services/instructor-service';
 import { createInstructorSchema, updateInstructorSchema } from '@/validators/instructor';
+import { audit } from '@/lib/audit';
 
 export interface InstructorActionState {
   success: boolean;
@@ -63,7 +64,8 @@ export async function createInstructorAction(
       default_lesson_duration: formData.get('default_lesson_duration') ? parseInt(formData.get('default_lesson_duration') as string, 10) : 60,
     });
 
-    await createInstructor(client, auth, input);
+    const instructor = await createInstructor(client, auth, input);
+    audit(client, auth, { action: 'instructor.created', resourceType: 'instructor', resourceId: instructor.id, details: { display_name: input.display_name } });
     revalidatePath('/dashboard/instructors');
     return { success: true };
   } catch (err) {
@@ -104,6 +106,7 @@ export async function updateInstructorAction(
 
     const input = updateInstructorSchema.parse(updates);
     await updateInstructor(client, auth, instructorId, input);
+    audit(client, auth, { action: 'instructor.updated', resourceType: 'instructor', resourceId: instructorId, details: updates });
     revalidatePath('/dashboard/instructors');
     return { success: true };
   } catch (err) {
@@ -119,6 +122,7 @@ export async function deleteInstructorAction(instructorId: string): Promise<Inst
     const client = await createServerSupabaseClient();
 
     await deleteInstructor(client, auth, instructorId);
+    audit(client, auth, { action: 'instructor.deleted', resourceType: 'instructor', resourceId: instructorId });
     revalidatePath('/dashboard/instructors');
     return { success: true };
   } catch (err) {

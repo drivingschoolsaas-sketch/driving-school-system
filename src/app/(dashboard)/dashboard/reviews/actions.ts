@@ -10,6 +10,7 @@ import { createServerSupabaseClient } from '@/lib/database';
 import { PERMISSIONS } from '@/permissions/roles';
 import { moderateReview, deleteReview } from '@/services/review-service';
 import { moderateReviewSchema } from '@/validators/review';
+import { audit } from '@/lib/audit';
 
 export interface ReviewActionState {
   success: boolean;
@@ -32,6 +33,7 @@ export async function moderateReviewAction(
     });
 
     await moderateReview(client, auth, reviewId, input);
+    audit(client, auth, { action: `review.${status}`, resourceType: 'review', resourceId: reviewId, details: { moderation_notes: notes } });
     revalidatePath('/dashboard/reviews');
     return { success: true };
   } catch (err) {
@@ -47,6 +49,7 @@ export async function deleteReviewAction(reviewId: string): Promise<ReviewAction
     const client = await createServerSupabaseClient();
 
     await deleteReview(client, auth, reviewId);
+    audit(client, auth, { action: 'review.deleted', resourceType: 'review', resourceId: reviewId });
     revalidatePath('/dashboard/reviews');
     return { success: true };
   } catch (err) {

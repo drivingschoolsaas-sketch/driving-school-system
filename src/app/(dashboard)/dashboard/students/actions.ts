@@ -11,6 +11,7 @@ import { getAdminClient } from '@/lib/database/supabase-admin';
 import { PERMISSIONS } from '@/permissions/roles';
 import { createStudent, updateStudent, deleteStudent } from '@/services/student-service';
 import { createStudentSchema, updateStudentSchema } from '@/validators/student';
+import { audit } from '@/lib/audit';
 
 export interface StudentActionState {
   success: boolean;
@@ -64,7 +65,8 @@ export async function createStudentAction(
       notes: formData.get('notes') || null,
     });
 
-    await createStudent(client, auth, input);
+    const student = await createStudent(client, auth, input);
+    audit(client, auth, { action: 'student.created', resourceType: 'student', resourceId: student.id, details: { display_name: input.display_name } });
     revalidatePath('/dashboard/students');
     return { success: true };
   } catch (err) {
@@ -97,6 +99,7 @@ export async function updateStudentAction(
 
     const input = updateStudentSchema.parse(updates);
     await updateStudent(client, auth, studentId, input);
+    audit(client, auth, { action: 'student.updated', resourceType: 'student', resourceId: studentId, details: updates });
     revalidatePath('/dashboard/students');
     return { success: true };
   } catch (err) {
@@ -112,6 +115,7 @@ export async function deleteStudentAction(studentId: string): Promise<StudentAct
     const client = await createServerSupabaseClient();
 
     await deleteStudent(client, auth, studentId);
+    audit(client, auth, { action: 'student.deleted', resourceType: 'student', resourceId: studentId });
     revalidatePath('/dashboard/students');
     return { success: true };
   } catch (err) {
