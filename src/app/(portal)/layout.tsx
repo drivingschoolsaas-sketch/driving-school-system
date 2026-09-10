@@ -26,6 +26,8 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Bookings', href: '/portal/bookings', icon: '📅' },
   { label: 'Progress', href: '/portal/progress', icon: '📈' },
   { label: 'Packages', href: '/portal/packages', icon: '📦' },
+  { label: 'Payments', href: '/portal/payments', icon: '💳' },
+  { label: 'Reviews', href: '/portal/reviews', icon: '⭐' },
   { label: 'Profile', href: '/portal/profile', icon: '👤' },
 ];
 

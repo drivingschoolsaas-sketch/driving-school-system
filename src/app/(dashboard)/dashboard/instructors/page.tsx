@@ -4,6 +4,7 @@
 // Admin-only view of all instructors with their status,
 // transmission type, and lesson counts.
 
+import Link from 'next/link';
 import { getDashboardContext } from '@/lib/auth';
 import { requirePermission } from '@/lib/auth';
 import { PERMISSIONS } from '@/permissions/roles';
@@ -50,9 +51,10 @@ export default async function InstructorsPage() {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {instructors.map((inst) => (
-            <div
+            <Link
               key={inst.id}
-              className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 hover:shadow-md transition-shadow"
+              href={`/dashboard/instructors/${inst.id}`}
+              className="block rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 hover:shadow-md transition-shadow"
             >
               <div className="flex items-start gap-3">
                 {inst.photo_url ? (
@@ -120,7 +122,7 @@ export default async function InstructorsPage() {
                   {inst.bio}
                 </p>
               )}
-            </div>
+            </Link>
           ))}
         </div>
       )}
