@@ -10,6 +10,14 @@ import { isOrgAdminRole } from '@/permissions/roles';
 import { DAYS_OF_WEEK_ORDERED } from '@/config/constants';
 import type { AvailabilityRule, AvailabilityException, BlockedTime, Instructor } from '@/types/database';
 import type { Metadata } from 'next';
+import {
+  AddRuleForm,
+  AddExceptionForm,
+  AddBlockedTimeForm,
+  DeleteRuleButton,
+  DeleteExceptionButton,
+  DeleteBlockedTimeButton,
+} from './availability-forms-client';
 
 export const metadata: Metadata = {
   title: 'Availability',
@@ -138,9 +146,12 @@ export default async function AvailabilityPage({ searchParams }: AvailabilityPag
         <div className="space-y-8">
           {/* Weekly Schedule */}
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Weekly Schedule — {selectedInstructor?.display_name}
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Weekly Schedule — {selectedInstructor?.display_name}
+              </h2>
+              <AddRuleForm instructorId={instructorId} primaryColor={primaryColor} />
+            </div>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-7">
               {DAYS_OF_WEEK_ORDERED.map((day) => {
                 const dayRules = rulesByDay.get(day) ?? [];
@@ -162,9 +173,12 @@ export default async function AvailabilityPage({ searchParams }: AvailabilityPag
                       <p className="text-xs text-gray-400 dark:text-gray-500">Day off</p>
                     ) : (
                       activeRules.map((rule) => (
-                        <p key={rule.id} className="text-xs text-green-700 dark:text-green-300">
-                          {formatTime(rule.start_time)} – {formatTime(rule.end_time)}
-                        </p>
+                        <div key={rule.id} className="flex items-center justify-between gap-1">
+                          <p className="text-xs text-green-700 dark:text-green-300">
+                            {formatTime(rule.start_time)} – {formatTime(rule.end_time)}
+                          </p>
+                          <DeleteRuleButton ruleId={rule.id} />
+                        </div>
                       ))
                     )}
                   </div>
@@ -175,9 +189,12 @@ export default async function AvailabilityPage({ searchParams }: AvailabilityPag
 
           {/* Upcoming Exceptions */}
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Upcoming Exceptions
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Upcoming Exceptions
+              </h2>
+              <AddExceptionForm instructorId={instructorId} primaryColor={primaryColor} />
+            </div>
             {exceptions.length === 0 ? (
               <p className="text-sm text-gray-500 dark:text-gray-400">No upcoming exceptions.</p>
             ) : (
@@ -207,6 +224,7 @@ export default async function AvailabilityPage({ searchParams }: AvailabilityPag
                         {exc.reason && ` — ${exc.reason}`}
                       </p>
                     </div>
+                    <DeleteExceptionButton exceptionId={exc.id} />
                   </div>
                 ))}
               </div>
@@ -215,9 +233,12 @@ export default async function AvailabilityPage({ searchParams }: AvailabilityPag
 
           {/* Blocked Times */}
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Blocked Times
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Blocked Times
+              </h2>
+              <AddBlockedTimeForm instructorId={instructorId} primaryColor={primaryColor} />
+            </div>
             {blockedTimes.length === 0 ? (
               <p className="text-sm text-gray-500 dark:text-gray-400">No upcoming blocked times.</p>
             ) : (
@@ -251,6 +272,7 @@ export default async function AvailabilityPage({ searchParams }: AvailabilityPag
                       >
                         {bt.reason.replace('_', ' ')}
                       </span>
+                      <DeleteBlockedTimeButton blockedTimeId={bt.id} />
                     </div>
                   );
                 })}

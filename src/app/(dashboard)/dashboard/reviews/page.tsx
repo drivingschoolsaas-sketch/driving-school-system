@@ -9,6 +9,7 @@ import { getDashboardContext, requirePermission } from '@/lib/auth';
 import { PERMISSIONS } from '@/permissions/roles';
 import { createServerSupabaseClient } from '@/lib/database';
 import { getReviews } from '@/services/review-service';
+import { ReviewActions } from './review-actions-client';
 
 // Status display config
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
@@ -34,8 +35,9 @@ export default async function ReviewsAdminPage(props: {
   searchParams: Promise<{ status?: string }>;
 }) {
   const searchParams = await props.searchParams;
-  const { auth } = await getDashboardContext();
+  const { auth, settings } = await getDashboardContext();
   requirePermission(auth, PERMISSIONS.REVIEW_MODERATE);
+  const primaryColor = settings?.primary_color ?? '#2563eb';
 
   const client = await createServerSupabaseClient();
   const statusFilter = searchParams.status;
@@ -180,6 +182,12 @@ export default async function ReviewsAdminPage(props: {
                         </span>
                       )}
                     </div>
+
+                    <ReviewActions
+                      reviewId={review.id}
+                      currentStatus={review.status}
+                      primaryColor={primaryColor}
+                    />
                   </div>
                 </div>
               </div>
