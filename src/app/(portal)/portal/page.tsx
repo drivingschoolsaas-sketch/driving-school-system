@@ -116,6 +116,22 @@ export default async function PortalDashboardPage() {
           <span className="text-2xl">📈</span>
           <span className="text-sm font-medium text-gray-900 dark:text-white">View Progress</span>
         </Link>
+        {completedCount > 0 && (
+          <Link
+            href="/portal/reviews"
+            className="flex items-center gap-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 hover:shadow-md transition-shadow"
+          >
+            <span className="text-2xl">⭐</span>
+            <span className="text-sm font-medium text-gray-900 dark:text-white">Leave a Review</span>
+          </Link>
+        )}
+        <Link
+          href="/portal/profile"
+          className="flex items-center gap-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 hover:shadow-md transition-shadow"
+        >
+          <span className="text-2xl">👤</span>
+          <span className="text-sm font-medium text-gray-900 dark:text-white">My Profile</span>
+        </Link>
       </div>
 
       {/* Next Booking */}

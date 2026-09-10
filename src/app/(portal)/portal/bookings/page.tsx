@@ -7,6 +7,7 @@ import { getPortalContext } from '@/lib/auth';
 import { createServerSupabaseClient } from '@/lib/database';
 import type { Booking, Instructor, LessonType } from '@/types/database';
 import type { Metadata } from 'next';
+import { CancelBookingButton } from './cancel-button';
 
 export const metadata: Metadata = {
   title: 'My Bookings',
@@ -145,7 +146,13 @@ export default async function PortalBookingsPage({ searchParams }: BookingsPageP
                   )}
                 </div>
 
-                <div className="mt-2 text-right">
+                <div className="mt-2 flex items-center justify-between">
+                  {['new_request', 'contacted', 'confirmed'].includes(booking.status) &&
+                    new Date(booking.start_datetime) > new Date() ? (
+                    <CancelBookingButton bookingId={booking.id} primaryColor={primaryColor} />
+                  ) : (
+                    <span />
+                  )}
                   <span className="text-sm font-semibold" style={{ color: primaryColor }}>
                     ${(booking.price_cents / 100).toFixed(0)}
                   </span>

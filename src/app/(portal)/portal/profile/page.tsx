@@ -1,11 +1,11 @@
 // ==================================================
 // Student Portal — Profile
 // ==================================================
-// Shows the student's profile information.
-// Editing via Server Actions will be added in a future phase.
+// Shows the student's profile information with editing.
 
 import { getPortalContext } from '@/lib/auth';
 import type { Metadata } from 'next';
+import { ProfileEditForm } from './profile-edit-form';
 
 export const metadata: Metadata = {
   title: 'My Profile',
@@ -88,14 +88,20 @@ export default async function PortalProfilePage() {
         <ProfileRow label="Phone" value={student.emergency_contact_phone} />
       </ProfileSection>
 
-      {/* Edit notice */}
-      <div className="rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 p-6 text-center">
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          To update your profile, please contact your driving school.
-        </p>
-        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-          Online profile editing coming soon.
-        </p>
+      {/* Edit Button */}
+      <div className="text-center">
+        <ProfileEditForm
+          student={{
+            phone: student.phone,
+            pickup_address: student.pickup_address,
+            pickup_suburb: student.pickup_suburb,
+            pickup_postcode: student.pickup_postcode,
+            preferred_transmission: student.preferred_transmission,
+            emergency_contact_name: student.emergency_contact_name,
+            emergency_contact_phone: student.emergency_contact_phone,
+          }}
+          primaryColor={primaryColor}
+        />
       </div>
     </div>
   );

@@ -253,6 +253,14 @@ export {
 } from './custom-theme-service';
 
 export {
+  getDrivingSkills,
+  createDrivingSkill,
+  deleteDrivingSkill,
+  getStudentProgress,
+  upsertStudentProgress,
+} from './student-progress-service';
+
+export {
   getMediaAssets,
   getMediaAsset,
   uploadMediaAsset,

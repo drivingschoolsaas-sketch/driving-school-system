@@ -4,6 +4,7 @@
 // Lists all students with search. Admin-only for full list;
 // instructors see students they have bookings with.
 
+import Link from 'next/link';
 import { getDashboardContext } from '@/lib/auth';
 import { createServerSupabaseClient } from '@/lib/database';
 import { isOrgAdminRole } from '@/permissions/roles';
@@ -79,9 +80,10 @@ export default async function StudentsPage({ searchParams }: StudentsPageProps) 
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {students.map((student) => (
-            <div
+            <Link
               key={student.id}
-              className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 hover:shadow-md transition-shadow"
+              href={`/dashboard/students/${student.id}`}
+              className="block rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 hover:shadow-md transition-shadow"
             >
               <div className="flex items-start gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-600 shrink-0">
@@ -132,7 +134,7 @@ export default async function StudentsPage({ searchParams }: StudentsPageProps) 
                   </span>
                 )}
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}
