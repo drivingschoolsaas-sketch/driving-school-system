@@ -8,6 +8,7 @@ import { PERMISSIONS } from '@/permissions/roles';
 import { createServerSupabaseClient } from '@/lib/database';
 import type { LessonPackage, LessonType } from '@/types/database';
 import type { Metadata } from 'next';
+import { AddPackageForm } from './package-form-client';
 
 export const metadata: Metadata = {
   title: 'Packages',
@@ -39,11 +40,17 @@ export default async function PackagesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Packages</h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {packages.length} package{packages.length !== 1 ? 's' : ''}
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Packages</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            {packages.length} package{packages.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+        <AddPackageForm
+          lessonTypes={lessonTypes.filter((lt) => lt.status === 'active').map((lt) => ({ id: lt.id, name: lt.name }))}
+          primaryColor={primaryColor}
+        />
       </div>
 
       {packages.length === 0 ? (

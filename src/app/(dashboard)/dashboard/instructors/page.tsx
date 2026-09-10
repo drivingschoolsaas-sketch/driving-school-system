@@ -10,6 +10,7 @@ import { PERMISSIONS } from '@/permissions/roles';
 import { createServerSupabaseClient } from '@/lib/database';
 import type { Instructor } from '@/types/database';
 import type { Metadata } from 'next';
+import { AddInstructorForm } from './instructor-form-client';
 
 export const metadata: Metadata = {
   title: 'Instructors',
@@ -32,11 +33,14 @@ export default async function InstructorsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Instructors</h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {instructors.length} instructor{instructors.length !== 1 ? 's' : ''}
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Instructors</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            {instructors.length} instructor{instructors.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+        <AddInstructorForm primaryColor={primaryColor} />
       </div>
 
       {instructors.length === 0 ? (

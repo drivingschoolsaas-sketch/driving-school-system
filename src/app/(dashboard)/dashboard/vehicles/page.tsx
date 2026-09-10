@@ -8,6 +8,7 @@ import { PERMISSIONS } from '@/permissions/roles';
 import { createServerSupabaseClient } from '@/lib/database';
 import type { Vehicle, Instructor } from '@/types/database';
 import type { Metadata } from 'next';
+import { AddVehicleForm } from './vehicle-form-client';
 
 export const metadata: Metadata = {
   title: 'Vehicles',
@@ -37,11 +38,17 @@ export default async function VehiclesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Vehicles</h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {vehicles.length} vehicle{vehicles.length !== 1 ? 's' : ''}
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Vehicles</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            {vehicles.length} vehicle{vehicles.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+        <AddVehicleForm
+          instructors={instructors.map((i) => ({ id: i.id, display_name: i.display_name }))}
+          primaryColor={primaryColor}
+        />
       </div>
 
       {vehicles.length === 0 ? (

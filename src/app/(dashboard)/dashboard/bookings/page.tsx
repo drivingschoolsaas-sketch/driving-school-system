@@ -2,13 +2,15 @@
 // Bookings Management Page
 // ==================================================
 // Lists all bookings with status filters, instructor filter,
-// and date range. Admin can view all; instructors see their own.
+// date range, status transition actions, and booking creation.
 
 import { getDashboardContext } from '@/lib/auth';
 import { createServerSupabaseClient } from '@/lib/database';
 import { isOrgAdminRole } from '@/permissions/roles';
-import type { Booking, Instructor, Student, LessonType } from '@/types/database';
+import type { Booking, Instructor, Student, LessonType, Vehicle } from '@/types/database';
 import type { Metadata } from 'next';
+import { BookingActions } from './booking-actions-client';
+import { CreateBookingForm } from './create-booking-form';
 
 export const metadata: Metadata = {
   title: 'Bookings',
@@ -47,7 +49,6 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
 
   // Instructor filter (admins can filter by instructor; instructors only see own)
   if (!isAdmin) {
-    // Get this user's instructor record
     const { data: instData } = await client
       .from('instructors')
       .select('id')
@@ -70,17 +71,19 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
     query = query.lte('start_datetime', params.to);
   }
 
-  const [bookingsRes, instructorsRes, studentsRes, lessonTypesRes] = await Promise.all([
+  const [bookingsRes, instructorsRes, studentsRes, lessonTypesRes, vehiclesRes] = await Promise.all([
     query,
     client.from('instructors').select('*').eq('organization_id', orgId).eq('is_active', true).order('display_name'),
     client.from('students').select('*').eq('organization_id', orgId).eq('is_active', true).order('display_name'),
     client.from('lesson_types').select('*').eq('organization_id', orgId).eq('status', 'active').order('name'),
+    client.from('vehicles').select('*').eq('organization_id', orgId).eq('status', 'active').order('name'),
   ]);
 
   const bookings = (bookingsRes.data ?? []) as Booking[];
   const instructors = (instructorsRes.data ?? []) as Instructor[];
   const students = (studentsRes.data ?? []) as Student[];
   const lessonTypes = (lessonTypesRes.data ?? []) as LessonType[];
+  const vehicles = (vehiclesRes.data ?? []) as Vehicle[];
 
   // Create lookup maps
   const instructorMap = new Map(instructors.map((i) => [i.id, i]));
@@ -106,6 +109,15 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
             {bookings.length} booking{bookings.length !== 1 ? 's' : ''} found
           </p>
         </div>
+        {isAdmin && (
+          <CreateBookingForm
+            instructors={instructors.map((i) => ({ id: i.id, display_name: i.display_name }))}
+            students={students.map((s) => ({ id: s.id, display_name: s.display_name }))}
+            lessonTypes={lessonTypes.map((lt) => ({ id: lt.id, name: lt.name, price_cents: lt.price_cents, duration_minutes: lt.duration_minutes }))}
+            vehicles={vehicles.map((v) => ({ id: v.id, name: v.name }))}
+            primaryColor={primaryColor}
+          />
+        )}
       </div>
 
       {/* Filter bar */}
@@ -162,77 +174,74 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
         </button>
       </form>
 
-      {/* Bookings table */}
+      {/* Bookings list */}
       {bookings.length === 0 ? (
         <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-8 text-center">
           <p className="text-gray-500 dark:text-gray-400">No bookings match your filters.</p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-800">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-                  Date / Time
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-                  Student
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-                  Instructor
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-                  Lesson
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-                  Status
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-                  Price
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
-              {bookings.map((booking) => {
-                const inst = instructorMap.get(booking.instructor_id);
-                const student = studentMap.get(booking.student_id);
-                const lt = lessonTypeMap.get(booking.lesson_type_id);
-                const start = new Date(booking.start_datetime);
+        <div className="space-y-3">
+          {bookings.map((booking) => {
+            const inst = instructorMap.get(booking.instructor_id);
+            const student = studentMap.get(booking.student_id);
+            const lt = lessonTypeMap.get(booking.lesson_type_id);
+            const start = new Date(booking.start_datetime);
+            const end = new Date(booking.end_datetime);
 
-                return (
-                  <tr key={booking.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        {start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            return (
+              <div
+                key={booking.id}
+                className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 space-y-3"
+              >
+                {/* Header row */}
+                <div className="flex flex-wrap items-start gap-4">
+                  {/* Date/Time */}
+                  <div className="shrink-0 w-24">
+                    <p className="text-sm font-bold text-gray-900 dark:text-white">
+                      {start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                      {' – '}
+                      {end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+
+                  {/* Details */}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                      {student?.display_name ?? 'Unknown student'}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {inst?.display_name ?? 'Unknown'} · {lt?.name ?? 'Unknown lesson'}
+                    </p>
+                    {booking.pickup_address && (
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                        📍 {booking.pickup_address}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-white whitespace-nowrap">
-                      {student?.display_name ?? '—'}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-white whitespace-nowrap">
-                      {inst?.display_name ?? '—'}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                      {lt?.name ?? '—'}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span
-                        className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium capitalize ${statusColors[booking.status] ?? ''}`}
-                      >
-                        {booking.status.replace('_', ' ')}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">
+                    )}
+                  </div>
+
+                  {/* Status & Price */}
+                  <div className="text-right shrink-0">
+                    <span
+                      className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${statusColors[booking.status] ?? ''}`}
+                    >
+                      {booking.status.replace('_', ' ')}
+                    </span>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white mt-1">
                       ${(booking.price_cents / 100).toFixed(0)}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Action buttons */}
+                {isAdmin && (
+                  <BookingActions bookingId={booking.id} currentStatus={booking.status} />
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

@@ -6,8 +6,10 @@
 
 import { getDashboardContext } from '@/lib/auth';
 import { createServerSupabaseClient } from '@/lib/database';
+import { isOrgAdminRole } from '@/permissions/roles';
 import type { Student } from '@/types/database';
 import type { Metadata } from 'next';
+import { AddStudentForm } from './student-form-client';
 
 export const metadata: Metadata = {
   title: 'Students',
@@ -23,6 +25,7 @@ export default async function StudentsPage({ searchParams }: StudentsPageProps) 
   const orgId = auth.organizationId;
   const primaryColor = settings?.primary_color ?? '#2563eb';
   const params = await searchParams;
+  const isAdmin = isOrgAdminRole(auth.role);
 
   let query = client
     .from('students')
@@ -47,6 +50,7 @@ export default async function StudentsPage({ searchParams }: StudentsPageProps) 
             {students.length} student{students.length !== 1 ? 's' : ''}
           </p>
         </div>
+        {isAdmin && <AddStudentForm primaryColor={primaryColor} />}
       </div>
 
       {/* Search */}
