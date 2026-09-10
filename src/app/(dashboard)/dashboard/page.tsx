@@ -9,6 +9,7 @@ import { getDashboardContext } from '@/lib/auth';
 import { createServerSupabaseClient } from '@/lib/database';
 import { isOrgAdminRole } from '@/permissions/roles';
 import type { Booking, Instructor } from '@/types/database';
+import { SetupChecklist, type SetupStep } from './setup-checklist';
 
 interface DashboardStats {
   todaysLessons: number;
@@ -78,6 +79,25 @@ export default async function DashboardOverviewPage() {
 
   const isAdmin = isOrgAdminRole(auth.role);
 
+  // Build setup checklist for admins
+  let setupSteps: SetupStep[] = [];
+  if (isAdmin) {
+    const [lessonTypesCount, availRulesCount, domainsCount] = await Promise.all([
+      client.from('lesson_types').select('id', { count: 'exact', head: true }).eq('organization_id', orgId),
+      client.from('availability_rules').select('id', { count: 'exact', head: true }).eq('organization_id', orgId),
+      client.from('organization_domains').select('id', { count: 'exact', head: true }).eq('organization_id', orgId),
+    ]);
+
+    setupSteps = [
+      { label: 'Customise your branding & settings', href: '/dashboard/settings', icon: '🎨', done: !!(settings?.primary_color && settings?.hero_title) },
+      { label: 'Add your instructors', href: '/dashboard/instructors', icon: '🚗', done: instructors.length > 0 },
+      { label: 'Set up lesson types & prices', href: '/dashboard/lesson-types', icon: '📖', done: (lessonTypesCount.count ?? 0) > 0 },
+      { label: 'Configure availability', href: '/dashboard/availability', icon: '🕐', done: (availRulesCount.count ?? 0) > 0 },
+      { label: 'Add your first student', href: '/dashboard/students', icon: '🎓', done: totalStudents > 0 },
+      { label: 'Connect a custom domain', href: '/dashboard/settings', icon: '🌐', done: (domainsCount.count ?? 0) > 1 },
+    ];
+  }
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -94,6 +114,11 @@ export default async function DashboardOverviewPage() {
           })}
         </p>
       </div>
+
+      {/* Setup Checklist (for new schools) */}
+      {isAdmin && setupSteps.length > 0 && (
+        <SetupChecklist steps={setupSteps} primaryColor={primaryColor} />
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">

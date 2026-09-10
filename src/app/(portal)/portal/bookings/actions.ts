@@ -19,7 +19,7 @@ export async function cancelOwnBookingAction(
   reason?: string
 ): Promise<PortalBookingActionState> {
   try {
-    const { auth, student } = await getPortalContext();
+    const { auth, student, settings } = await getPortalContext();
     const client = await createServerSupabaseClient();
 
     // Verify this booking belongs to the student
@@ -44,13 +44,14 @@ export async function cancelOwnBookingAction(
       return { success: false, error: `Cannot cancel a booking with status "${booking.status}".` };
     }
 
-    // Check if the booking is too close (e.g., within 24 hours)
+    // Check if the booking is too close (use school's cancellation notice setting)
+    const cancellationNoticeHours = settings?.cancellation_notice_hours ?? 24;
     const bookingStart = new Date(booking.start_datetime);
     const hoursUntil = (bookingStart.getTime() - Date.now()) / (1000 * 60 * 60);
-    if (hoursUntil < 24) {
+    if (hoursUntil < cancellationNoticeHours) {
       return {
         success: false,
-        error: 'Cannot cancel within 24 hours of the lesson. Please contact the school directly.',
+        error: `Cannot cancel within ${cancellationNoticeHours} hours of the lesson. Please contact the school directly.`,
       };
     }
 
