@@ -6,11 +6,12 @@
 
 import { redirect } from 'next/navigation';
 import { getDashboardContext, requirePermission } from '@/lib/auth';
-import { PERMISSIONS } from '@/permissions/roles';
+import { PERMISSIONS, isOrgAdminRole } from '@/permissions/roles';
 import { createServerSupabaseClient } from '@/lib/database';
 import { getAdminClient } from '@/lib/database/supabase-admin';
 import { isFeatureFlagEnabled } from '@/services/platform-admin-service';
 import { getPayments } from '@/services/payment-service';
+import { RecordPaymentForm } from './record-payment-form';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -66,8 +67,10 @@ export default async function PaymentsPage(props: {
   searchParams: Promise<{ status?: string }>;
 }) {
   const searchParams = await props.searchParams;
-  const { auth } = await getDashboardContext();
+  const { auth, settings } = await getDashboardContext();
   requirePermission(auth, PERMISSIONS.PAYMENT_VIEW);
+  const primaryColor = settings?.primary_color ?? '#2563eb';
+  const isAdmin = isOrgAdminRole(auth.role);
 
   // P1-8: Payments are non-MVP — gated behind feature flag
   const adminClient = getAdminClient();
@@ -78,7 +81,20 @@ export default async function PaymentsPage(props: {
 
   const client = await createServerSupabaseClient();
   const statusFilter = searchParams.status;
-  const payments = await getPayments(client, auth, { status: statusFilter });
+
+  const [payments, studentsRes] = await Promise.all([
+    getPayments(client, auth, { status: statusFilter }),
+    isAdmin
+      ? client
+          .from('students')
+          .select('id, display_name')
+          .eq('organization_id', auth.organizationId)
+          .eq('is_active', true)
+          .order('display_name')
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  const students = (studentsRes.data ?? []) as Array<{ id: string; display_name: string }>;
 
   // Summary stats
   const totalRevenue = payments
@@ -89,13 +105,18 @@ export default async function PaymentsPage(props: {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Payments
-        </h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          View transaction history and manage payments.
-        </p>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Payments
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            View transaction history and manage payments.
+          </p>
+        </div>
+        {isAdmin && (
+          <RecordPaymentForm students={students} primaryColor={primaryColor} />
+        )}
       </div>
 
       {/* Summary Cards */}
