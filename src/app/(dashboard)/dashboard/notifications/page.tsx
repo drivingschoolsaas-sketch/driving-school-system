@@ -3,6 +3,7 @@
 // ==================================================
 // View notification delivery history and status.
 
+import Link from 'next/link';
 import { getDashboardContext, requirePermission } from '@/lib/auth';
 import { PERMISSIONS } from '@/permissions/roles';
 import { createServerSupabaseClient } from '@/lib/database';
@@ -81,13 +82,21 @@ export default async function NotificationsPage(props: {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Notifications
-        </h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          View notification delivery logs and status.
-        </p>
+      <div className="mb-6 flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Notifications
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            View notification delivery logs and status.
+          </p>
+        </div>
+        <Link
+          href="/dashboard/notifications/templates"
+          className="shrink-0 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        >
+          ✉️ Email Templates
+        </Link>
       </div>
 
       {/* Summary */}
