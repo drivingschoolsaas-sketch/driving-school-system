@@ -6,7 +6,7 @@
 // Status transition buttons + cancel with reason dialog.
 
 import { useState, useTransition } from 'react';
-import { transitionStatusAction, cancelBookingAction } from './actions';
+import { transitionStatusAction, cancelBookingAction, rescheduleBookingAction } from './actions';
 
 // Valid transitions — mirrors booking-service VALID_TRANSITIONS
 const VALID_TRANSITIONS: Record<string, string[]> = {
@@ -42,14 +42,19 @@ interface BookingActionsProps {
   currentStatus: string;
 }
 
+const TERMINAL_STATUSES = ['completed', 'cancelled', 'rejected', 'no_show'];
+
 export function BookingActions({ bookingId, currentStatus }: BookingActionsProps) {
   const transitions = VALID_TRANSITIONS[currentStatus] ?? [];
   const [isPending, startTransition] = useTransition();
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [showReschedule, setShowReschedule] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
+  const [rescheduleData, setRescheduleData] = useState({ date: '', start: '', end: '', reason: '' });
   const [error, setError] = useState<string | null>(null);
+  const canReschedule = !TERMINAL_STATUSES.includes(currentStatus);
 
-  if (transitions.length === 0) return null;
+  if (transitions.length === 0 && !canReschedule) return null;
 
   function handleTransition(newStatus: string) {
     if (newStatus === 'cancelled') {
@@ -91,10 +96,98 @@ export function BookingActions({ bookingId, currentStatus }: BookingActionsProps
             {STATUS_LABELS[status] ?? status}
           </button>
         ))}
+        {canReschedule && (
+          <button
+            onClick={() => setShowReschedule(!showReschedule)}
+            disabled={isPending}
+            className="rounded-lg bg-purple-600 hover:bg-purple-700 px-3 py-1.5 text-xs font-medium text-white transition-colors disabled:opacity-50"
+          >
+            🔄 Reschedule
+          </button>
+        )}
       </div>
 
       {error && (
         <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+      )}
+
+      {showReschedule && (
+        <div className="mt-2 rounded-lg border border-purple-200 dark:border-purple-700 bg-purple-50 dark:bg-purple-900/20 p-3 space-y-2">
+          <p className="text-xs font-medium text-purple-800 dark:text-purple-200">
+            Reschedule to a new date/time
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="block text-xs text-gray-600 dark:text-gray-400 mb-0.5">Date</label>
+              <input
+                type="date"
+                value={rescheduleData.date}
+                onChange={(e) => setRescheduleData({ ...rescheduleData, date: e.target.value })}
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-900 dark:text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-600 dark:text-gray-400 mb-0.5">Start</label>
+              <input
+                type="time"
+                value={rescheduleData.start}
+                onChange={(e) => setRescheduleData({ ...rescheduleData, start: e.target.value })}
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-900 dark:text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-600 dark:text-gray-400 mb-0.5">End</label>
+              <input
+                type="time"
+                value={rescheduleData.end}
+                onChange={(e) => setRescheduleData({ ...rescheduleData, end: e.target.value })}
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-900 dark:text-white"
+              />
+            </div>
+          </div>
+          <input
+            type="text"
+            placeholder="Reason (optional)"
+            value={rescheduleData.reason}
+            onChange={(e) => setRescheduleData({ ...rescheduleData, reason: e.target.value })}
+            className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-900 dark:text-white"
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                if (!rescheduleData.date || !rescheduleData.start || !rescheduleData.end) {
+                  setError('Date, start time, and end time are required.');
+                  return;
+                }
+                setError(null);
+                startTransition(async () => {
+                  const fd = new FormData();
+                  fd.set('new_date', rescheduleData.date);
+                  fd.set('new_start_time', rescheduleData.start);
+                  fd.set('new_end_time', rescheduleData.end);
+                  if (rescheduleData.reason) fd.set('reason', rescheduleData.reason);
+                  const result = await rescheduleBookingAction(bookingId, fd);
+                  if (!result.success) {
+                    setError(result.error ?? 'Failed to reschedule');
+                  } else {
+                    setShowReschedule(false);
+                    setRescheduleData({ date: '', start: '', end: '', reason: '' });
+                  }
+                });
+              }}
+              disabled={isPending}
+              className="rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-purple-700 disabled:opacity-50"
+            >
+              {isPending ? 'Rescheduling…' : 'Confirm Reschedule'}
+            </button>
+            <button
+              onClick={() => { setShowReschedule(false); setRescheduleData({ date: '', start: '', end: '', reason: '' }); }}
+              className="rounded-lg bg-gray-200 dark:bg-gray-600 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500"
+            >
+              Back
+            </button>
+          </div>
+        </div>
       )}
 
       {showCancelDialog && (
