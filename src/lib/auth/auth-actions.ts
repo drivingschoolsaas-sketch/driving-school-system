@@ -16,6 +16,8 @@ import { validateRedirectUrl } from './redirect-url';
 import { signInSchema, signUpSchema, forgotPasswordSchema, resetPasswordSchema } from '@/validators/auth';
 import { logger } from '@/lib/logging';
 import { authLimiter, RateLimitError } from '@/lib/rate-limit';
+import { isPlatformRole } from '@/permissions/roles';
+import type { UserRole } from '@/config/constants';
 
 /** Extract client IP from request headers for rate limiting. */
 async function getClientIp(): Promise<string> {
@@ -73,9 +75,30 @@ export async function signInAction(formData: FormData): Promise<AuthActionResult
     return { error: 'Invalid email or password.' };
   }
 
-  // Redirect to the returnTo URL or default
+  // Determine post-login redirect based on user role
   const returnTo = formData.get('returnTo') as string | null;
-  const safeUrl = validateRedirectUrl(returnTo, '/dashboard');
+  let defaultRedirect = '/dashboard';
+
+  // Check if user is a platform admin — redirect to /admin instead
+  const { data: memberships } = await supabase
+    .from('organization_members')
+    .select('role')
+    .eq('user_id', (await supabase.auth.getUser()).data.user!.id)
+    .eq('status', 'active');
+
+  const hasPlatformRole = (memberships ?? []).some((m) =>
+    isPlatformRole(m.role as UserRole)
+  );
+
+  if (hasPlatformRole && (!returnTo || returnTo === '/dashboard' || returnTo === '/')) {
+    defaultRedirect = '/admin';
+  }
+
+  const safeUrl = validateRedirectUrl(returnTo, defaultRedirect);
+  // If returnTo is '/' or '/dashboard' but user is platform admin, override
+  if (hasPlatformRole && (safeUrl === '/' || safeUrl === '/dashboard')) {
+    redirect('/admin');
+  }
   redirect(safeUrl);
 }
 

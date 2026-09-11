@@ -288,6 +288,9 @@ export function isPlatformRole(role: UserRole): boolean {
  */
 export function isOrgAdminRole(role: UserRole): boolean {
   return (
-    role === USER_ROLES.SCHOOL_OWNER || role === USER_ROLES.SCHOOL_ADMIN
+    role === USER_ROLES.PLATFORM_OWNER ||
+    role === USER_ROLES.PLATFORM_SUPPORT ||
+    role === USER_ROLES.SCHOOL_OWNER ||
+    role === USER_ROLES.SCHOOL_ADMIN
   );
 }

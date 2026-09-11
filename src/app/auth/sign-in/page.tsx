@@ -13,7 +13,7 @@ const initialState: AuthActionResult = {};
 
 function SignInForm() {
   const searchParams = useSearchParams();
-  const returnTo = searchParams.get('returnTo') ?? '/';
+  const returnTo = searchParams.get('returnTo') ?? '/dashboard';
   const message = searchParams.get('message');
   const [state, formAction, isPending] = useActionState(
     async (_prev: AuthActionResult, formData: FormData) => {
