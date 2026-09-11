@@ -190,6 +190,48 @@ export function notifyStudentWelcome(
   })();
 }
 
+/**
+ * Send a booking confirmation email for a public (unauthenticated) booking.
+ * Since there is no student record, we send directly using the visitor's email.
+ */
+export function notifyPublicBookingReceived(
+  client: SupabaseClient,
+  organizationId: string,
+  customerEmail: string,
+  customerName: string,
+  instructorName: string,
+  lessonTypeName: string,
+  startDatetime: string,
+  endDatetime: string,
+  schoolName: string
+): void {
+  void (async () => {
+    try {
+      await sendNotification(client, {
+        organizationId,
+        notificationType: 'booking_confirmed' as Parameters<typeof sendNotification>[1]['notificationType'],
+        recipientEmail: customerEmail,
+        recipientName: customerName,
+        variables: {
+          student_name: customerName,
+          instructor_name: instructorName,
+          lesson_type: lessonTypeName,
+          date: formatDate(startDatetime),
+          start_time: formatTime(startDatetime),
+          end_time: formatTime(endDatetime),
+          pickup_address: 'TBA',
+          school_name: schoolName,
+          cancellation_hours: '24',
+        },
+      });
+    } catch (err) {
+      logger.error('Failed to send public booking confirmation', {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  })();
+}
+
 // --------------------------------------------------
 // Helper: Build params from booking + related data
 // --------------------------------------------------

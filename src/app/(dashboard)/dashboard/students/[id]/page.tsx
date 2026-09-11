@@ -10,7 +10,7 @@ import { getDashboardContext, requirePermission } from '@/lib/auth';
 import { PERMISSIONS } from '@/permissions/roles';
 import { createServerSupabaseClient } from '@/lib/database';
 import { getDrivingSkills, getStudentProgress } from '@/services/student-progress-service';
-import type { Student, Booking, DrivingSkill } from '@/types/database';
+import type { Student } from '@/types/database';
 import type { Metadata } from 'next';
 import { ProgressEditor } from './progress-editor';
 
@@ -42,22 +42,53 @@ export default async function StudentDetailPage({ params }: PageProps) {
   const student = studentData as Student;
 
   // Fetch related data in parallel
-  const [bookingsRes, skills, progress] = await Promise.all([
+  const [bookingsRes, allBookingsRes, skills, progress, paymentsRes] = await Promise.all([
+    // Recent bookings with instructor + lesson type names
     client
       .from('bookings')
-      .select('*')
+      .select('id, start_datetime, end_datetime, status, price_cents, pickup_address, notes, instructor_id, lesson_type_id, instructors(display_name), lesson_types(name)')
       .eq('organization_id', orgId)
       .eq('student_id', studentId)
       .order('start_datetime', { ascending: false })
-      .limit(10),
+      .limit(20),
+    // All bookings for stats (count only)
+    client
+      .from('bookings')
+      .select('status, price_cents')
+      .eq('organization_id', orgId)
+      .eq('student_id', studentId),
     getDrivingSkills(client, auth),
     getStudentProgress(client, auth, studentId),
+    // Total payments
+    client
+      .from('payments')
+      .select('amount_cents')
+      .eq('organization_id', orgId)
+      .eq('student_id', studentId)
+      .eq('status', 'completed'),
   ]);
 
-  const bookings = (bookingsRes.data ?? []) as Booking[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rawBookings = (bookingsRes.data ?? []) as any[];
+  const bookings = rawBookings.map((b) => ({
+    id: b.id as string,
+    start_datetime: b.start_datetime as string,
+    end_datetime: b.end_datetime as string,
+    status: b.status as string,
+    price_cents: b.price_cents as number,
+    pickup_address: b.pickup_address as string | null,
+    notes: b.notes as string | null,
+    instructor_id: b.instructor_id as string,
+    lesson_type_id: b.lesson_type_id as string | null,
+    instructorName: (b.instructors?.display_name ?? b.instructors?.[0]?.display_name ?? null) as string | null,
+    lessonTypeName: (b.lesson_types?.name ?? b.lesson_types?.[0]?.name ?? null) as string | null,
+  }));
+  const allBookings = (allBookingsRes.data ?? []) as Array<{ status: string; price_cents: number }>;
   const activeSkills = skills.filter((s) => s.is_active);
+  const payments = (paymentsRes.data ?? []) as Array<{ amount_cents: number }>;
 
-  const completedLessons = bookings.filter((b) => b.status === 'completed').length;
+  const completedLessons = allBookings.filter((b) => b.status === 'completed').length;
+  const totalSpentCents = payments.reduce((sum, p) => sum + p.amount_cents, 0);
   const upcomingBookings = bookings.filter(
     (b) => new Date(b.start_datetime) > new Date() && !['cancelled', 'rejected'].includes(b.status)
   );
@@ -120,10 +151,10 @@ export default async function StudentDetailPage({ params }: PageProps) {
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
-          { label: 'Completed', value: completedLessons, icon: '✅' },
-          { label: 'Upcoming', value: upcomingBookings.length, icon: '📅' },
-          { label: 'Total Bookings', value: bookings.length, icon: '📋' },
-          { label: 'Skills Tracked', value: activeSkills.length, icon: '📊' },
+          { label: 'Completed', value: String(completedLessons), icon: '✅' },
+          { label: 'Upcoming', value: String(upcomingBookings.length), icon: '📅' },
+          { label: 'Total Bookings', value: String(allBookings.length), icon: '📋' },
+          { label: 'Total Spent', value: totalSpentCents > 0 ? `$${(totalSpentCents / 100).toFixed(0)}` : '$0', icon: '💰' },
         ].map((stat) => (
           <div
             key={stat.label}
@@ -168,29 +199,43 @@ export default async function StudentDetailPage({ params }: PageProps) {
             <div className="space-y-2">
               {bookings.map((b) => {
                 const start = new Date(b.start_datetime);
+                const instructorName = b.instructorName;
+                const lessonName = b.lessonTypeName;
                 return (
                   <div
                     key={b.id}
                     className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          {start.toLocaleDateString('en-US', {
-                            weekday: 'short',
-                            month: 'short',
-                            day: 'numeric',
-                          })}
-                          {' '}
-                          {start.toLocaleTimeString('en-US', {
-                            hour: 'numeric',
-                            minute: '2-digit',
-                            hour12: true,
-                          })}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          ${(b.price_cents / 100).toFixed(0)}
-                        </p>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">
+                            {start.toLocaleDateString('en-US', {
+                              weekday: 'short',
+                              month: 'short',
+                              day: 'numeric',
+                            })}
+                            {' '}
+                            {start.toLocaleTimeString('en-US', {
+                              hour: 'numeric',
+                              minute: '2-digit',
+                              hour12: true,
+                            })}
+                          </p>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            ${(b.price_cents / 100).toFixed(0)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {lessonName && (
+                            <span className="text-xs text-gray-600 dark:text-gray-400">{lessonName}</span>
+                          )}
+                          {instructorName && (
+                            <span className="text-xs text-gray-500 dark:text-gray-500">
+                              with {instructorName}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <span
                         className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize whitespace-nowrap ${

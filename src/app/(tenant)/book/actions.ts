@@ -12,6 +12,7 @@ import { getTenantData } from '@/lib/tenant';
 import { createServerSupabaseClient } from '@/lib/database';
 import { getAdminClient } from '@/lib/database/supabase-admin';
 import { computeAvailableSlots, type AvailableSlot } from '@/services/availability-engine';
+import { notifyPublicBookingReceived } from '@/services/booking-notifications';
 import type { AvailabilityRule, AvailabilityException, BlockedTime, Booking } from '@/types/database';
 
 export interface BookingRequestState {
@@ -128,14 +129,23 @@ export async function submitBookingRequestAction(
       return { success: false, error: 'Name and email are required.' };
     }
 
-    // Get the lesson type to extract price
-    const { data: lessonType } = await adminClient
-      .from('lesson_types')
-      .select('price_cents')
-      .eq('id', lessonTypeId)
-      .eq('organization_id', orgId)
-      .single() as { data: { price_cents: number } | null };
+    // Get the lesson type and instructor info for price + email
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [lessonTypeRes, instructorNameRes] = await Promise.all([
+      (adminClient.from('lesson_types') as any)
+        .select('price_cents, name')
+        .eq('id', lessonTypeId)
+        .eq('organization_id', orgId)
+        .single(),
+      (adminClient.from('instructors') as any)
+        .select('display_name')
+        .eq('id', instructorId)
+        .eq('organization_id', orgId)
+        .single(),
+    ]);
 
+    const lessonType = lessonTypeRes.data as { price_cents: number; name: string } | null;
+    const instructorData = instructorNameRes.data as { display_name: string } | null;
     const priceCents = lessonType?.price_cents ?? 0;
 
     // Insert booking directly (no auth user for public visitors)
@@ -164,6 +174,20 @@ export async function submitBookingRequestAction(
       console.error('Booking insert error:', insertError);
       return { success: false, error: 'Failed to submit booking. Please try again.' };
     }
+
+    // Send confirmation email to the visitor (fire-and-forget)
+    const serverClient = await createServerSupabaseClient();
+    notifyPublicBookingReceived(
+      serverClient,
+      orgId,
+      customerEmail,
+      customerName,
+      instructorData?.display_name ?? 'Your instructor',
+      lessonType?.name ?? 'Driving Lesson',
+      slotStart,
+      slotEnd,
+      data.organization.name
+    );
 
     revalidatePath('/book');
     return { success: true };
