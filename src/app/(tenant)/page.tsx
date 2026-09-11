@@ -1,8 +1,9 @@
 import { getTenantPageData } from '@/lib/tenant';
 import Link from 'next/link';
-import type { LessonType, LessonPackage, Instructor, Review } from '@/types/database';
+import type { LessonType, LessonPackage, Instructor } from '@/types/database';
 import { TestimonialCarousel } from './components/testimonial-carousel';
 import { FAQAccordion } from './components/faq-accordion';
+import { HeroSlider } from './components/hero-slider';
 
 /**
  * Tenant home page — the public-facing landing page for a driving school.
@@ -22,7 +23,7 @@ export default async function HomePage() {
     );
   }
 
-  const { organization, settings, lessonTypes, lessonPackages, instructors, serviceAreas, reviews } = data;
+  const { organization, settings, lessonTypes, lessonPackages, instructors, serviceAreas, reviews, heroSlides } = data;
   const primaryColor = settings?.primary_color ?? '#2563eb';
   const schoolName = organization.name;
   const sections = settings?.sections_enabled ?? [
@@ -38,7 +39,11 @@ export default async function HomePage() {
   return (
     <div className="tenant-home">
       {/* ========== HERO SECTION ========== */}
-      {sections.includes('hero') && (
+      {sections.includes('hero') && heroSlides.length > 0 ? (
+        <section className="relative">
+          <HeroSlider slides={heroSlides} primaryColor={primaryColor} />
+        </section>
+      ) : sections.includes('hero') ? (
         <section
           className="relative overflow-hidden py-24 sm:py-32 lg:py-40"
           style={{
@@ -83,7 +88,7 @@ export default async function HomePage() {
             </div>
           </div>
         </section>
-      )}
+      ) : null}
 
       {/* ========== VALUE PROPOSITIONS STRIP ========== */}
       <section className="relative -mt-6 z-10 mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">

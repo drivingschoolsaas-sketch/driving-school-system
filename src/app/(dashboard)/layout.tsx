@@ -42,6 +42,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Reports', href: '/dashboard/reports', icon: '📈', adminOnly: true },
   { label: 'Payments', href: '/dashboard/payments', icon: '💳', adminOnly: true },
   { label: 'Notifications', href: '/dashboard/notifications', icon: '🔔', adminOnly: true },
+  { label: 'Hero Slides', href: '/dashboard/hero-slides', icon: '🎠', adminOnly: true },
   { label: 'Media', href: '/dashboard/media', icon: '🖼️', adminOnly: true },
   { label: 'Billing', href: '/dashboard/billing', icon: '💰', minRole: USER_ROLES.SCHOOL_OWNER },
   { label: 'Settings', href: '/dashboard/settings', icon: '⚙️', minRole: USER_ROLES.SCHOOL_OWNER },

@@ -294,6 +294,23 @@ export interface MediaAsset {
   updated_at: string;
 }
 
+// --- Hero Slides ---
+
+export interface HeroSlide {
+  id: string;
+  organization_id: string;
+  image_url: string;
+  storage_path: string | null;
+  title: string | null;
+  subtitle: string | null;
+  link_url: string | null;
+  link_text: string | null;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 // --- Availability Rules ---
 
 export interface AvailabilityRule {

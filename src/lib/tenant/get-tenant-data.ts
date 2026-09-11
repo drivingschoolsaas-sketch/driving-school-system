@@ -7,7 +7,7 @@
 
 import 'server-only';
 import { headers } from 'next/headers';
-import type { Organization, SchoolSettings, LessonType, LessonPackage, Instructor, ServiceArea, Review } from '@/types/database';
+import type { Organization, SchoolSettings, LessonType, LessonPackage, Instructor, ServiceArea, Review, HeroSlide } from '@/types/database';
 import { getAdminClient } from '@/lib/database/supabase-admin';
 import { resolveHostname } from './resolve-hostname';
 import { getServerEnv } from '@/config/env';
@@ -24,6 +24,7 @@ export interface TenantPageData extends TenantData {
   instructors: Instructor[];
   serviceAreas: ServiceArea[];
   reviews: Review[];
+  heroSlides: HeroSlide[];
 }
 
 /**
@@ -95,7 +96,7 @@ export async function getTenantPageData(): Promise<TenantPageData | null> {
     const adminClient = getAdminClient();
     const orgId = tenantData.organization.id;
 
-    const [lessonTypesRes, packagesRes, instructorsRes, areasRes, reviewsRes] = await Promise.all([
+    const [lessonTypesRes, packagesRes, instructorsRes, areasRes, reviewsRes, heroSlidesRes] = await Promise.all([
       adminClient
         .from('lesson_types')
         .select('*')
@@ -131,6 +132,13 @@ export async function getTenantPageData(): Promise<TenantPageData | null> {
         .in('status', ['approved', 'featured'])
         .order('created_at', { ascending: false })
         .limit(10),
+      adminClient
+        .from('hero_slides')
+        .select('*')
+        .eq('organization_id', orgId)
+        .eq('is_active', true)
+        .order('sort_order')
+        .order('created_at'),
     ]);
 
     return {
@@ -140,6 +148,7 @@ export async function getTenantPageData(): Promise<TenantPageData | null> {
       instructors: (instructorsRes.data ?? []) as Instructor[],
       serviceAreas: (areasRes.data ?? []) as ServiceArea[],
       reviews: (reviewsRes.data ?? []) as Review[],
+      heroSlides: (heroSlidesRes.data ?? []) as HeroSlide[],
     };
   } catch (error) {
     logger.error('Failed to get tenant page data', error instanceof Error ? error : new Error(String(error)), {
