@@ -8,6 +8,10 @@
 import { revalidatePath } from 'next/cache';
 import { getPortalContext } from '@/lib/auth';
 import { createServerSupabaseClient } from '@/lib/database';
+import {
+  resolveBookingNotificationParams,
+  notifyBookingCancelled,
+} from '@/services/booking-notifications';
 
 export interface PortalBookingActionState {
   success: boolean;
@@ -68,6 +72,11 @@ export async function cancelOwnBookingAction(
       .eq('organization_id', auth.organizationId);
 
     if (updateError) throw updateError;
+
+    // Notify student of cancellation (fire-and-forget)
+    resolveBookingNotificationParams(client, auth.organizationId, bookingId).then((params) => {
+      if (params) notifyBookingCancelled(client, params, reason ?? 'Cancelled by student');
+    });
 
     revalidatePath('/portal/bookings');
     revalidatePath('/portal');

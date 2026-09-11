@@ -11,6 +11,11 @@ import { getDashboardContext, requirePermission } from '@/lib/auth';
 import { PERMISSIONS } from '@/permissions/roles';
 import { createServerSupabaseClient } from '@/lib/database';
 import { audit } from '@/lib/audit';
+import {
+  resolveBookingNotificationParams,
+  notifyBookingConfirmed,
+  notifyLessonCompleted,
+} from '@/services/booking-notifications';
 
 export interface TodayActionState {
   success: boolean;
@@ -66,6 +71,12 @@ export async function startLessonAction(
     if (updateError) throw updateError;
 
     audit(client, auth, { action: 'booking.started', resourceType: 'booking', resourceId: bookingId });
+
+    // Notify student of confirmation (fire-and-forget)
+    resolveBookingNotificationParams(client, auth.organizationId, bookingId).then((params) => {
+      if (params) notifyBookingConfirmed(client, params);
+    });
+
     revalidatePath('/dashboard/today');
     revalidatePath('/dashboard/bookings');
     return { success: true };
@@ -122,6 +133,12 @@ export async function completeLessonAction(
     if (updateError) throw updateError;
 
     audit(client, auth, { action: 'booking.completed', resourceType: 'booking', resourceId: bookingId });
+
+    // Send review request notification (fire-and-forget)
+    resolveBookingNotificationParams(client, auth.organizationId, bookingId).then((params) => {
+      if (params) notifyLessonCompleted(client, params);
+    });
+
     revalidatePath('/dashboard/today');
     revalidatePath('/dashboard/bookings');
     return { success: true };

@@ -19,6 +19,13 @@ import {
   transitionBookingStatusSchema,
   cancelBookingSchema,
 } from '@/validators/booking';
+import { audit } from '@/lib/audit';
+import {
+  resolveBookingNotificationParams,
+  notifyBookingConfirmed,
+  notifyBookingCancelled,
+  notifyLessonCompleted,
+} from '@/services/booking-notifications';
 
 export interface BookingActionState {
   success: boolean;
@@ -49,7 +56,14 @@ export async function createBookingAction(
       notes: formData.get('notes') || null,
     });
 
-    await createBooking(client, auth, input);
+    const booking = await createBooking(client, auth, input);
+    audit(client, auth, { action: 'booking.created', resourceType: 'booking', resourceId: booking.id });
+
+    // Notify student of new booking (fire-and-forget)
+    resolveBookingNotificationParams(client, auth.organizationId, booking.id).then((params) => {
+      if (params) notifyBookingConfirmed(client, params);
+    });
+
     revalidatePath('/dashboard/bookings');
     revalidatePath('/dashboard/calendar');
     return { success: true };
@@ -75,6 +89,16 @@ export async function transitionStatusAction(
     });
 
     await transitionBookingStatus(client, auth, bookingId, input.status, input.reason);
+    audit(client, auth, { action: `booking.${input.status}`, resourceType: 'booking', resourceId: bookingId });
+
+    // Send appropriate notification based on new status
+    resolveBookingNotificationParams(client, auth.organizationId, bookingId).then((params) => {
+      if (!params) return;
+      if (input.status === 'confirmed') notifyBookingConfirmed(client, params);
+      else if (input.status === 'completed') notifyLessonCompleted(client, params);
+      else if (input.status === 'cancelled') notifyBookingCancelled(client, params, input.reason ?? undefined);
+    });
+
     revalidatePath('/dashboard/bookings');
     revalidatePath('/dashboard/calendar');
     revalidatePath('/dashboard');
@@ -95,7 +119,18 @@ export async function cancelBookingAction(
     const client = await createServerSupabaseClient();
 
     const input = cancelBookingSchema.parse({ reason: reason || null });
+
+    // Resolve notification params before cancellation (need booking data)
+    const notifParams = await resolveBookingNotificationParams(client, auth.organizationId, bookingId);
+
     await cancelBooking(client, auth, bookingId, input);
+    audit(client, auth, { action: 'booking.cancelled', resourceType: 'booking', resourceId: bookingId, details: { reason } });
+
+    // Notify student of cancellation (fire-and-forget)
+    if (notifParams) {
+      notifyBookingCancelled(client, notifParams, reason ?? 'Cancelled by admin');
+    }
+
     revalidatePath('/dashboard/bookings');
     revalidatePath('/dashboard/calendar');
     revalidatePath('/dashboard');

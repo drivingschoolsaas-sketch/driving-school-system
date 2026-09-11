@@ -12,6 +12,7 @@ import { PERMISSIONS } from '@/permissions/roles';
 import { createStudent, updateStudent, deleteStudent } from '@/services/student-service';
 import { createStudentSchema, updateStudentSchema } from '@/validators/student';
 import { audit } from '@/lib/audit';
+import { notifyStudentWelcome } from '@/services/booking-notifications';
 
 export interface StudentActionState {
   success: boolean;
@@ -23,7 +24,7 @@ export async function createStudentAction(
   formData: FormData
 ): Promise<StudentActionState> {
   try {
-    const { auth } = await getDashboardContext();
+    const { auth, organization } = await getDashboardContext();
     requirePermission(auth, PERMISSIONS.STUDENT_CREATE);
     const client = await createServerSupabaseClient();
 
@@ -67,6 +68,10 @@ export async function createStudentAction(
 
     const student = await createStudent(client, auth, input);
     audit(client, auth, { action: 'student.created', resourceType: 'student', resourceId: student.id, details: { display_name: input.display_name } });
+
+    // Send welcome email (fire-and-forget)
+    notifyStudentWelcome(client, auth.organizationId, userId, displayName, email, organization.name);
+
     revalidatePath('/dashboard/students');
     return { success: true };
   } catch (err) {
