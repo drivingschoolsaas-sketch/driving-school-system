@@ -3,6 +3,7 @@
 // ==================================================
 // List and manage all driving school organizations.
 
+import Link from 'next/link';
 import { getPlatformAdminContext } from '@/lib/auth';
 import { getAdminClient } from '@/lib/database';
 import { listOrganizations } from '@/services/platform-admin-service';
@@ -126,8 +127,13 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
 
                 return (
                   <tr key={org.id} className="hover:bg-gray-50 dark:hover:bg-gray-750">
-                    <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
-                      {org.name}
+                    <td className="whitespace-nowrap px-4 py-3 text-sm font-medium">
+                      <Link
+                        href={`/admin/organizations/${org.id}`}
+                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
+                      >
+                        {org.name}
+                      </Link>
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                       {org.slug}
