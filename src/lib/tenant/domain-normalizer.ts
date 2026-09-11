@@ -70,11 +70,6 @@ export function classifyHostname(
     return { type: 'localhost', normalized };
   }
 
-  // Vercel preview deployments
-  if (normalized.endsWith('.vercel.app')) {
-    return { type: 'preview', normalized };
-  }
-
   // Platform admin domain (e.g., admin.driveflow.com.au)
   if (normalized === `${adminSubdomain}.${normalizedPlatform}`) {
     return { type: 'platform_admin', normalized };
@@ -86,9 +81,16 @@ export function classifyHostname(
   }
 
   // Platform subdomain (e.g., schoolname.driveflow.com.au)
+  // This also handles Vercel subdomains when the platform domain
+  // is a .vercel.app domain (e.g., sydney.myapp.vercel.app)
   if (normalized.endsWith(`.${normalizedPlatform}`)) {
     const subdomain = normalized.replace(`.${normalizedPlatform}`, '');
     return { type: 'tenant', normalized, subdomain };
+  }
+
+  // Vercel preview deployments (non-platform .vercel.app URLs)
+  if (normalized.endsWith('.vercel.app')) {
+    return { type: 'preview', normalized };
   }
 
   // Custom domain — treat as tenant
