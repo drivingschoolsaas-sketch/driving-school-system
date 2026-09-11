@@ -372,6 +372,84 @@ export async function cancelBooking(
 // Reschedule
 // --------------------------------------------------
 
+import type { RescheduleBookingInput } from '@/validators/booking';
+
+/**
+ * Reschedule a booking to a new date/time (and optionally new instructor).
+ * Validates the booking exists and isn't in a terminal state.
+ * The DB exclusion constraint enforces no-overlap.
+ */
+export async function rescheduleBooking(
+  client: SupabaseClient,
+  context: AuthorizedContext,
+  bookingId: string,
+  input: RescheduleBookingInput
+): Promise<Booking> {
+  const current = await getBooking(client, context, bookingId);
+  if (!current) {
+    throw BookingErrors.notFound({ bookingId });
+  }
+
+  // Can only reschedule non-terminal bookings
+  const terminalStatuses: BookingStatus[] = ['completed', 'cancelled', 'rejected', 'no_show'];
+  if (terminalStatuses.includes(current.status)) {
+    throw BookingErrors.invalidStatusTransition(current.status, current.status);
+  }
+
+  const updates: Record<string, unknown> = {
+    start_datetime: input.new_start_datetime,
+    end_datetime: input.new_end_datetime,
+  };
+
+  if (input.new_instructor_id) {
+    updates.instructor_id = input.new_instructor_id;
+  }
+
+  const { data, error } = await client
+    .from('bookings')
+    .update(updates)
+    .eq('id', bookingId)
+    .eq('organization_id', context.organizationId)
+    .select()
+    .single();
+
+  if (error) {
+    if (isConflictError(error)) {
+      throw BookingErrors.slotUnavailable({ bookingId });
+    }
+    logger.error('Failed to reschedule booking', error, {
+      feature: 'bookings',
+      operation: 'reschedule',
+      organizationId: context.organizationId,
+      entityId: bookingId,
+    });
+    throw new Error('Failed to reschedule booking.');
+  }
+
+  logger.info('Booking rescheduled', {
+    feature: 'bookings',
+    operation: 'reschedule',
+    organizationId: context.organizationId,
+    entityId: bookingId,
+    from: { start: current.start_datetime, instructor: current.instructor_id },
+    to: { start: input.new_start_datetime, instructor: input.new_instructor_id ?? current.instructor_id },
+  });
+
+  await audit(client, context, {
+    action: 'booking.rescheduled',
+    resourceType: 'booking',
+    resourceId: bookingId,
+    details: {
+      old_start: current.start_datetime,
+      new_start: input.new_start_datetime,
+      new_instructor_id: input.new_instructor_id ?? null,
+      reason: input.reason ?? null,
+    },
+  });
+
+  return data as Booking;
+}
+
 /**
  * Reject a booking request. Only admins/instructors should call this.
  */

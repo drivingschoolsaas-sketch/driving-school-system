@@ -13,17 +13,20 @@ import {
   createBooking,
   transitionBookingStatus,
   cancelBooking,
+  rescheduleBooking,
 } from '@/services/booking-service';
 import {
   createBookingSchema,
   transitionBookingStatusSchema,
   cancelBookingSchema,
+  rescheduleBookingSchema,
 } from '@/validators/booking';
 import { audit } from '@/lib/audit';
 import {
   resolveBookingNotificationParams,
   notifyBookingConfirmed,
   notifyBookingCancelled,
+  notifyBookingChanged,
   notifyLessonCompleted,
 } from '@/services/booking-notifications';
 
@@ -137,6 +140,53 @@ export async function cancelBookingAction(
     return { success: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to cancel booking';
+    return { success: false, error: message };
+  }
+}
+
+export async function rescheduleBookingAction(
+  bookingId: string,
+  formData: FormData
+): Promise<BookingActionState> {
+  try {
+    const { auth } = await getDashboardContext();
+    requirePermission(auth, PERMISSIONS.BOOKING_EDIT);
+    const client = await createServerSupabaseClient();
+
+    const newDate = formData.get('new_date') as string;
+    const newStartTime = formData.get('new_start_time') as string;
+    const newEndTime = formData.get('new_end_time') as string;
+    const newInstructorId = (formData.get('new_instructor_id') as string) || undefined;
+    const reason = (formData.get('reason') as string) || undefined;
+
+    const newStartDatetime = `${newDate}T${newStartTime}:00`;
+    const newEndDatetime = `${newDate}T${newEndTime}:00`;
+
+    const input = rescheduleBookingSchema.parse({
+      new_start_datetime: new Date(newStartDatetime).toISOString(),
+      new_end_datetime: new Date(newEndDatetime).toISOString(),
+      new_instructor_id: newInstructorId,
+      reason,
+    });
+
+    await rescheduleBooking(client, auth, bookingId, input);
+    audit(client, auth, {
+      action: 'booking.rescheduled',
+      resourceType: 'booking',
+      resourceId: bookingId,
+      details: { new_start: input.new_start_datetime, reason },
+    });
+
+    // Notify student of the change (fire-and-forget)
+    resolveBookingNotificationParams(client, auth.organizationId, bookingId).then((params) => {
+      if (params) notifyBookingChanged(client, params);
+    });
+
+    revalidatePath('/dashboard/bookings');
+    revalidatePath('/dashboard/calendar');
+    return { success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to reschedule booking';
     return { success: false, error: message };
   }
 }
