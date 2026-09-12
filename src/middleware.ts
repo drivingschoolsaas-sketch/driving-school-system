@@ -28,21 +28,30 @@ export async function middleware(request: NextRequest) {
   // where wildcard subdomains aren't available on .vercel.app domains)
   const tenantOverride = request.nextUrl.searchParams.get('tenant');
 
-  // Create response — we'll modify headers and cookies on it
-  let response = NextResponse.next();
-
-  // Set classification headers for use in Server Components
-  response.headers.set('x-hostname-type', classification.type);
-  response.headers.set('x-normalized-hostname', classification.normalized);
+  // Build request headers that Server Components will see via headers().
+  // NextResponse.next({ request: { headers } }) forwards these as
+  // request headers — response.headers.set() only sets response headers
+  // sent to the browser, NOT available in Server Components.
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-hostname-type', classification.type);
+  requestHeaders.set('x-normalized-hostname', classification.normalized);
 
   if (classification.subdomain) {
-    response.headers.set('x-tenant-subdomain', classification.subdomain);
+    requestHeaders.set('x-tenant-subdomain', classification.subdomain);
   }
 
-  // Pass tenant override slug to Server Components via header
   if (tenantOverride) {
-    response.headers.set('x-tenant-override', tenantOverride);
+    requestHeaders.set('x-tenant-override', tenantOverride);
   }
+
+  // Create response with modified request headers
+  let response = NextResponse.next({
+    request: { headers: requestHeaders },
+  });
+
+  // Also set on response for browser dev tools visibility
+  response.headers.set('x-hostname-type', classification.type);
+  response.headers.set('x-normalized-hostname', classification.normalized);
 
   // Refresh Supabase auth session (extends cookie expiry)
   // This must run on every request to keep sessions alive.
@@ -61,25 +70,20 @@ export async function middleware(request: NextRequest) {
             request.cookies.set(name, value)
           );
           // Create a fresh response with the updated request cookies
+          // AND the custom headers for Server Components
           response = NextResponse.next({
-            request,
+            request: { headers: requestHeaders },
           });
           // Set cookies on the response for the browser
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
           );
-          // Re-apply classification headers (response was recreated)
+          // Re-apply response headers for browser dev tools
           response.headers.set('x-hostname-type', classification.type);
           response.headers.set(
             'x-normalized-hostname',
             classification.normalized
           );
-          if (classification.subdomain) {
-            response.headers.set('x-tenant-subdomain', classification.subdomain);
-          }
-          if (tenantOverride) {
-            response.headers.set('x-tenant-override', tenantOverride);
-          }
         },
       },
     });
