@@ -10,6 +10,7 @@ import { createServerSupabaseClient } from '@/lib/database';
 import type { LessonType } from '@/types/database';
 import type { Metadata } from 'next';
 import { AddLessonTypeForm } from './lesson-type-form-client';
+import { LessonTypeRowActions } from './lesson-type-row-actions';
 
 export const metadata: Metadata = {
   title: 'Lesson Types',
@@ -58,6 +59,7 @@ export default async function LessonTypesPage() {
                 <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Price</th>
                 <th className="px-4 py-3 text-center text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Public</th>
                 <th className="px-4 py-3 text-center text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Status</th>
+                <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
@@ -100,6 +102,9 @@ export default async function LessonTypesPage() {
                     >
                       {lt.status}
                     </span>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <LessonTypeRowActions lessonType={lt} primaryColor={primaryColor} />
                   </td>
                 </tr>
               ))}
