@@ -1,6 +1,6 @@
 import { getTenantPageData } from '@/lib/tenant';
 import Link from 'next/link';
-import type { LessonType, LessonPackage, Instructor } from '@/types/database';
+import type { LessonType, LessonPackage, Instructor, SuccessStory } from '@/types/database';
 import { TestimonialCarousel } from './components/testimonial-carousel';
 import { FAQAccordion } from './components/faq-accordion';
 import { HeroSlider } from './components/hero-slider';
@@ -23,7 +23,7 @@ export default async function HomePage() {
     );
   }
 
-  const { organization, settings, lessonTypes, lessonPackages, instructors, serviceAreas, reviews, heroSlides } = data;
+  const { organization, settings, lessonTypes, lessonPackages, instructors, serviceAreas, reviews, heroSlides, successStories } = data;
   const primaryColor = settings?.primary_color ?? '#2563eb';
   const schoolName = organization.name;
   const sections = settings?.sections_enabled ?? [
@@ -188,6 +188,49 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ========== SUCCESS STORIES ========== */}
+      {successStories.length > 0 && (
+        <section className="py-20 sm:py-28 bg-gray-50 dark:bg-gray-900/50">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <span
+                className="inline-block text-sm font-bold uppercase tracking-widest mb-2"
+                style={{ color: primaryColor }}
+              >
+                Our Students
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white">
+                🎉 Success Stories
+              </h2>
+              <p className="mt-3 text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+                Congratulations to our students who passed their driving tests!
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {successStories.slice(0, 6).map((story) => (
+                <SuccessStoryCard key={story.id} story={story} primaryColor={primaryColor} />
+              ))}
+            </div>
+
+            {successStories.length > 6 && (
+              <div className="mt-10 text-center">
+                <Link
+                  href="/success-stories"
+                  className="inline-flex items-center gap-2 text-sm font-bold hover:underline"
+                  style={{ color: primaryColor }}
+                >
+                  View all success stories
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                </Link>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* ========== LESSONS ========== */}
       {sections.includes('lessons') && lessonTypes.length > 0 && (
@@ -631,6 +674,77 @@ function InstructorCard({
             {instructor.default_lesson_duration} min
           </span>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function SuccessStoryCard({
+  story,
+  primaryColor,
+}: {
+  story: SuccessStory;
+  primaryColor: string;
+}) {
+  return (
+    <div className="group rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-all hover:-translate-y-1">
+      {/* Photo or placeholder */}
+      {story.photo_url ? (
+        // eslint-disable-next-line @next/next/no-img-element -- dynamic tenant URL
+        <img
+          src={story.photo_url}
+          alt={`${story.student_name} passed their driving test`}
+          className="w-full h-56 object-cover"
+        />
+      ) : (
+        <div
+          className="w-full h-40 flex items-center justify-center"
+          style={{ backgroundColor: `${primaryColor}10` }}
+        >
+          <span className="text-6xl">🏆</span>
+        </div>
+      )}
+
+      <div className="p-5">
+        {/* Name & badge */}
+        <div className="flex items-center gap-2 mb-2">
+          <h3 className="text-base font-bold text-gray-900 dark:text-white">
+            {story.student_name}
+          </h3>
+          <span
+            className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold text-white"
+            style={{ backgroundColor: primaryColor }}
+          >
+            PASSED ✓
+          </span>
+        </div>
+
+        {/* Details */}
+        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400 mb-3">
+          {story.pass_date && (
+            <span className="inline-flex items-center gap-1">
+              📅{' '}
+              {new Date(story.pass_date + 'T00:00:00').toLocaleDateString(
+                'en-AU',
+                { year: 'numeric', month: 'short', day: 'numeric' }
+              )}
+            </span>
+          )}
+          {story.test_location && (
+            <span className="inline-flex items-center gap-1">
+              📍 {story.test_location}
+            </span>
+          )}
+        </div>
+
+        {/* Student message */}
+        {story.message && (
+          <blockquote className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed italic border-l-3 pl-3"
+            style={{ borderLeftColor: primaryColor }}
+          >
+            &ldquo;{story.message}&rdquo;
+          </blockquote>
+        )}
       </div>
     </div>
   );

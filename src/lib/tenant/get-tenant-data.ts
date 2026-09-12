@@ -7,7 +7,7 @@
 
 import 'server-only';
 import { headers } from 'next/headers';
-import type { Organization, SchoolSettings, LessonType, LessonPackage, Instructor, ServiceArea, Review, HeroSlide } from '@/types/database';
+import type { Organization, SchoolSettings, LessonType, LessonPackage, Instructor, ServiceArea, Review, HeroSlide, SuccessStory } from '@/types/database';
 import { getAdminClient } from '@/lib/database/supabase-admin';
 import { resolveHostname, resolveTenantBySlug } from './resolve-hostname';
 import { getServerEnv } from '@/config/env';
@@ -25,6 +25,7 @@ export interface TenantPageData extends TenantData {
   serviceAreas: ServiceArea[];
   reviews: Review[];
   heroSlides: HeroSlide[];
+  successStories: SuccessStory[];
 }
 
 /**
@@ -131,7 +132,7 @@ export async function getTenantPageData(): Promise<TenantPageData | null> {
     const adminClient = getAdminClient();
     const orgId = tenantData.organization.id;
 
-    const [lessonTypesRes, packagesRes, instructorsRes, areasRes, reviewsRes, heroSlidesRes] = await Promise.all([
+    const [lessonTypesRes, packagesRes, instructorsRes, areasRes, reviewsRes, heroSlidesRes, successStoriesRes] = await Promise.all([
       adminClient
         .from('lesson_types')
         .select('*')
@@ -174,6 +175,15 @@ export async function getTenantPageData(): Promise<TenantPageData | null> {
         .eq('is_active', true)
         .order('sort_order')
         .order('created_at'),
+      adminClient
+        .from('success_stories')
+        .select('*')
+        .eq('organization_id', orgId)
+        .eq('status', 'published')
+        .eq('consent_given', true)
+        .order('sort_order')
+        .order('pass_date', { ascending: false })
+        .limit(12),
     ]);
 
     return {
@@ -184,6 +194,7 @@ export async function getTenantPageData(): Promise<TenantPageData | null> {
       serviceAreas: (areasRes.data ?? []) as ServiceArea[],
       reviews: (reviewsRes.data ?? []) as Review[],
       heroSlides: (heroSlidesRes.data ?? []) as HeroSlide[],
+      successStories: (successStoriesRes.data ?? []) as SuccessStory[],
     };
   } catch (error) {
     logger.error('Failed to get tenant page data', error instanceof Error ? error : new Error(String(error)), {
