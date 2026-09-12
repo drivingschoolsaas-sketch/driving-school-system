@@ -38,6 +38,12 @@ yarn-error.log*
 # vercel
 .vercel
 
+# supabase temp
+supabase/.temp/
+
+# test assets
+test-slide-*.png
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

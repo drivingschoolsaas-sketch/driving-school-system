@@ -18,27 +18,36 @@ export async function GET() {
     try {
       const adminClient = getAdminClient();
 
-      // Test 1: Direct org query by slug
-      const { data: org, error: orgError } = await adminClient
+      // Test 1: Direct org query by slug (cast to any to avoid generated type issues)
+      const orgResult = await adminClient
         .from('organizations')
-        .select('id, name, slug, status')
+        .select('*')
         .eq('slug', tenantOverride)
         .in('status', ['active', 'trial'])
         .single();
 
-      result.orgQuery = { org, error: orgError?.message ?? null };
+      const org = orgResult.data as Record<string, unknown> | null;
+      const orgError = orgResult.error;
+
+      result.orgQuery = {
+        found: !!org,
+        slug: org?.slug ?? null,
+        name: org?.name ?? null,
+        id: org?.id ?? null,
+        error: orgError?.message ?? null,
+      };
 
       // Test 2: Check if settings exist
-      if (org) {
-        const { data: settings, error: settingsError } = await adminClient
+      if (org?.id) {
+        const settingsResult = await adminClient
           .from('school_settings')
-          .select('id, organization_id')
-          .eq('organization_id', org.id)
+          .select('*')
+          .eq('organization_id', org.id as string)
           .maybeSingle();
 
         result.settingsQuery = {
-          found: !!settings,
-          error: settingsError?.message ?? null,
+          found: !!settingsResult.data,
+          error: settingsResult.error?.message ?? null,
         };
       }
     } catch (err) {
