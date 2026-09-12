@@ -68,11 +68,15 @@ export async function getPlatformAdminContext(): Promise<PlatformAdminContext> {
       env.NEXT_PUBLIC_PLATFORM_ADMIN_SUBDOMAIN
     );
 
-    // Allow platform_admin hostname, localhost in dev, or preview
-    // deployments (e.g., .vercel.app). Preview/localhost still require
-    // a valid platform role (checked in step 3 below).
+    // Allow platform_admin hostname, platform_website (main domain),
+    // localhost in dev, or preview deployments (e.g., .vercel.app).
+    // On Vercel, the platform domain IS the deployment URL, so admin
+    // pages are served from the same hostname classified as
+    // platform_website. All types still require a valid platform role
+    // (checked in step 3 below).
     const isAllowedHostname =
       classification.type === 'platform_admin' ||
+      classification.type === 'platform_website' ||
       classification.type === 'localhost' ||
       classification.type === 'preview';
 

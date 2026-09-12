@@ -30,7 +30,7 @@ export async function GET() {
       env.NEXT_PUBLIC_PLATFORM_ADMIN_SUBDOMAIN
     );
     results.hostnameType = classification.type;
-    results.isAllowed = ['platform_admin', 'localhost', 'preview'].includes(classification.type);
+    results.isAllowed = ['platform_admin', 'platform_website', 'localhost', 'preview'].includes(classification.type);
 
     // Step 4: Check getUser
     const client = await createServerSupabaseClient();
