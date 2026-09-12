@@ -45,6 +45,39 @@ export async function createPackageAction(
   }
 }
 
+export async function updatePackageAction(
+  packageId: string,
+  formData: FormData
+): Promise<PackageActionState> {
+  try {
+    const { auth } = await getDashboardContext();
+    requirePermission(auth, PERMISSIONS.ORG_MANAGE_SETTINGS);
+    const client = await createServerSupabaseClient();
+
+    const updates: Record<string, unknown> = {};
+    if (formData.has('name')) updates.name = (formData.get('name') as string)?.trim();
+    if (formData.has('description')) updates.description = (formData.get('description') as string)?.trim() || null;
+    if (formData.has('lesson_type_id')) updates.lesson_type_id = formData.get('lesson_type_id');
+    if (formData.has('lesson_count')) updates.lesson_count = parseInt(formData.get('lesson_count') as string, 10);
+    if (formData.has('price_cents')) updates.price_cents = parseInt(formData.get('price_cents') as string, 10);
+    if (formData.has('savings_cents')) updates.savings_cents = parseInt(formData.get('savings_cents') as string, 10);
+    if (formData.has('validity_days')) {
+      const val = formData.get('validity_days') as string;
+      updates.validity_days = val ? parseInt(val, 10) : null;
+    }
+    if (formData.has('is_public')) updates.is_public = formData.get('is_public') === 'true';
+    if (formData.has('status')) updates.status = formData.get('status');
+
+    const input = updateLessonPackageSchema.parse(updates);
+    await updateLessonPackage(client, auth, packageId, input);
+    revalidatePath('/dashboard/packages');
+    return { success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to update package';
+    return { success: false, error: message };
+  }
+}
+
 export async function deletePackageAction(packageId: string): Promise<PackageActionState> {
   try {
     const { auth } = await getDashboardContext();

@@ -9,6 +9,7 @@ import { createServerSupabaseClient } from '@/lib/database';
 import type { LessonPackage, LessonType } from '@/types/database';
 import type { Metadata } from 'next';
 import { AddPackageForm } from './package-form-client';
+import { PackageCardActions } from './package-card-actions';
 
 export const metadata: Metadata = {
   title: 'Packages',
@@ -71,17 +72,24 @@ export default async function PackagesPage() {
                   <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
                     {pkg.name}
                   </h3>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${
-                      pkg.status === 'active'
-                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                        : pkg.status === 'archived'
-                          ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
-                          : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                    }`}
-                  >
-                    {pkg.status}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${
+                        pkg.status === 'active'
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                          : pkg.status === 'archived'
+                            ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                            : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                      }`}
+                    >
+                      {pkg.status}
+                    </span>
+                    <PackageCardActions
+                      pkg={pkg}
+                      lessonTypes={lessonTypes.map((lt) => ({ id: lt.id, name: lt.name }))}
+                      primaryColor={primaryColor}
+                    />
+                  </div>
                 </div>
 
                 {pkg.description && (
