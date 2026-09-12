@@ -839,7 +839,7 @@ export async function getSystemHealth(
     client
       .from('organization_domains')
       .select('id', { count: 'exact', head: true })
-      .in('status', ['failed', 'pending']),
+      .in('status', ['failed', 'pending_verification']),
     client
       .from('subscriptions')
       .select('id', { count: 'exact', head: true })

@@ -18,7 +18,7 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
     label: 'Verified',
     className: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
   },
-  pending: {
+  pending_verification: {
     label: 'Pending',
     className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
   },
@@ -80,7 +80,7 @@ export default async function DomainsPage({ searchParams }: PageProps) {
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
-        {['all', 'verified', 'pending', 'verifying', 'failed', 'suspended'].map(
+        {['all', 'verified', 'pending_verification', 'verifying', 'failed', 'suspended'].map(
           (s) => (
             <a
               key={s}
@@ -91,7 +91,9 @@ export default async function DomainsPage({ searchParams }: PageProps) {
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
               }`}
             >
-              {s.charAt(0).toUpperCase() + s.slice(1)}
+              {s === 'pending_verification'
+                ? 'Pending'
+                : s.charAt(0).toUpperCase() + s.slice(1)}
             </a>
           )
         )}
@@ -138,7 +140,7 @@ export default async function DomainsPage({ searchParams }: PageProps) {
             ) : (
               domains.map((domain) => {
                 const statusInfo =
-                  STATUS_CONFIG[domain.status] ?? STATUS_CONFIG.pending;
+                  STATUS_CONFIG[domain.status] ?? STATUS_CONFIG.pending_verification;
                 return (
                   <tr key={domain.id}>
                     <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
