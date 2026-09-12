@@ -5,9 +5,11 @@
 // Requires platform_owner or platform_support role.
 
 import Link from 'next/link';
+import { cookies } from 'next/headers';
 import { getPlatformAdminContext } from '@/lib/auth';
 import type { Metadata } from 'next';
 import { SignOutButton } from '../(dashboard)/components/sign-out-button';
+import { LockAdminButton } from './admin/lock-admin-button';
 
 export const metadata: Metadata = {
   title: 'Platform Admin — DriveFlow',
@@ -35,6 +37,18 @@ export default async function PlatformAdminLayout({
   children: React.ReactNode;
 }) {
   const admin = await getPlatformAdminContext();
+  const pinEnabled = !!process.env.PLATFORM_ADMIN_PIN;
+
+  // If PIN gate is active and user hasn't verified yet, render
+  // children without the admin chrome (sidebar/header). The verify
+  // page provides its own full-screen layout.
+  if (pinEnabled) {
+    const cookieStore = await cookies();
+    const pinCookie = cookieStore.get('x-admin-pin-verified')?.value;
+    if (!pinCookie) {
+      return <>{children}</>;
+    }
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -75,6 +89,12 @@ export default async function PlatformAdminLayout({
             </p>
             <span className="text-xs text-gray-300 dark:text-gray-600">|</span>
             <SignOutButton />
+            {pinEnabled && (
+              <>
+                <span className="text-xs text-gray-300 dark:text-gray-600">|</span>
+                <LockAdminButton />
+              </>
+            )}
           </div>
         </div>
       </aside>
@@ -97,7 +117,8 @@ export default async function PlatformAdminLayout({
               </Link>
             ))}
           </nav>
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 flex items-center gap-2">
+            {pinEnabled && <LockAdminButton />}
             <SignOutButton />
           </div>
         </header>

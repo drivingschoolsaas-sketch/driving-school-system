@@ -21,6 +21,9 @@ const serverEnvSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.string().url('NEXT_PUBLIC_APP_URL must be a valid URL'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 
+  // Security — optional secondary PIN for admin access
+  PLATFORM_ADMIN_PIN: z.string().min(4, 'PLATFORM_ADMIN_PIN must be at least 4 characters').optional(),
+
   // Development only — explicit tenant slug for localhost
   DEV_TENANT_SLUG: z.string().optional(),
 });

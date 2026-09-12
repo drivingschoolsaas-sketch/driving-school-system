@@ -139,6 +139,21 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // Admin PIN gate: redirect to /admin/verify if PIN is required but not verified.
+  // The PIN cookie is HMAC-signed — full signature verification happens server-side
+  // in the verify action. Middleware only checks cookie presence for the redirect.
+  const adminPin = process.env.PLATFORM_ADMIN_PIN;
+  if (
+    adminPin &&
+    pathname.startsWith('/admin') &&
+    pathname !== '/admin/verify'
+  ) {
+    const pinCookie = request.cookies.get('x-admin-pin-verified')?.value;
+    if (!pinCookie) {
+      return NextResponse.redirect(new URL('/admin/verify', request.url));
+    }
+  }
+
   return response;
 }
 
