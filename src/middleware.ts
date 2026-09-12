@@ -102,9 +102,13 @@ export async function middleware(request: NextRequest) {
   if (isProtectedRoute) {
     // Check for the Supabase auth cookie presence
     // (Full authorization happens in the page via protectRoute)
+    // Note: Supabase SSR v2+ may chunk large tokens into cookies like
+    // sb-xxx-auth-token.0, sb-xxx-auth-token.1, etc. — so we use
+    // includes() instead of endsWith() to match both chunked and
+    // non-chunked cookie names.
     const hasAuthCookie = request.cookies.getAll().some(
       (cookie) =>
-        cookie.name.startsWith('sb-') && cookie.name.endsWith('-auth-token')
+        cookie.name.startsWith('sb-') && cookie.name.includes('-auth-token')
     );
 
     if (!hasAuthCookie) {

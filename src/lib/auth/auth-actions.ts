@@ -59,23 +59,35 @@ export async function signInAction(formData: FormData): Promise<AuthActionResult
     return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' };
   }
 
-  const supabase = await createServerSupabaseClient();
-  const { error } = await supabase.auth.signInWithPassword({
+  let supabase;
+  try {
+    supabase = await createServerSupabaseClient();
+  } catch (err) {
+    logger.error('Failed to create Supabase client', err instanceof Error ? err : new Error(String(err)), {
+      feature: 'auth',
+      operation: 'sign_in',
+    });
+    return { error: 'Service temporarily unavailable. Please try again.' };
+  }
+
+  const { data: signInData, error } = await supabase.auth.signInWithPassword({
     email: parsed.data.email,
     password: parsed.data.password,
   });
 
-  if (error) {
+  if (error || !signInData.user) {
     logger.warn('Sign-in failed', {
       feature: 'auth',
       operation: 'sign_in',
       email: parsed.data.email,
-      errorMessage: error.message,
+      errorMessage: error?.message ?? 'No user returned',
     });
     return { error: 'Invalid email or password.' };
   }
 
   // Determine post-login redirect based on user role
+  // Use the user ID from signInWithPassword directly — don't re-call
+  // getUser() which relies on cookies being immediately readable.
   const returnTo = formData.get('returnTo') as string | null;
   let defaultRedirect = '/dashboard';
 
@@ -83,7 +95,7 @@ export async function signInAction(formData: FormData): Promise<AuthActionResult
   const { data: memberships } = await supabase
     .from('organization_members')
     .select('role')
-    .eq('user_id', (await supabase.auth.getUser()).data.user!.id)
+    .eq('user_id', signInData.user.id)
     .eq('status', 'active');
 
   const hasPlatformRole = (memberships ?? []).some((m) =>
