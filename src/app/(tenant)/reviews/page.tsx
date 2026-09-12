@@ -6,7 +6,7 @@
 // only approved/featured ones appear here.
 
 import { getTenantData } from '@/lib/tenant';
-import { createServerSupabaseClient } from '@/lib/database';
+import { getAdminClient } from '@/lib/database/supabase-admin';
 import { getPublicReviews } from '@/services/review-service';
 import type { Metadata } from 'next';
 
@@ -29,7 +29,7 @@ export default async function ReviewsPage() {
 
   const { organization, settings } = data;
   const primaryColor = settings?.primary_color ?? '#2563eb';
-  const client = await createServerSupabaseClient();
+  const client = getAdminClient();
   const reviews = await getPublicReviews(client, organization.id);
 
   // Calculate average rating

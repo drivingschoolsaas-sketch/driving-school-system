@@ -1,5 +1,5 @@
 import { getTenantData } from '@/lib/tenant';
-import { createServerSupabaseClient } from '@/lib/database';
+import { getAdminClient } from '@/lib/database/supabase-admin';
 import type { LessonType, Instructor } from '@/types/database';
 import type { Metadata } from 'next';
 import { BookingWidget } from './booking-widget';
@@ -19,7 +19,9 @@ export default async function BookPage() {
   const data = await getTenantData();
   if (!data) return <PageNotConfigured />;
 
-  const client = await createServerSupabaseClient();
+  // Use admin client — public website visitors are unauthenticated,
+  // and RLS blocks anon reads on these tables.
+  const client = getAdminClient();
   const orgId = data.organization.id;
 
   const [lessonTypesRes, instructorsRes] = await Promise.all([

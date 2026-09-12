@@ -63,7 +63,11 @@ export async function getDashboardContext(): Promise<DashboardContext> {
           redirect('/auth/sign-in');
         }
         orgId = overrideResolved.tenant.organizationId;
-      } catch {
+      } catch (err) {
+        // redirect() throws a special error — rethrow it
+        if (isRedirectError(err)) {
+          throw err;
+        }
         logger.warn('Dashboard: tenant override slug not found', {
           feature: 'dashboard',
           operation: 'get_dashboard_context',

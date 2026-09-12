@@ -25,8 +25,15 @@ export async function middleware(request: NextRequest) {
   );
 
   // Check for ?tenant= query parameter override (for testing on Vercel
-  // where wildcard subdomains aren't available on .vercel.app domains)
-  const tenantOverride = request.nextUrl.searchParams.get('tenant');
+  // where wildcard subdomains aren't available on .vercel.app domains).
+  // If no ?tenant= param, fall back to a previously-set cookie so that
+  // internal navigation (Link clicks) doesn't lose the tenant context.
+  let tenantOverride = request.nextUrl.searchParams.get('tenant');
+
+  if (!tenantOverride) {
+    // Fall back to cookie set by a previous ?tenant= request
+    tenantOverride = request.cookies.get('x-tenant-slug')?.value ?? null;
+  }
 
   // Build request headers that Server Components will see via headers().
   // NextResponse.next({ request: { headers } }) forwards these as
@@ -52,6 +59,20 @@ export async function middleware(request: NextRequest) {
   // Also set on response for browser dev tools visibility
   response.headers.set('x-hostname-type', classification.type);
   response.headers.set('x-normalized-hostname', classification.normalized);
+
+  // Persist the tenant slug in a cookie so internal navigation
+  // (Link clicks without ?tenant=) keeps the tenant context.
+  const tenantFromUrl = request.nextUrl.searchParams.get('tenant');
+  if (tenantFromUrl) {
+    // User navigated with ?tenant=slug — persist it
+    response.cookies.set('x-tenant-slug', tenantFromUrl, {
+      path: '/',
+      httpOnly: false,
+      sameSite: 'lax',
+      // 30 days; refreshed on each ?tenant= visit
+      maxAge: 60 * 60 * 24 * 30,
+    });
+  }
 
   // Refresh Supabase auth session (extends cookie expiry)
   // This must run on every request to keep sessions alive.

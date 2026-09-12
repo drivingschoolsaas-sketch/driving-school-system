@@ -58,7 +58,11 @@ export async function getPortalContext(): Promise<PortalContext> {
           redirect('/auth/sign-in');
         }
         orgId = overrideResolved.tenant.organizationId;
-      } catch {
+      } catch (err) {
+        // redirect() throws a special error — rethrow it
+        if (isRedirectError(err)) {
+          throw err;
+        }
         logger.warn('Portal: tenant override slug not found', {
           feature: 'portal',
           operation: 'get_portal_context',

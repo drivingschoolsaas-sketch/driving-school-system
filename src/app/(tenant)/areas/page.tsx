@@ -1,5 +1,5 @@
 import { getTenantData } from '@/lib/tenant';
-import { createServerSupabaseClient } from '@/lib/database';
+import { getAdminClient } from '@/lib/database/supabase-admin';
 import type { ServiceArea } from '@/types/database';
 import type { Metadata } from 'next';
 
@@ -11,7 +11,7 @@ export default async function AreasPage() {
   const data = await getTenantData();
   if (!data) return <PageNotConfigured />;
 
-  const client = await createServerSupabaseClient();
+  const client = getAdminClient();
   const { data: areasData } = await client
     .from('service_areas')
     .select('*')

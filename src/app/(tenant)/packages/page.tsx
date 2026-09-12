@@ -1,5 +1,5 @@
 import { getTenantData } from '@/lib/tenant';
-import { createServerSupabaseClient } from '@/lib/database';
+import { getAdminClient } from '@/lib/database/supabase-admin';
 import type { LessonPackage } from '@/types/database';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -12,7 +12,7 @@ export default async function PackagesPage() {
   const data = await getTenantData();
   if (!data) return <PageNotConfigured />;
 
-  const client = await createServerSupabaseClient();
+  const client = getAdminClient();
   const { data: packages } = await client
     .from('lesson_packages')
     .select('*')

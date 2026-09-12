@@ -1,5 +1,5 @@
 import { getTenantData } from '@/lib/tenant';
-import { createServerSupabaseClient } from '@/lib/database';
+import { getAdminClient } from '@/lib/database/supabase-admin';
 import type { Instructor } from '@/types/database';
 import type { Metadata } from 'next';
 
@@ -11,7 +11,7 @@ export default async function InstructorsPage() {
   const data = await getTenantData();
   if (!data) return <PageNotConfigured />;
 
-  const client = await createServerSupabaseClient();
+  const client = getAdminClient();
   const { data: instructorsData } = await client
     .from('instructors')
     .select('*')

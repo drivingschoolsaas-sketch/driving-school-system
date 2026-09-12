@@ -6,7 +6,7 @@
 // status='published' appear here.
 
 import { getTenantData } from '@/lib/tenant';
-import { createServerSupabaseClient } from '@/lib/database';
+import { getAdminClient } from '@/lib/database/supabase-admin';
 import { getPublicSuccessStories } from '@/services/success-story-service';
 import type { Metadata } from 'next';
 
@@ -29,7 +29,7 @@ export default async function SuccessStoriesPage() {
 
   const { organization, settings } = data;
   const primaryColor = settings?.primary_color ?? '#2563eb';
-  const client = await createServerSupabaseClient();
+  const client = getAdminClient();
   const stories = await getPublicSuccessStories(client, organization.id);
 
   return (

@@ -1,5 +1,5 @@
 import { getTenantData } from '@/lib/tenant';
-import { createServerSupabaseClient } from '@/lib/database';
+import { getAdminClient } from '@/lib/database/supabase-admin';
 import type { LessonType } from '@/types/database';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -12,7 +12,9 @@ export default async function LessonsPage() {
   const data = await getTenantData();
   if (!data) return <PageNotConfigured />;
 
-  const client = await createServerSupabaseClient();
+  // Use admin client — public website visitors are unauthenticated,
+  // and RLS blocks anon reads on lesson_types.
+  const client = getAdminClient();
   const { data: lessonTypes } = await client
     .from('lesson_types')
     .select('*')
