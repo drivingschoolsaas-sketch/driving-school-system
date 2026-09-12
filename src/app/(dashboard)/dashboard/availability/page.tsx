@@ -254,13 +254,10 @@ export default async function AvailabilityPage({ searchParams }: AvailabilityPag
                     >
                       <span className="text-lg">🚫</span>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white capitalize">
-                          {bt.reason.replace('_', ' ')}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
                           {bt.is_all_day
-                            ? start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                            : `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} ${start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} – ${end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`}
+                            ? start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                            : `${start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} ${start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} – ${end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`}
                         </p>
                         {bt.notes && (
                           <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{bt.notes}</p>
@@ -270,7 +267,7 @@ export default async function AvailabilityPage({ searchParams }: AvailabilityPag
                         className="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium capitalize"
                         style={{ backgroundColor: `${primaryColor}15`, color: primaryColor }}
                       >
-                        {bt.reason.replace('_', ' ')}
+                        {bt.reason.replaceAll('_', ' ')}
                       </span>
                       <DeleteBlockedTimeButton blockedTimeId={bt.id} />
                     </div>

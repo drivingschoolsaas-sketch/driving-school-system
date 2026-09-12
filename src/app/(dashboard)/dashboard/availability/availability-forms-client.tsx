@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useState, useTransition } from 'react';
+import { useActionState, useState, useEffect, useTransition } from 'react';
 import {
   createRuleAction,
   createExceptionAction,
@@ -40,7 +40,12 @@ export function AddRuleForm({ instructorId, primaryColor }: AddRuleProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [state, formAction, isPending] = useActionState(createRuleAction, initialState);
 
-  if (state.success && isOpen) setIsOpen(false);
+  // Close modal on success (effect-based to avoid render-time side effects)
+  useEffect(() => {
+    if (state.success) {
+      setIsOpen(false);
+    }
+  }, [state]);
 
   return (
     <>
@@ -81,7 +86,7 @@ export function AddRuleForm({ instructorId, primaryColor }: AddRuleProps) {
                 </div>
               </div>
 
-              {state.error && <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>}
+              {state.error && !state.success && <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>}
 
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={() => setIsOpen(false)}
@@ -114,7 +119,12 @@ export function AddExceptionForm({ instructorId, primaryColor }: AddExceptionPro
   const [isAvailable, setIsAvailable] = useState(false);
   const [state, formAction, isPending] = useActionState(createExceptionAction, initialState);
 
-  if (state.success && isOpen) setIsOpen(false);
+  // Close modal on success
+  useEffect(() => {
+    if (state.success) {
+      setIsOpen(false);
+    }
+  }, [state]);
 
   return (
     <>
@@ -167,7 +177,7 @@ export function AddExceptionForm({ instructorId, primaryColor }: AddExceptionPro
                 <input type="text" name="reason" maxLength={500} className={inputClass} placeholder="Optional" />
               </div>
 
-              {state.error && <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>}
+              {state.error && !state.success && <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>}
 
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={() => setIsOpen(false)}
@@ -200,7 +210,12 @@ export function AddBlockedTimeForm({ instructorId, primaryColor }: AddBlockedTim
   const [isAllDay, setIsAllDay] = useState(false);
   const [state, formAction, isPending] = useActionState(createBlockedTimeAction, initialState);
 
-  if (state.success && isOpen) setIsOpen(false);
+  // Close modal on success
+  useEffect(() => {
+    if (state.success) {
+      setIsOpen(false);
+    }
+  }, [state]);
 
   return (
     <>
@@ -262,7 +277,7 @@ export function AddBlockedTimeForm({ instructorId, primaryColor }: AddBlockedTim
                 <input type="text" name="notes" maxLength={1000} className={inputClass} placeholder="Optional" />
               </div>
 
-              {state.error && <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>}
+              {state.error && !state.success && <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>}
 
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={() => setIsOpen(false)}
@@ -287,57 +302,120 @@ export function AddBlockedTimeForm({ instructorId, primaryColor }: AddBlockedTim
 
 export function DeleteRuleButton({ ruleId }: { ruleId: string }) {
   const [isPending, startTransition] = useTransition();
+  const [showConfirm, setShowConfirm] = useState(false);
 
   function handleDelete() {
-    if (!confirm('Remove this time slot?')) return;
     startTransition(async () => {
       await deleteRuleAction(ruleId);
+      setShowConfirm(false);
     });
   }
 
   return (
-    <button onClick={handleDelete} disabled={isPending}
-      className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50"
-      title="Remove">
-      ✕
-    </button>
+    <>
+      <button onClick={() => setShowConfirm(true)} disabled={isPending}
+        className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50"
+        title="Remove">
+        ✕
+      </button>
+
+      {showConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-xs rounded-xl bg-white dark:bg-gray-800 shadow-xl p-6 space-y-4">
+            <p className="text-sm text-gray-700 dark:text-gray-300">Remove this time slot?</p>
+            <div className="flex justify-end gap-3">
+              <button type="button" onClick={() => setShowConfirm(false)}
+                className="rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                Cancel
+              </button>
+              <button type="button" onClick={handleDelete} disabled={isPending}
+                className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50">
+                {isPending ? 'Removing…' : 'Remove'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
 export function DeleteExceptionButton({ exceptionId }: { exceptionId: string }) {
   const [isPending, startTransition] = useTransition();
+  const [showConfirm, setShowConfirm] = useState(false);
 
   function handleDelete() {
-    if (!confirm('Remove this exception?')) return;
     startTransition(async () => {
       await deleteExceptionAction(exceptionId);
+      setShowConfirm(false);
     });
   }
 
   return (
-    <button onClick={handleDelete} disabled={isPending}
-      className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50"
-      title="Remove">
-      ✕
-    </button>
+    <>
+      <button onClick={() => setShowConfirm(true)} disabled={isPending}
+        className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50"
+        title="Remove">
+        ✕
+      </button>
+
+      {showConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-xs rounded-xl bg-white dark:bg-gray-800 shadow-xl p-6 space-y-4">
+            <p className="text-sm text-gray-700 dark:text-gray-300">Remove this exception?</p>
+            <div className="flex justify-end gap-3">
+              <button type="button" onClick={() => setShowConfirm(false)}
+                className="rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                Cancel
+              </button>
+              <button type="button" onClick={handleDelete} disabled={isPending}
+                className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50">
+                {isPending ? 'Removing…' : 'Remove'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
 export function DeleteBlockedTimeButton({ blockedTimeId }: { blockedTimeId: string }) {
   const [isPending, startTransition] = useTransition();
+  const [showConfirm, setShowConfirm] = useState(false);
 
   function handleDelete() {
-    if (!confirm('Remove this blocked time?')) return;
     startTransition(async () => {
       await deleteBlockedTimeAction(blockedTimeId);
+      setShowConfirm(false);
     });
   }
 
   return (
-    <button onClick={handleDelete} disabled={isPending}
-      className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50"
-      title="Remove">
-      ✕
-    </button>
+    <>
+      <button onClick={() => setShowConfirm(true)} disabled={isPending}
+        className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50"
+        title="Remove">
+        ✕
+      </button>
+
+      {showConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-xs rounded-xl bg-white dark:bg-gray-800 shadow-xl p-6 space-y-4">
+            <p className="text-sm text-gray-700 dark:text-gray-300">Remove this blocked time?</p>
+            <div className="flex justify-end gap-3">
+              <button type="button" onClick={() => setShowConfirm(false)}
+                className="rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                Cancel
+              </button>
+              <button type="button" onClick={handleDelete} disabled={isPending}
+                className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50">
+                {isPending ? 'Removing…' : 'Remove'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
