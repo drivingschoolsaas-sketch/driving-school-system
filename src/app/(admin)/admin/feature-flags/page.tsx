@@ -6,6 +6,7 @@
 import { getPlatformAdminContext } from '@/lib/auth';
 import { getAdminClient } from '@/lib/database';
 import { getFeatureFlags } from '@/services/platform-admin-service';
+import { FeatureFlagToggle } from './feature-flag-toggle';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -72,19 +73,11 @@ export default async function FeatureFlagsPage() {
                   )}
               </div>
               <div className="flex-shrink-0">
-                <div
-                  className={`h-6 w-11 rounded-full ${
-                    flag.is_enabled
-                      ? 'bg-green-500'
-                      : 'bg-gray-300 dark:bg-gray-600'
-                  }`}
-                >
-                  <div
-                    className={`h-5 w-5 translate-y-0.5 rounded-full bg-white shadow transition-transform ${
-                      flag.is_enabled ? 'translate-x-5.5' : 'translate-x-0.5'
-                    }`}
-                  />
-                </div>
+                <FeatureFlagToggle
+                  flagId={flag.id}
+                  flagName={flag.name}
+                  initialEnabled={flag.is_enabled}
+                />
               </div>
             </div>
           ))}

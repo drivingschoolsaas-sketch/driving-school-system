@@ -50,9 +50,11 @@ export default async function AuditLogsPage({ searchParams }: PageProps) {
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
               }`}
             >
-              {rt === 'feature_flag'
-                ? 'Feature Flags'
-                : rt.charAt(0).toUpperCase() + rt.slice(1) + 's'}
+              {rt === 'all'
+                ? 'All'
+                : rt === 'feature_flag'
+                  ? 'Feature Flags'
+                  : rt.charAt(0).toUpperCase() + rt.slice(1) + 's'}
             </a>
           )
         )}

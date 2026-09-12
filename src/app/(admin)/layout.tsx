@@ -39,7 +39,7 @@ export default async function PlatformAdminLayout({
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Sidebar */}
-      <aside className="hidden w-64 flex-shrink-0 border-r border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 lg:block">
+      <aside className="hidden w-64 flex-shrink-0 flex-col border-r border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 lg:flex">
         <div className="flex h-16 items-center border-b border-gray-200 px-6 dark:border-gray-700">
           <Link
             href="/admin"
@@ -81,11 +81,11 @@ export default async function PlatformAdminLayout({
 
       {/* Mobile header */}
       <div className="flex flex-1 flex-col">
-        <header className="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4 dark:border-gray-700 dark:bg-gray-800 lg:hidden">
-          <span className="text-lg font-bold text-gray-900 dark:text-white">
+        <header className="flex h-16 items-center gap-2 border-b border-gray-200 bg-white px-4 dark:border-gray-700 dark:bg-gray-800 lg:hidden">
+          <span className="text-lg font-bold text-gray-900 dark:text-white flex-shrink-0">
             🛡️ Admin
           </span>
-          <nav className="flex gap-2 overflow-x-auto">
+          <nav className="flex gap-2 overflow-x-auto flex-1">
             {NAV_ITEMS.map((item) => (
               <Link
                 key={item.href}
@@ -97,6 +97,9 @@ export default async function PlatformAdminLayout({
               </Link>
             ))}
           </nav>
+          <div className="flex-shrink-0">
+            <SignOutButton />
+          </div>
         </header>
 
         {/* Main content */}
