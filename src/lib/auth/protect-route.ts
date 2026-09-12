@@ -12,6 +12,7 @@
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import { createServerSupabaseClient } from '@/lib/database/supabase-server';
+import { getAdminClient } from '@/lib/database/supabase-admin';
 import { getSession } from './session';
 import {
   authorizeForOrganization,
@@ -19,7 +20,7 @@ import {
   requireRole,
   type AuthorizedContext,
 } from './authorization';
-import { resolveHostname } from '@/lib/tenant/resolve-hostname';
+import { resolveHostname, resolveTenantBySlug } from '@/lib/tenant/resolve-hostname';
 import type { TenantContext } from '@/lib/tenant/tenant-context';
 import type { UserRole } from '@/config/constants';
 import type { Permission } from '@/permissions/roles';
@@ -71,26 +72,45 @@ export async function protectRoute(options?: {
     redirect('/auth/sign-in');
   }
 
-  // Step 2: Resolve tenant from hostname
+  // Step 2: Resolve tenant from hostname (or ?tenant= override on Vercel)
   const headerStore = await headers();
   const hostname = headerStore.get('x-normalized-hostname') ?? headerStore.get('host') ?? 'localhost';
+  const tenantOverride = headerStore.get('x-tenant-override');
 
   const supabase = await createServerSupabaseClient();
+  const adminClient = getAdminClient();
 
   let resolved;
-  try {
-    resolved = await resolveHostname(hostname, {
-      platformDomain: PLATFORM_DOMAIN,
-      adminSubdomain: ADMIN_SUBDOMAIN,
-    }, supabase);
-  } catch {
-    logger.warn('Protected route: tenant resolution failed', {
-      feature: 'auth',
-      operation: 'protect_route',
-      hostname,
-      userId: user.id,
-    });
-    redirect('/auth/error?code=TENANT_RESOLUTION_FAILED');
+
+  // On Vercel (.vercel.app), hostname resolves as 'preview' not 'tenant'.
+  // Check for ?tenant= query parameter override first (set by middleware).
+  if (tenantOverride) {
+    try {
+      resolved = await resolveTenantBySlug(adminClient, tenantOverride, hostname);
+    } catch {
+      logger.warn('Protected route: tenant override slug not found', {
+        feature: 'auth',
+        operation: 'protect_route',
+        tenantOverride,
+        userId: user.id,
+      });
+      redirect('/auth/error?code=TENANT_RESOLUTION_FAILED');
+    }
+  } else {
+    try {
+      resolved = await resolveHostname(hostname, {
+        platformDomain: PLATFORM_DOMAIN,
+        adminSubdomain: ADMIN_SUBDOMAIN,
+      }, supabase);
+    } catch {
+      logger.warn('Protected route: tenant resolution failed', {
+        feature: 'auth',
+        operation: 'protect_route',
+        hostname,
+        userId: user.id,
+      });
+      redirect('/auth/error?code=TENANT_RESOLUTION_FAILED');
+    }
   }
 
   if (resolved.kind !== 'tenant') {

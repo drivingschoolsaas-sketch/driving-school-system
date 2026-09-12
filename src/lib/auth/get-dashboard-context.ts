@@ -7,9 +7,10 @@
 
 import 'server-only';
 import { redirect } from 'next/navigation';
+import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import { createServerSupabaseClient } from '@/lib/database';
 import { getAdminClient } from '@/lib/database/supabase-admin';
-import { resolveHostname } from '@/lib/tenant/resolve-hostname';
+import { resolveHostname, resolveTenantBySlug } from '@/lib/tenant/resolve-hostname';
 import { getServerEnv } from '@/config/env';
 import { logger } from '@/lib/logging';
 import { authorizeForOrganization, type AuthorizedContext } from './authorization';
@@ -41,23 +42,46 @@ export async function getDashboardContext(): Promise<DashboardContext> {
       redirect('/auth/sign-in');
     }
 
-    // 2. Resolve tenant from hostname
+    // 2. Resolve tenant from hostname (or ?tenant= override on Vercel)
     // Use admin client for hostname resolution — the localhost dev
     // fallback queries organizations without user context, and RLS
     // may block the anon client when the user isn't a member of the
     // first org returned.
     const headerStore = await headers();
     const hostname = headerStore.get('host') ?? 'localhost';
-    const resolved = await resolveHostname(hostname, {
-      platformDomain: env.NEXT_PUBLIC_PLATFORM_DOMAIN,
-      adminSubdomain: env.NEXT_PUBLIC_PLATFORM_ADMIN_SUBDOMAIN,
-    }, getAdminClient());
+    const tenantOverride = headerStore.get('x-tenant-override');
+    const adminClient = getAdminClient();
 
-    if (resolved.kind !== 'tenant') {
-      redirect('/auth/sign-in');
+    let orgId: string;
+
+    // On Vercel (.vercel.app), hostname resolves as 'preview' not 'tenant'.
+    // Check for ?tenant= query parameter override first (set by middleware).
+    if (tenantOverride) {
+      try {
+        const overrideResolved = await resolveTenantBySlug(adminClient, tenantOverride, hostname);
+        if (overrideResolved.kind !== 'tenant') {
+          redirect('/auth/sign-in');
+        }
+        orgId = overrideResolved.tenant.organizationId;
+      } catch {
+        logger.warn('Dashboard: tenant override slug not found', {
+          feature: 'dashboard',
+          operation: 'get_dashboard_context',
+          tenantOverride,
+        });
+        redirect('/auth/sign-in');
+      }
+    } else {
+      const resolved = await resolveHostname(hostname, {
+        platformDomain: env.NEXT_PUBLIC_PLATFORM_DOMAIN,
+        adminSubdomain: env.NEXT_PUBLIC_PLATFORM_ADMIN_SUBDOMAIN,
+      }, adminClient);
+
+      if (resolved.kind !== 'tenant') {
+        redirect('/auth/sign-in');
+      }
+      orgId = resolved.tenant.organizationId;
     }
-
-    const orgId = resolved.tenant.organizationId;
 
     // 3. Get user's memberships
     const { data: memberships } = await client
@@ -98,7 +122,7 @@ export async function getDashboardContext(): Promise<DashboardContext> {
   } catch (error) {
     // authorizeForOrganization throws AppError on failure
     // redirect() throws a special Next.js error — rethrow it
-    if (error instanceof Error && error.message === 'NEXT_REDIRECT') {
+    if (isRedirectError(error)) {
       throw error;
     }
 

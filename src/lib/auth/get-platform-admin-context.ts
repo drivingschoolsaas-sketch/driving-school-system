@@ -11,6 +11,7 @@
 
 import 'server-only';
 import { redirect } from 'next/navigation';
+import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import { createServerSupabaseClient } from '@/lib/database';
 import { getServerEnv } from '@/config/env';
 import { logger } from '@/lib/logging';
@@ -112,7 +113,7 @@ export async function getPlatformAdminContext(): Promise<PlatformAdminContext> {
     };
   } catch (error) {
     // redirect() throws a special Next.js error — rethrow it
-    if (error instanceof Error && error.message === 'NEXT_REDIRECT') {
+    if (isRedirectError(error)) {
       throw error;
     }
 
