@@ -9,7 +9,7 @@ import 'server-only';
 import { headers } from 'next/headers';
 import type { Organization, SchoolSettings, LessonType, LessonPackage, Instructor, ServiceArea, Review, HeroSlide } from '@/types/database';
 import { getAdminClient } from '@/lib/database/supabase-admin';
-import { resolveHostname } from './resolve-hostname';
+import { resolveHostname, resolveTenantBySlug } from './resolve-hostname';
 import { getServerEnv } from '@/config/env';
 import { logger } from '@/lib/logging';
 
@@ -42,6 +42,41 @@ export async function getTenantData(): Promise<TenantData | null> {
     // unauthenticated reads on organizations/settings tables, but
     // public website visitors are never authenticated.
     const adminClient = getAdminClient();
+
+    // Check for ?tenant= query parameter override (set by middleware).
+    // This allows testing tenant sites on Vercel where wildcard
+    // subdomains aren't available on .vercel.app domains.
+    const tenantOverride = headerStore.get('x-tenant-override');
+    if (tenantOverride) {
+      try {
+        const resolved = await resolveTenantBySlug(adminClient, tenantOverride, hostname);
+        if (resolved.kind === 'tenant') {
+          const orgId = resolved.tenant.organizationId;
+          const { data: org } = await adminClient
+            .from('organizations')
+            .select('*')
+            .eq('id', orgId)
+            .single();
+          if (!org) return null;
+          const { data: settings } = await adminClient
+            .from('school_settings')
+            .select('*')
+            .eq('organization_id', orgId)
+            .maybeSingle();
+          return {
+            organization: org as Organization,
+            settings: settings ? (settings as SchoolSettings) : null,
+          };
+        }
+      } catch {
+        // Fall through to normal hostname resolution
+        logger.debug('Tenant override slug not found, falling back to hostname', {
+          feature: 'tenant',
+          operation: 'get_tenant_data',
+          tenantOverride,
+        });
+      }
+    }
 
     const resolved = await resolveHostname(hostname, {
       platformDomain: env.NEXT_PUBLIC_PLATFORM_DOMAIN,

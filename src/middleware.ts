@@ -24,6 +24,10 @@ export async function middleware(request: NextRequest) {
     ADMIN_SUBDOMAIN
   );
 
+  // Check for ?tenant= query parameter override (for testing on Vercel
+  // where wildcard subdomains aren't available on .vercel.app domains)
+  const tenantOverride = request.nextUrl.searchParams.get('tenant');
+
   // Create response — we'll modify headers and cookies on it
   let response = NextResponse.next();
 
@@ -33,6 +37,11 @@ export async function middleware(request: NextRequest) {
 
   if (classification.subdomain) {
     response.headers.set('x-tenant-subdomain', classification.subdomain);
+  }
+
+  // Pass tenant override slug to Server Components via header
+  if (tenantOverride) {
+    response.headers.set('x-tenant-override', tenantOverride);
   }
 
   // Refresh Supabase auth session (extends cookie expiry)
@@ -67,6 +76,9 @@ export async function middleware(request: NextRequest) {
           );
           if (classification.subdomain) {
             response.headers.set('x-tenant-subdomain', classification.subdomain);
+          }
+          if (tenantOverride) {
+            response.headers.set('x-tenant-override', tenantOverride);
           }
         },
       },

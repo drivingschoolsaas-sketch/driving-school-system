@@ -1,6 +1,6 @@
 export { normalizeHostname, classifyHostname } from './domain-normalizer';
 export type { HostnameType, HostnameClassification } from './domain-normalizer';
-export { resolveHostname } from './resolve-hostname';
+export { resolveHostname, resolveTenantBySlug } from './resolve-hostname';
 export type {
   TenantContext,
   PlatformContext,

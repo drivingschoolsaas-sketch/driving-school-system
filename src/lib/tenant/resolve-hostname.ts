@@ -209,6 +209,56 @@ async function resolveTenantFromDatabase(
 }
 
 /**
+ * Resolve a tenant by organization slug.
+ * Used for ?tenant= query parameter override (testing on Vercel
+ * where wildcard subdomains aren't available on .vercel.app domains)
+ * and for localhost development via DEV_TENANT_SLUG.
+ */
+export async function resolveTenantBySlug(
+  client: SupabaseClient,
+  slug: string,
+  hostname: string = 'override'
+): Promise<ResolvedContext> {
+  const { data: org, error } = await client
+    .from('organizations')
+    .select('*')
+    .eq('slug', slug)
+    .in('status', ['active', 'trial'])
+    .single();
+
+  if (error || !org) {
+    logger.debug(`Tenant slug "${slug}" not found or not active`, {
+      feature: 'tenant',
+      operation: 'resolve_tenant_by_slug',
+      slug,
+    });
+    throw DomainErrors.unknownHost(hostname);
+  }
+
+  const organization = org as Organization;
+
+  logger.debug('Tenant resolved by slug', {
+    feature: 'tenant',
+    operation: 'resolve_tenant_by_slug',
+    organizationId: organization.id,
+    organizationSlug: organization.slug,
+  });
+
+  return {
+    kind: 'tenant',
+    tenant: {
+      organizationId: organization.id,
+      organizationName: organization.name,
+      organizationSlug: organization.slug,
+      organizationStatus: organization.status,
+      hostname,
+      timezone: organization.timezone,
+      currency: organization.currency,
+    },
+  };
+}
+
+/**
  * Development-only: resolve localhost to the organization specified
  * by the DEV_TENANT_SLUG env var. Explicit is better than silent.
  */
