@@ -12,8 +12,6 @@
 import 'server-only';
 import { redirect } from 'next/navigation';
 import { createServerSupabaseClient } from '@/lib/database';
-import { getAdminClient } from '@/lib/database/supabase-admin';
-import { resolveHostname } from '@/lib/tenant/resolve-hostname';
 import { getServerEnv } from '@/config/env';
 import { logger } from '@/lib/logging';
 import { isPlatformRole } from '@/permissions/roles';
@@ -56,33 +54,33 @@ export async function getPlatformAdminContext(): Promise<PlatformAdminContext> {
       redirect('/auth/sign-in');
     }
 
-    // 2. Verify hostname is the admin domain (or localhost in dev)
+    // 2. Verify hostname is the admin domain (or localhost/preview in dev/staging)
     const headerStore = await headers();
     const hostname = headerStore.get('host') ?? 'localhost';
-    const resolved = await resolveHostname(
+
+    // Import classifyHostname to do a quick check without a DB call
+    // when the hostname is a known preview/localhost type.
+    const { classifyHostname } = await import('@/lib/tenant/domain-normalizer');
+    const classification = classifyHostname(
       hostname,
-      {
-        platformDomain: env.NEXT_PUBLIC_PLATFORM_DOMAIN,
-        adminSubdomain: env.NEXT_PUBLIC_PLATFORM_ADMIN_SUBDOMAIN,
-      },
-      getAdminClient()
+      env.NEXT_PUBLIC_PLATFORM_DOMAIN,
+      env.NEXT_PUBLIC_PLATFORM_ADMIN_SUBDOMAIN
     );
 
-    // Allow platform_admin hostname, or localhost in development
-    const isLocalDev =
-      process.env.NODE_ENV === 'development' &&
-      (hostname === 'localhost' || hostname.startsWith('localhost:'));
+    // Allow platform_admin hostname, localhost in dev, or preview
+    // deployments (e.g., .vercel.app). Preview/localhost still require
+    // a valid platform role (checked in step 3 below).
+    const isAllowedHostname =
+      classification.type === 'platform_admin' ||
+      classification.type === 'localhost' ||
+      classification.type === 'preview';
 
-    if (resolved.kind === 'platform') {
-      const platformType = resolved.platform.type;
-      if (platformType !== 'platform_admin' && platformType !== 'localhost') {
-        redirect('/auth/sign-in');
-      }
-    } else if (!isLocalDev) {
+    if (!isAllowedHostname) {
       logger.warn('Platform admin access from non-admin hostname', {
         feature: 'platform_admin',
         operation: 'get_platform_admin_context',
         hostname,
+        hostnameType: classification.type,
       });
       redirect('/auth/sign-in');
     }
