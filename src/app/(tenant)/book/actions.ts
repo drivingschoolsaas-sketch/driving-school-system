@@ -174,7 +174,7 @@ export async function submitBookingRequestAction(
 
     if (insertError) {
       console.error('Booking insert error:', insertError);
-      return { success: false, error: `Booking error: ${insertError.message || insertError.details || insertError.code || JSON.stringify(insertError)}` };
+      return { success: false, error: 'Failed to submit booking. Please try again.' };
     }
 
     // Send confirmation email to the visitor (fire-and-forget)
