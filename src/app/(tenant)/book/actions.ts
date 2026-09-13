@@ -32,7 +32,9 @@ export async function getAvailableSlotsAction(
   const data = await getTenantData();
   if (!data) return [];
 
-  const client = await createServerSupabaseClient();
+  // Use admin client — public visitors are unauthenticated,
+  // and RLS blocks anon reads on these tables.
+  const client = getAdminClient();
   const orgId = data.organization.id;
 
   // Fetch all availability data for this instructor/date

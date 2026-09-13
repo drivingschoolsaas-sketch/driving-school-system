@@ -200,11 +200,12 @@ function getWorkingWindows(
     return [];
   }
 
-  // Fall back to recurring rules
-  const rule = rules.find((r) => r.day_of_week === dayOfWeek && r.is_active);
-  if (!rule) return [];
+  // Fall back to recurring rules — an instructor may have multiple
+  // time slots on the same day (e.g. morning + afternoon)
+  const dayRules = rules.filter((r) => r.day_of_week === dayOfWeek && r.is_active);
+  if (dayRules.length === 0) return [];
 
-  return [[timeToMinutes(rule.start_time), timeToMinutes(rule.end_time)]];
+  return dayRules.map((r) => [timeToMinutes(r.start_time), timeToMinutes(r.end_time)] as [number, number]);
 }
 
 /**
