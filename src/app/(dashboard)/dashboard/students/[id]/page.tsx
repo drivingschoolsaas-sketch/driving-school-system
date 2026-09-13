@@ -242,7 +242,7 @@ export default async function StudentDetailPage({ params }: PageProps) {
                           statusColors[b.status] ?? ''
                         }`}
                       >
-                        {b.status.replace('_', ' ')}
+                        {b.status.replaceAll('_', ' ')}
                       </span>
                     </div>
                   </div>

@@ -4,7 +4,7 @@
 // Create Booking Form (Client Component)
 // ==================================================
 
-import { useActionState, useState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import { createBookingAction, type BookingActionState } from './actions';
 
 interface Props {
@@ -25,9 +25,9 @@ export function CreateBookingForm({ instructors, students, lessonTypes, vehicles
   // Auto-calculate end time based on lesson type duration
   const lessonType = lessonTypes.find((lt) => lt.id === selectedLessonType);
 
-  if (state.success && isOpen) {
-    setIsOpen(false);
-  }
+  useEffect(() => {
+    if (state.success) setIsOpen(false);
+  }, [state]);
 
   return (
     <>

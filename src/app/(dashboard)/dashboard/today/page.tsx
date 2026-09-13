@@ -59,7 +59,7 @@ export default async function TodayModePage() {
   const bookings = (bookingsData ?? []) as Booking[];
 
   // Fetch related data
-  const studentIds = [...new Set(bookings.map((b) => b.student_id))];
+  const studentIds = [...new Set(bookings.map((b) => b.student_id).filter(Boolean))] as string[];
   const lessonTypeIds = [...new Set(bookings.map((b) => b.lesson_type_id))];
 
   let students: Student[] = [];
@@ -260,7 +260,7 @@ function LessonCard({
         <span
           className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${statusColors[booking.status] ?? ''}`}
         >
-          {booking.status.replace('_', ' ')}
+          {booking.status.replaceAll('_', ' ')}
         </span>
       </div>
 

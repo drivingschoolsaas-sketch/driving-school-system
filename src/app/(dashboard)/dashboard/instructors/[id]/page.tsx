@@ -308,7 +308,7 @@ export default async function InstructorDetailPage({ params }: PageProps) {
                               STATUS_COLORS[b.status] ?? ''
                             }`}
                           >
-                            {b.status.replace('_', ' ')}
+                            {b.status.replaceAll('_', ' ')}
                           </span>
                         </div>
                       );

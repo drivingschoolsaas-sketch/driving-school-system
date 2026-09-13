@@ -89,7 +89,7 @@ export async function recordPaymentAction(
               variables: {
                 student_name: (student as { display_name: string }).display_name,
                 amount: `$${amountDollars.toFixed(2)}`,
-                description: input.description ?? input.payment_type.replace('_', ' '),
+                description: input.description ?? input.payment_type.replaceAll('_', ' '),
                 date: new Date().toLocaleDateString('en-AU'),
                 school_name: (org as { name: string }).name,
               },

@@ -85,7 +85,7 @@ export default async function PlatformAdminLayout({
           </p>
           <div className="flex items-center gap-2">
             <p className="text-xs capitalize text-gray-500 dark:text-gray-400">
-              {admin.role.replace('_', ' ')}
+              {admin.role.replaceAll('_', ' ')}
             </p>
             <span className="text-xs text-gray-300 dark:text-gray-600">|</span>
             <SignOutButton />

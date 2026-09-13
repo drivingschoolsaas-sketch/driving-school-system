@@ -291,7 +291,7 @@ function BookingCard({
       <span
         className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium capitalize ${statusColors[booking.status] ?? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}`}
       >
-        {booking.status.replace('_', ' ')}
+        {booking.status.replaceAll('_', ' ')}
       </span>
       {/* Price */}
       <span className="shrink-0 text-sm font-semibold text-gray-900 dark:text-white">

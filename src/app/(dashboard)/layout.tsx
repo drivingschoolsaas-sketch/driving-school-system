@@ -109,7 +109,7 @@ export default async function DashboardLayout({
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-medium text-gray-900 dark:text-white capitalize truncate">
-                  {auth.role.replace('_', ' ')}
+                  {auth.role.replaceAll('_', ' ')}
                 </p>
                 <div className="flex items-center gap-2">
                   <Link

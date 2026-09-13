@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import { updateProfileAction, type ProfileActionState } from './actions';
 
 interface Props {
@@ -25,7 +25,9 @@ export function ProfileEditForm({ student, primaryColor }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [state, formAction, isPending] = useActionState(updateProfileAction, initialState);
 
-  if (state.success && isOpen) setIsOpen(false);
+  useEffect(() => {
+    if (state.success) setIsOpen(false);
+  }, [state]);
 
   return (
     <>

@@ -9,7 +9,6 @@
 
 import { revalidatePath } from 'next/cache';
 import { getTenantData } from '@/lib/tenant';
-import { createServerSupabaseClient } from '@/lib/database';
 import { getAdminClient } from '@/lib/database/supabase-admin';
 import { computeAvailableSlots, type AvailableSlot } from '@/services/availability-engine';
 import { notifyPublicBookingReceived } from '@/services/booking-notifications';
@@ -178,9 +177,11 @@ export async function submitBookingRequestAction(
     }
 
     // Send confirmation email to the visitor (fire-and-forget)
-    const serverClient = await createServerSupabaseClient();
+    // Use admin client — public visitors are unauthenticated so
+    // a cookie-based client would have no session and RLS queries
+    // inside the notification helper would silently fail.
     notifyPublicBookingReceived(
-      serverClient,
+      adminClient,
       orgId,
       customerEmail,
       customerName,

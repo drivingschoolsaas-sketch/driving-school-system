@@ -113,7 +113,7 @@ export default async function AuditLogsPage({ searchParams }: PageProps) {
                     {log.user_email ?? log.user_id.substring(0, 8) + '…'}
                     {log.user_role && (
                       <span className="ml-1 text-xs capitalize text-gray-400">
-                        ({log.user_role.replace('_', ' ')})
+                        ({log.user_role.replaceAll('_', ' ')})
                       </span>
                     )}
                   </td>

@@ -227,7 +227,7 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
                     <span
                       className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${statusColors[booking.status] ?? ''}`}
                     >
-                      {booking.status.replace('_', ' ')}
+                      {booking.status.replaceAll('_', ' ')}
                     </span>
                     <p className="text-sm font-semibold text-gray-900 dark:text-white mt-1">
                       ${(booking.price_cents / 100).toFixed(0)}

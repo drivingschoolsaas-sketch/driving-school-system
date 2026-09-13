@@ -211,7 +211,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
           <div key={status} className="flex items-center gap-1.5">
             <span className={`h-3 w-3 rounded-sm ${colors.bg} ${colors.border} border-l-2`} />
             <span className="text-gray-600 dark:text-gray-400 capitalize">
-              {status.replace('_', ' ')}
+              {status.replaceAll('_', ' ')}
             </span>
           </div>
         ))}
@@ -348,7 +348,7 @@ function CalendarBookingCard({
         )}
       </div>
       <span className={`shrink-0 text-xs font-medium capitalize ${colors.text}`}>
-        {booking.status.replace('_', ' ')}
+        {booking.status.replaceAll('_', ' ')}
       </span>
       <span className="shrink-0 text-sm font-semibold text-gray-900 dark:text-white">
         ${(booking.price_cents / 100).toFixed(0)}

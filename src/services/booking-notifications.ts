@@ -256,6 +256,10 @@ export async function resolveBookingNotificationParams(
 
     if (!booking) return null;
 
+    // Public bookings (walk-ins) have no student — this function
+    // is only for dashboard-created bookings linked to a student.
+    if (!booking.student_id) return null;
+
     const [studentRes, instructorRes, ltRes, orgRes, settingsRes] = await Promise.all([
       client
         .from('students')

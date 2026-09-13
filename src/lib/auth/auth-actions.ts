@@ -47,6 +47,7 @@ export async function signInAction(formData: FormData): Promise<AuthActionResult
     if (err instanceof RateLimitError) {
       return { error: 'Too many sign-in attempts. Please try again later.' };
     }
+    throw err;
   }
 
   const raw = {
@@ -125,6 +126,7 @@ export async function signUpAction(formData: FormData): Promise<AuthActionResult
     if (err instanceof RateLimitError) {
       return { error: 'Too many sign-up attempts. Please try again later.' };
     }
+    throw err;
   }
 
   const raw = {
@@ -186,6 +188,7 @@ export async function forgotPasswordAction(formData: FormData): Promise<AuthActi
     if (err instanceof RateLimitError) {
       return { error: 'Too many requests. Please try again later.' };
     }
+    throw err;
   }
 
   const raw = { email: formData.get('email') };

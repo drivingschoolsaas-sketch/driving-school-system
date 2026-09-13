@@ -207,7 +207,7 @@ export default async function OrganizationDetailPage({ params }: PageProps) {
                         )}
                       </div>
                       <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-                        {d.domain_type.replace('_', ' ')}
+                        {d.domain_type.replaceAll('_', ' ')}
                       </p>
                     </div>
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${ds.className}`}>
@@ -246,7 +246,7 @@ export default async function OrganizationDetailPage({ params }: PageProps) {
                       {m.user_id}
                     </td>
                     <td className="py-2 pr-4 capitalize">
-                      {m.role.replace('_', ' ')}
+                      {m.role.replaceAll('_', ' ')}
                     </td>
                     <td className="py-2 pr-4 capitalize">{m.status}</td>
                     <td className="py-2 text-xs text-gray-500 dark:text-gray-400">

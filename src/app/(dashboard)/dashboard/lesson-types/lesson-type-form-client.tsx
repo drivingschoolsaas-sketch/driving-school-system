@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import { createLessonTypeAction, type LessonTypeActionState } from './actions';
 
 interface Props {
@@ -13,7 +13,9 @@ export function AddLessonTypeForm({ primaryColor }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [state, formAction, isPending] = useActionState(createLessonTypeAction, initialState);
 
-  if (state.success && isOpen) setIsOpen(false);
+  useEffect(() => {
+    if (state.success) setIsOpen(false);
+  }, [state]);
 
   return (
     <>

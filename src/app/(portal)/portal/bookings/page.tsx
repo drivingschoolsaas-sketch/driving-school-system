@@ -134,7 +134,7 @@ export default async function PortalBookingsPage({ searchParams }: BookingsPageP
                   <span
                     className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${statusColors[booking.status] ?? ''}`}
                   >
-                    {booking.status.replace('_', ' ')}
+                    {booking.status.replaceAll('_', ' ')}
                   </span>
                 </div>
 

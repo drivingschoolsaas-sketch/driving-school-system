@@ -198,7 +198,7 @@ export default async function PortalDashboardPage() {
                   <span
                     className="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium capitalize bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                   >
-                    {booking.status.replace('_', ' ')}
+                    {booking.status.replaceAll('_', ' ')}
                   </span>
                 </div>
               );
