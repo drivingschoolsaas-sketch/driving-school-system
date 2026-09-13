@@ -149,7 +149,7 @@ export default async function TodayModePage() {
           </h2>
           <LessonCard
             booking={nextLesson}
-            student={studentMap.get(nextLesson.student_id)}
+            student={nextLesson.student_id ? studentMap.get(nextLesson.student_id) : undefined}
             lessonType={lessonTypeMap.get(nextLesson.lesson_type_id)}
             statusColors={statusColors}
             primaryColor={primaryColor}
@@ -169,7 +169,7 @@ export default async function TodayModePage() {
               <LessonCard
                 key={booking.id}
                 booking={booking}
-                student={studentMap.get(booking.student_id)}
+                student={booking.student_id ? studentMap.get(booking.student_id) : undefined}
                 lessonType={lessonTypeMap.get(booking.lesson_type_id)}
                 statusColors={statusColors}
                 primaryColor={primaryColor}
@@ -190,7 +190,7 @@ export default async function TodayModePage() {
               <LessonCard
                 key={booking.id}
                 booking={booking}
-                student={studentMap.get(booking.student_id)}
+                student={booking.student_id ? studentMap.get(booking.student_id) : undefined}
                 lessonType={lessonTypeMap.get(booking.lesson_type_id)}
                 statusColors={statusColors}
                 primaryColor={primaryColor}

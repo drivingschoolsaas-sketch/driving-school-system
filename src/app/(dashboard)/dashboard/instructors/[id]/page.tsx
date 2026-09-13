@@ -274,7 +274,7 @@ export default async function InstructorDetailPage({ params }: PageProps) {
                     {dayBookings.map((b) => {
                       const start = new Date(b.start_datetime);
                       const end = new Date(b.end_datetime);
-                      const studentName = studentMap.get(b.student_id) ?? 'Unknown';
+                      const studentName = (b.student_id ? studentMap.get(b.student_id) : null) ?? 'Walk-in';
                       const lt = ltMap.get(b.lesson_type_id);
 
                       return (

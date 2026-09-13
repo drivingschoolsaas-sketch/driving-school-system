@@ -183,7 +183,7 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
         <div className="space-y-3">
           {bookings.map((booking) => {
             const inst = instructorMap.get(booking.instructor_id);
-            const student = studentMap.get(booking.student_id);
+            const student = booking.student_id ? studentMap.get(booking.student_id) : undefined;
             const lt = lessonTypeMap.get(booking.lesson_type_id);
             const start = new Date(booking.start_datetime);
             const end = new Date(booking.end_datetime);
