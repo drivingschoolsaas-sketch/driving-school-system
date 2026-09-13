@@ -361,7 +361,7 @@ export interface Booking {
   id: string;
   organization_id: string;
   instructor_id: string;
-  student_id: string;
+  student_id: string | null;
   lesson_type_id: string;
   vehicle_id: string | null;
   start_datetime: string; // ISO 8601
@@ -377,7 +377,7 @@ export interface Booking {
   cancelled_by: string | null;
   cancellation_reason: string | null;
   rescheduled_from_id: string | null;
-  created_by: string;
+  created_by: string | null;
   created_at: string;
   updated_at: string;
 }
