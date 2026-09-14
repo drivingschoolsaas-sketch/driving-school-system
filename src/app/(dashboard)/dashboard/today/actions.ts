@@ -10,6 +10,7 @@ import { revalidatePath } from 'next/cache';
 import { getDashboardContext, requirePermission } from '@/lib/auth';
 import { PERMISSIONS } from '@/permissions/roles';
 import { createServerSupabaseClient } from '@/lib/database';
+import { getAdminClient } from '@/lib/database/supabase-admin';
 import { audit } from '@/lib/audit';
 import {
   resolveBookingNotificationParams,
@@ -73,8 +74,9 @@ export async function startLessonAction(
     audit(client, auth, { action: 'booking.started', resourceType: 'booking', resourceId: bookingId });
 
     // Notify student of confirmation (fire-and-forget)
-    resolveBookingNotificationParams(client, auth.organizationId, bookingId).then((params) => {
-      if (params) notifyBookingConfirmed(client, params);
+    const ac = getAdminClient();
+    resolveBookingNotificationParams(ac, auth.organizationId, bookingId).then((params) => {
+      if (params) notifyBookingConfirmed(ac, params);
     });
 
     revalidatePath('/dashboard/today');
@@ -135,8 +137,9 @@ export async function completeLessonAction(
     audit(client, auth, { action: 'booking.completed', resourceType: 'booking', resourceId: bookingId });
 
     // Send review request notification (fire-and-forget)
-    resolveBookingNotificationParams(client, auth.organizationId, bookingId).then((params) => {
-      if (params) notifyLessonCompleted(client, params);
+    const ac2 = getAdminClient();
+    resolveBookingNotificationParams(ac2, auth.organizationId, bookingId).then((params) => {
+      if (params) notifyLessonCompleted(ac2, params);
     });
 
     revalidatePath('/dashboard/today');

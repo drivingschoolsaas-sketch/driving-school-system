@@ -48,9 +48,13 @@ export async function getMediaAssets(
   }
 
   if (options?.search) {
-    query = query.or(
-      `filename.ilike.%${options.search}%,alt_text.ilike.%${options.search}%`
-    );
+    // Sanitize search to prevent PostgREST filter injection
+    const safe = options.search.replace(/[%,().*\\]/g, '');
+    if (safe) {
+      query = query.or(
+        `filename.ilike.%${safe}%,alt_text.ilike.%${safe}%`
+      );
+    }
   }
 
   query = query.range(

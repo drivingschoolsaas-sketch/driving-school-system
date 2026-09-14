@@ -4,7 +4,8 @@
 // View current plan, usage, billing interval,
 // and manage subscription. School owner only.
 
-import { getDashboardContext } from '@/lib/auth';
+import { getDashboardContext, requireRole } from '@/lib/auth';
+import { USER_ROLES } from '@/config/constants';
 import { createServerSupabaseClient } from '@/lib/database';
 import { getSubscription, getPlans, getCurrentUsage } from '@/services/subscription-service';
 import { getEntitlements } from '@/services/entitlement-service';
@@ -59,6 +60,7 @@ function formatDate(dateStr: string | null): string {
 
 export default async function BillingPage() {
   const { auth } = await getDashboardContext();
+  requireRole(auth, USER_ROLES.SCHOOL_OWNER);
   const client = await createServerSupabaseClient();
 
   const [subscription, plans, usage, entitlements] = await Promise.all([

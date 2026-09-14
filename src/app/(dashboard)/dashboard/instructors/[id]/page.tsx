@@ -116,15 +116,15 @@ export default async function InstructorDetailPage({ params }: PageProps) {
   const cancelledCount = allBookings.filter((b) => b.status === 'cancelled').length;
   const totalRevenueCents = allBookings
     .filter((b) => b.status === 'completed')
-    .reduce((sum, b) => sum + b.price_cents, 0);
-  const uniqueStudentIds = new Set(allBookings.map((b) => b.student_id));
+    .reduce((sum, b) => sum + (b.price_cents ?? 0), 0);
+  const uniqueStudentIds = new Set(allBookings.map((b) => b.student_id).filter(Boolean));
   const avgRating =
     reviews.length > 0
       ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
       : null;
 
   // Get student names for upcoming bookings
-  const upcomingStudentIds = [...new Set(upcomingBookings.map((b) => b.student_id))];
+  const upcomingStudentIds = [...new Set(upcomingBookings.map((b) => b.student_id).filter((id): id is string => id !== null))];
   let studentMap = new Map<string, string>();
   if (upcomingStudentIds.length > 0) {
     const { data: students } = await client

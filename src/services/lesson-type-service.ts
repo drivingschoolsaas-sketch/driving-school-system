@@ -93,8 +93,8 @@ export async function createLessonType(
   const { data, error } = await client
     .from('lesson_types')
     .insert({
-      organization_id: context.organizationId,
       ...input,
+      organization_id: context.organizationId,
     })
     .select()
     .single();

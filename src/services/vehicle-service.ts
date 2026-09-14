@@ -63,8 +63,8 @@ export async function createVehicle(
   const { data, error } = await client
     .from('vehicles')
     .insert({
-      organization_id: context.organizationId,
       ...input,
+      organization_id: context.organizationId,
     })
     .select()
     .single();

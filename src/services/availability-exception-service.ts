@@ -80,8 +80,8 @@ export async function createAvailabilityException(
   const { data, error } = await client
     .from('availability_exceptions')
     .insert({
-      organization_id: context.organizationId,
       ...input,
+      organization_id: context.organizationId,
     })
     .select()
     .single();

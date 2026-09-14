@@ -139,9 +139,9 @@ export async function createBooking(
   const { data, error } = await client
     .from('bookings')
     .insert({
+      ...input,
       organization_id: context.organizationId,
       created_by: context.userId,
-      ...input,
     })
     .select()
     .single();
@@ -251,12 +251,13 @@ export async function transitionBookingStatus(
     throw BookingErrors.invalidStatusTransition(current.status, newStatus);
   }
 
-  // Update status
+  // Update status — include current status check to prevent TOCTOU race
   const { data, error } = await client
     .from('bookings')
     .update({ status: newStatus })
     .eq('id', bookingId)
     .eq('organization_id', context.organizationId)
+    .eq('status', current.status)
     .select()
     .single();
 

@@ -8,6 +8,7 @@
 import { revalidatePath } from 'next/cache';
 import { getDashboardContext, requirePermission } from '@/lib/auth';
 import { createServerSupabaseClient } from '@/lib/database';
+import { getAdminClient } from '@/lib/database/supabase-admin';
 import { PERMISSIONS } from '@/permissions/roles';
 import {
   createBooking,
@@ -62,9 +63,10 @@ export async function createBookingAction(
     const booking = await createBooking(client, auth, input);
     audit(client, auth, { action: 'booking.created', resourceType: 'booking', resourceId: booking.id });
 
-    // Notify student of new booking (fire-and-forget)
-    resolveBookingNotificationParams(client, auth.organizationId, booking.id).then((params) => {
-      if (params) notifyBookingConfirmed(client, params);
+    // Notify student of new booking (fire-and-forget, use admin client to survive after response)
+    const ac = getAdminClient();
+    resolveBookingNotificationParams(ac, auth.organizationId, booking.id).then((params) => {
+      if (params) notifyBookingConfirmed(ac, params);
     });
 
     revalidatePath('/dashboard/bookings');
@@ -94,12 +96,13 @@ export async function transitionStatusAction(
     await transitionBookingStatus(client, auth, bookingId, input.status, input.reason);
     audit(client, auth, { action: `booking.${input.status}`, resourceType: 'booking', resourceId: bookingId });
 
-    // Send appropriate notification based on new status
-    resolveBookingNotificationParams(client, auth.organizationId, bookingId).then((params) => {
+    // Send appropriate notification based on new status (admin client survives after response)
+    const ac2 = getAdminClient();
+    resolveBookingNotificationParams(ac2, auth.organizationId, bookingId).then((params) => {
       if (!params) return;
-      if (input.status === 'confirmed') notifyBookingConfirmed(client, params);
-      else if (input.status === 'completed') notifyLessonCompleted(client, params);
-      else if (input.status === 'cancelled') notifyBookingCancelled(client, params, input.reason ?? undefined);
+      if (input.status === 'confirmed') notifyBookingConfirmed(ac2, params);
+      else if (input.status === 'completed') notifyLessonCompleted(ac2, params);
+      else if (input.status === 'cancelled') notifyBookingCancelled(ac2, params, input.reason ?? undefined);
     });
 
     revalidatePath('/dashboard/bookings');
@@ -177,9 +180,10 @@ export async function rescheduleBookingAction(
       details: { new_start: input.new_start_datetime, reason },
     });
 
-    // Notify student of the change (fire-and-forget)
-    resolveBookingNotificationParams(client, auth.organizationId, bookingId).then((params) => {
-      if (params) notifyBookingChanged(client, params);
+    // Notify student of the change (fire-and-forget, admin client survives after response)
+    const ac3 = getAdminClient();
+    resolveBookingNotificationParams(ac3, auth.organizationId, bookingId).then((params) => {
+      if (params) notifyBookingChanged(ac3, params);
     });
 
     revalidatePath('/dashboard/bookings');

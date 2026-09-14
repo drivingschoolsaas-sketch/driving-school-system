@@ -68,7 +68,8 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
     query = query.gte('start_datetime', params.from);
   }
   if (params.to) {
-    query = query.lte('start_datetime', params.to);
+    // Append end-of-day time so bookings ON the "to" date are included
+    query = query.lt('start_datetime', params.to + 'T24:00:00');
   }
 
   const [bookingsRes, instructorsRes, studentsRes, lessonTypesRes, vehiclesRes] = await Promise.all([

@@ -65,7 +65,7 @@ export default async function StudentDetailPage({ params }: PageProps) {
       .select('amount_cents')
       .eq('organization_id', orgId)
       .eq('student_id', studentId)
-      .eq('status', 'completed'),
+      .eq('status', 'succeeded'),
   ]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

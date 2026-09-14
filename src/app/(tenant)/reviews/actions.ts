@@ -88,17 +88,35 @@ async function notifyNewReview(
   try {
     const stars = '★'.repeat(rating) + '☆'.repeat(5 - rating);
 
+    // Look up the school owner's email for the notification recipient
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: ownerMember } = await (client as any)
+      .from('organization_members')
+      .select('user_id')
+      .eq('organization_id', organizationId)
+      .eq('role', 'school_owner')
+      .eq('status', 'active')
+      .limit(1)
+      .single();
+
+    const ownerId = (ownerMember as { user_id?: string } | null)?.user_id;
+    let ownerEmail: string | null = null;
+    if (ownerId) {
+      const { data: userData } = await client.auth.admin.getUserById(ownerId);
+      ownerEmail = userData?.user?.email ?? null;
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await client.from('notifications').insert({
       organization_id: organizationId,
       notification_type: 'custom',
       channel: 'email',
-      recipient_email: null,
+      recipient_user_id: ownerId ?? null,
+      recipient_email: ownerEmail,
       recipient_name: 'School Admin',
       subject: `New Review Pending — ${reviewerName} (${stars})`,
       body: `A new ${rating}-star review from ${reviewerName} is waiting for your approval. Go to Dashboard → Reviews to approve or reject it.`,
-      status: 'sent',
-      sent_at: new Date().toISOString(),
+      status: 'queued',
       metadata: { source: 'public_review' },
     } as any);
   } catch {

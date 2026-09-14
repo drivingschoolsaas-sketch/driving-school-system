@@ -8,6 +8,7 @@
 import { revalidatePath } from 'next/cache';
 import { getPortalContext } from '@/lib/auth';
 import { createServerSupabaseClient } from '@/lib/database';
+import { getAdminClient } from '@/lib/database/supabase-admin';
 import {
   resolveBookingNotificationParams,
   notifyBookingCancelled,
@@ -73,9 +74,10 @@ export async function cancelOwnBookingAction(
 
     if (updateError) throw updateError;
 
-    // Notify student of cancellation (fire-and-forget)
-    resolveBookingNotificationParams(client, auth.organizationId, bookingId).then((params) => {
-      if (params) notifyBookingCancelled(client, params, reason ?? 'Cancelled by student');
+    // Notify student of cancellation (fire-and-forget, admin client survives after response)
+    const ac = getAdminClient();
+    resolveBookingNotificationParams(ac, auth.organizationId, bookingId).then((params) => {
+      if (params) notifyBookingCancelled(ac, params, reason ?? 'Cancelled by student');
     });
 
     revalidatePath('/portal/bookings');

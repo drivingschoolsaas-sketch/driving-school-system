@@ -105,6 +105,15 @@ export async function middleware(request: NextRequest) {
             'x-normalized-hostname',
             classification.normalized
           );
+          // Re-apply tenant cookie (lost when response was recreated)
+          if (tenantFromUrl) {
+            response.cookies.set('x-tenant-slug', tenantFromUrl, {
+              path: '/',
+              httpOnly: false,
+              sameSite: 'lax',
+              maxAge: 60 * 60 * 24 * 30,
+            });
+          }
         },
       },
     });

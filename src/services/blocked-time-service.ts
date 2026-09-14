@@ -80,8 +80,8 @@ export async function createBlockedTime(
   const { data, error } = await client
     .from('blocked_times')
     .insert({
-      organization_id: context.organizationId,
       ...input,
+      organization_id: context.organizationId,
     })
     .select()
     .single();

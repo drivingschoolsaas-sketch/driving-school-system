@@ -41,7 +41,7 @@ export default async function OrganizationDetailPage({ params }: PageProps) {
       ac.from('bookings').select('id', { count: 'exact', head: true }).eq('organization_id', id),
       ac.from('organization_domains').select('id, hostname, domain_type, status, is_primary, verified_at').eq('organization_id', id).order('is_primary', { ascending: false }),
       ac.from('organization_members').select('user_id, role, status, created_at').eq('organization_id', id).order('created_at'),
-      ac.from('bookings').select('id, status, price_cents').eq('organization_id', id).not('status', 'in', '("cancelled","rejected")'),
+      ac.from('bookings').select('id, status, price_cents').eq('organization_id', id).not('status', 'in', '(cancelled,rejected)'),
     ]);
 
   const studentCount = studentsRes.count ?? 0;
@@ -65,7 +65,7 @@ export default async function OrganizationDetailPage({ params }: PageProps) {
     price_cents: number;
     status: string;
   }>;
-  const totalRevenueCents = activeBookings.reduce((sum: number, b: { price_cents: number }) => sum + b.price_cents, 0);
+  const totalRevenueCents = activeBookings.reduce((sum: number, b: { price_cents: number }) => sum + (b.price_cents ?? 0), 0);
 
   const sub = Array.isArray(org.subscription) ? org.subscription[0] : org.subscription;
   const plan = sub?.plan;

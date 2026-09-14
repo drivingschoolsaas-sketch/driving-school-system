@@ -116,8 +116,8 @@ export async function addMember(
     );
   }
 
-  if (existing && existing.status !== 'removed') {
-    // Reactivate existing membership
+  if (existing) {
+    // Reactivate existing membership (handles 'invited', 'suspended', and 'removed')
     const { data, error } = await client
       .from('organization_members')
       .update({ role, status: 'active' })

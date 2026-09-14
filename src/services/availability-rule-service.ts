@@ -71,8 +71,8 @@ export async function createAvailabilityRule(
   const { data, error } = await client
     .from('availability_rules')
     .insert({
-      organization_id: context.organizationId,
       ...input,
+      organization_id: context.organizationId,
     })
     .select()
     .single();
@@ -185,9 +185,9 @@ export async function setWeeklySchedule(
 
   // Insert new rules
   const rows = schedule.map((entry) => ({
+    ...entry,
     organization_id: context.organizationId,
     instructor_id: instructorId,
-    ...entry,
   }));
 
   const { data, error: insertError } = await client

@@ -37,25 +37,25 @@ export async function createStudentAction(
       return { success: false, error: 'Email is required to create a student account.' };
     }
 
-    // Check if user already exists
-    const { data: existingUsers } = await adminClient.auth.admin.listUsers();
-    const existingUser = existingUsers?.users?.find((u) => u.email === email);
-
+    // Try to create user first, fall back to lookup if already exists.
+    // This avoids the pagination problem of listUsers() which only returns page 1.
     let userId: string;
-    if (existingUser) {
-      userId = existingUser.id;
-    } else {
-      // Create user without sending an invitation email to avoid
-      // bounces on invalid addresses. The school owner can share
-      // the portal link with the student directly.
-      const { data: createData, error: createError } = await adminClient.auth.admin.createUser({
-        email,
-        email_confirm: true,
-        user_metadata: { full_name: displayName },
-      });
-      if (createError || !createData.user) {
-        return { success: false, error: createError?.message ?? 'Failed to create student account.' };
+    const { data: createData, error: createError } = await adminClient.auth.admin.createUser({
+      email,
+      email_confirm: true,
+      user_metadata: { full_name: displayName },
+    });
+    if (createError) {
+      // User likely already exists — try to find them
+      const { data: listData } = await adminClient.auth.admin.listUsers({ perPage: 1000, page: 1 });
+      const existingUser = listData?.users?.find((u) => u.email === email);
+      if (!existingUser) {
+        return { success: false, error: createError.message ?? 'Failed to create student account.' };
       }
+      userId = existingUser.id;
+    } else if (!createData.user) {
+      return { success: false, error: 'Failed to create student account.' };
+    } else {
       userId = createData.user.id;
     }
 

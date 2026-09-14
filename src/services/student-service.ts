@@ -63,8 +63,8 @@ export async function createStudent(
   const { data, error } = await client
     .from('students')
     .insert({
-      organization_id: context.organizationId,
       ...input,
+      organization_id: context.organizationId,
     })
     .select()
     .single();

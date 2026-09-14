@@ -151,9 +151,13 @@ export async function listOrganizations(
   }
 
   if (options?.search) {
-    query = query.or(
-      `name.ilike.%${options.search}%,slug.ilike.%${options.search}%`
-    );
+    // Sanitize search to prevent PostgREST filter injection
+    const safe = options.search.replace(/[%,().*\\]/g, '');
+    if (safe) {
+      query = query.or(
+        `name.ilike.%${safe}%,slug.ilike.%${safe}%`
+      );
+    }
   }
 
   query = query
@@ -309,39 +313,44 @@ export async function createOrganization(
 
   if (orgError) throw orgError;
 
-  // 3. Create the owner via Supabase Auth (no invitation email sent
-  //    to avoid bounces on domains without mailboxes). If the user
-  //    already exists, we look them up and add the membership.
+  // 3. Create the owner via Supabase Auth. Try creating first — if user
+  //    already exists, look them up. This avoids the pagination problem
+  //    of listUsers() which only returns the first page of results.
   let ownerUserId: string;
   let inviteSent = false;
 
-  // Check if user already exists
-  const { data: existingUsers } = await client.auth.admin.listUsers();
-  const existingOwner = existingUsers?.users?.find(
-    (u) => u.email === input.ownerEmail
-  );
+  const { data: createData, error: createErr } =
+    await client.auth.admin.createUser({
+      email: input.ownerEmail,
+      email_confirm: true,
+      user_metadata: { full_name: input.ownerName },
+    });
 
-  if (existingOwner) {
-    ownerUserId = existingOwner.id;
-    inviteSent = false;
-  } else {
-    const { data: createData, error: createErr } =
-      await client.auth.admin.createUser({
-        email: input.ownerEmail,
-        email_confirm: true,
-        user_metadata: { full_name: input.ownerName },
-      });
-
-    if (createErr || !createData.user) {
+  if (createErr) {
+    // User likely already exists — try to find them
+    const { data: listData } = await client.auth.admin.listUsers({
+      perPage: 1000,
+      page: 1,
+    });
+    const existingOwner = listData?.users?.find(
+      (u) => u.email === input.ownerEmail
+    );
+    if (!existingOwner) {
       // Rollback: delete the org
       await client.from('organizations').delete().eq('id', org.id);
-      throw createErr ?? new Error('Failed to create owner account');
+      throw createErr;
     }
+    ownerUserId = existingOwner.id;
+    inviteSent = false;
+  } else if (!createData.user) {
+    await client.from('organizations').delete().eq('id', org.id);
+    throw new Error('Failed to create owner account');
+  } else {
     ownerUserId = createData.user.id;
     inviteSent = true;
   }
 
-  // 4. Create org membership
+  // 4. Create org membership (must succeed — org without owner is broken)
   const { error: memberErr } = await client
     .from('organization_members')
     .insert({
@@ -352,11 +361,14 @@ export async function createOrganization(
     });
 
   if (memberErr) {
-    logger.error('Failed to create owner membership', {
+    // Rollback: delete the org since it has no owner
+    logger.error('Failed to create owner membership — rolling back org', {
       organizationId: org.id,
       ownerUserId,
       error: memberErr.message,
     });
+    await client.from('organizations').delete().eq('id', org.id);
+    throw new Error('Failed to create owner membership');
   }
 
   // 5. Create default school_settings
