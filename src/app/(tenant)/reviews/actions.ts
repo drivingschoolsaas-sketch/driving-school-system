@@ -91,14 +91,15 @@ async function notifyNewReview(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await client.from('notifications').insert({
       organization_id: organizationId,
-      type: 'Review Submitted',
-      channel: 'in_app',
+      notification_type: 'custom',
+      channel: 'email',
       recipient_email: null,
       recipient_name: 'School Admin',
       subject: `New Review Pending — ${reviewerName} (${stars})`,
       body: `A new ${rating}-star review from ${reviewerName} is waiting for your approval. Go to Dashboard → Reviews to approve or reject it.`,
       status: 'sent',
-      metadata: {},
+      sent_at: new Date().toISOString(),
+      metadata: { source: 'public_review' },
     } as any);
   } catch {
     // Notification is non-critical — don't fail the review submission
