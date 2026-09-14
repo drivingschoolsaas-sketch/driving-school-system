@@ -24,6 +24,13 @@ const cspDirectives = [
 ].join('; ');
 
 const nextConfig: NextConfig = {
+  // Allow hero slide uploads up to 5MB via server actions
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '6mb',
+    },
+  },
+
   // Allow images from any tenant's custom domain
   images: {
     remotePatterns: [
