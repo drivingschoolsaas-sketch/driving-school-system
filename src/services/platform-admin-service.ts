@@ -309,38 +309,35 @@ export async function createOrganization(
 
   if (orgError) throw orgError;
 
-  // 3. Invite the owner via Supabase Auth
-  //    inviteUserByEmail sends a magic link email. If the user already
-  //    exists, we fall back to looking them up and adding the membership.
+  // 3. Create the owner via Supabase Auth (no invitation email sent
+  //    to avoid bounces on domains without mailboxes). If the user
+  //    already exists, we look them up and add the membership.
   let ownerUserId: string;
   let inviteSent = false;
 
-  const { data: inviteData, error: inviteErr } =
-    await client.auth.admin.inviteUserByEmail(input.ownerEmail, {
-      data: { full_name: input.ownerName },
-    });
+  // Check if user already exists
+  const { data: existingUsers } = await client.auth.admin.listUsers();
+  const existingOwner = existingUsers?.users?.find(
+    (u) => u.email === input.ownerEmail
+  );
 
-  if (inviteErr) {
-    if (inviteErr.message.includes('already been registered')) {
-      // User exists — find their ID and add them as owner
-      const { data: listData } = await client.auth.admin.listUsers();
-      const found = listData?.users?.find(
-        (u) => u.email === input.ownerEmail
-      );
-      if (!found) {
-        throw new Error(
-          `Owner email ${input.ownerEmail} is registered but could not be found`
-        );
-      }
-      ownerUserId = found.id;
-      inviteSent = false;
-    } else {
+  if (existingOwner) {
+    ownerUserId = existingOwner.id;
+    inviteSent = false;
+  } else {
+    const { data: createData, error: createErr } =
+      await client.auth.admin.createUser({
+        email: input.ownerEmail,
+        email_confirm: true,
+        user_metadata: { full_name: input.ownerName },
+      });
+
+    if (createErr || !createData.user) {
       // Rollback: delete the org
       await client.from('organizations').delete().eq('id', org.id);
-      throw inviteErr;
+      throw createErr ?? new Error('Failed to create owner account');
     }
-  } else {
-    ownerUserId = inviteData.user.id;
+    ownerUserId = createData.user.id;
     inviteSent = true;
   }
 

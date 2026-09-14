@@ -45,14 +45,18 @@ export async function createStudentAction(
     if (existingUser) {
       userId = existingUser.id;
     } else {
-      // Invite the student — they'll set their own password
-      const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, {
-        data: { full_name: displayName },
+      // Create user without sending an invitation email to avoid
+      // bounces on invalid addresses. The school owner can share
+      // the portal link with the student directly.
+      const { data: createData, error: createError } = await adminClient.auth.admin.createUser({
+        email,
+        email_confirm: true,
+        user_metadata: { full_name: displayName },
       });
-      if (inviteError || !inviteData.user) {
-        return { success: false, error: inviteError?.message ?? 'Failed to create student account.' };
+      if (createError || !createData.user) {
+        return { success: false, error: createError?.message ?? 'Failed to create student account.' };
       }
-      userId = inviteData.user.id;
+      userId = createData.user.id;
     }
 
     const input = createStudentSchema.parse({
