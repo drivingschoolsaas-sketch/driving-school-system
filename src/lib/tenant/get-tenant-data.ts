@@ -170,7 +170,7 @@ export async function getTenantPageData(): Promise<TenantPageData | null> {
         .limit(10),
       adminClient
         .from('hero_slides')
-        .select('id, organization_id, title, subtitle, image_url, cta_text, cta_link, is_active, sort_order')
+        .select('id, organization_id, title, subtitle, image_url, link_text, link_url, is_active, sort_order')
         .eq('organization_id', orgId)
         .eq('is_active', true)
         .order('sort_order')
