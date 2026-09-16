@@ -163,7 +163,7 @@ export async function getTenantPageData(): Promise<TenantPageData | null> {
         .order('name'),
       adminClient
         .from('reviews')
-        .select('id, organization_id, reviewer_display_name, rating, review_text, status, created_at')
+        .select('id, organization_id, reviewer_name, rating, title, body, status, is_anonymous, created_at')
         .eq('organization_id', orgId)
         .in('status', ['approved', 'featured'])
         .order('created_at', { ascending: false })
@@ -177,7 +177,7 @@ export async function getTenantPageData(): Promise<TenantPageData | null> {
         .order('created_at'),
       adminClient
         .from('success_stories')
-        .select('id, organization_id, student_display_name, photo_url, quote, pass_date, instructor_name, status, sort_order')
+        .select('id, organization_id, student_name, photo_url, message, pass_date, test_location, status, sort_order')
         .eq('organization_id', orgId)
         .eq('status', 'published')
         .eq('consent_given', true)
