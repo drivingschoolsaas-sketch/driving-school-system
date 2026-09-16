@@ -93,12 +93,12 @@ export default async function HomePage() {
       {/* ========== VALUE PROPOSITIONS STRIP ========== */}
       <section className="relative -mt-6 z-10 mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-xl grid grid-cols-2 lg:grid-cols-4 divide-x divide-gray-100 dark:divide-gray-700">
-          {[
+          {(settings?.value_propositions ?? [
             { icon: '🎓', title: 'Qualified Instructors', desc: 'Fully licensed & experienced' },
             { icon: '🚗', title: 'Dual Control Cars', desc: 'Learn safely with confidence' },
             { icon: '📅', title: 'Flexible Scheduling', desc: '7 days a week availability' },
-            { icon: '⭐', title: 'High Pass Rate', desc: 'Proven track record' },
-          ].map((item) => (
+            { icon: '⭐', title: 'Great Results', desc: 'Students love learning with us' },
+          ]).map((item) => (
             <div key={item.title} className="flex flex-col items-center py-6 px-4 text-center">
               <span className="text-3xl mb-2">{item.icon}</span>
               <h3 className="text-sm font-bold text-gray-900 dark:text-white">{item.title}</h3>
@@ -292,8 +292,13 @@ export default async function HomePage() {
               </p>
             </div>
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {lessonPackages.slice(0, 6).map((pkg, i) => (
-                <PackageCard key={pkg.id} pkg={pkg} primaryColor={primaryColor} popular={i === 1} />
+              {lessonPackages.slice(0, 6).map((pkg) => (
+                <PackageCard
+                  key={pkg.id}
+                  pkg={pkg}
+                  primaryColor={primaryColor}
+                  popular={settings?.popular_package_id === pkg.id}
+                />
               ))}
             </div>
           </div>
@@ -452,7 +457,7 @@ export default async function HomePage() {
 
           <FAQAccordion
             primaryColor={primaryColor}
-            faqs={[
+            faqs={settings?.custom_faqs ?? [
               {
                 q: 'What do I need to bring to my first lesson?',
                 a: "You'll need your learner's permit/licence and wear comfortable clothes and enclosed shoes. We provide everything else!",

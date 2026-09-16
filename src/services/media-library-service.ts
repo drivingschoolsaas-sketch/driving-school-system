@@ -17,7 +17,8 @@ const ALLOWED_MIME_TYPES = [
   'image/png',
   'image/webp',
   'image/gif',
-  'image/svg+xml',
+  // SVG intentionally excluded — SVG files can contain embedded JavaScript
+  // and pose an XSS risk when served to browsers.
 ];
 
 // --------------------------------------------------

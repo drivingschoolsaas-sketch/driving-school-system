@@ -47,6 +47,31 @@ export const updateSchoolSettingsSchema = z.object({
     .array(z.string().max(50))
     .max(20)
     .optional(),
+
+  // Custom website content
+  custom_faqs: z
+    .array(
+      z.object({
+        q: z.string().min(5).max(200),
+        a: z.string().min(10).max(1000),
+      })
+    )
+    .max(20)
+    .optional()
+    .nullable(),
+  value_propositions: z
+    .array(
+      z.object({
+        icon: z.string().min(1).max(10),
+        title: z.string().min(2).max(50),
+        desc: z.string().min(2).max(100),
+      })
+    )
+    .min(1)
+    .max(8)
+    .optional()
+    .nullable(),
+  popular_package_id: z.string().uuid().optional().nullable(),
 }).partial();
 
 export type UpdateSchoolSettingsInput = z.infer<typeof updateSchoolSettingsSchema>;

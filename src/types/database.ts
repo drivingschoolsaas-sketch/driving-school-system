@@ -265,6 +265,12 @@ export interface SchoolSettings {
   default_travel_buffer_minutes: number;
   default_transmission: TransmissionType;
   sections_enabled: string[];
+  /** Custom FAQ items as [{q, a}]. Null uses platform defaults. */
+  custom_faqs: Array<{ q: string; a: string }> | null;
+  /** Custom value proposition cards as [{icon, title, desc}]. Null uses platform defaults. */
+  value_propositions: Array<{ icon: string; title: string; desc: string }> | null;
+  /** Package ID to display with "Most Popular" badge. Null shows no badge. */
+  popular_package_id: string | null;
   /** Pending draft content changes (partial JSON of content fields). Null = no draft. */
   draft_content: Record<string, unknown> | null;
   /** When website content was last published (draft→live). */

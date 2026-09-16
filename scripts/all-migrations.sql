@@ -774,6 +774,15 @@ CREATE TABLE school_settings (
   -- Website sections visibility
   sections_enabled JSONB NOT NULL DEFAULT '["hero","packages","instructors","reviews","contact"]'::jsonb,
 
+  -- Custom website content (NULL = use platform defaults)
+  custom_faqs JSONB DEFAULT NULL,
+  value_propositions JSONB DEFAULT NULL,
+  popular_package_id UUID DEFAULT NULL,
+
+  -- Content workflow
+  draft_content JSONB DEFAULT NULL,
+  content_published_at TIMESTAMPTZ DEFAULT NULL,
+
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
@@ -972,8 +981,8 @@ CREATE TABLE availability_rules (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-  -- An instructor can have at most one rule per day of week per org
-  CONSTRAINT uq_availability_rule UNIQUE (organization_id, instructor_id, day_of_week),
+  -- Prevent duplicate start times on the same day (allows split shifts like 8-12 + 2-6)
+  CONSTRAINT uq_availability_rule_no_overlap UNIQUE (organization_id, instructor_id, day_of_week, start_time),
   -- End must be after start
   CONSTRAINT chk_availability_time_order CHECK (end_time > start_time)
 );
@@ -1118,12 +1127,15 @@ CREATE EXTENSION IF NOT EXISTS btree_gist;
 -- ==================================================
 
 CREATE TYPE booking_status AS ENUM (
-  'pending',
-  'awaiting_payment',
+  'new_request',
+  'contacted',
   'confirmed',
   'completed',
   'cancelled',
+  'rejected',
   'no_show',
+  'pending',
+  'awaiting_payment',
   'rescheduled'
 );
 
@@ -1146,7 +1158,7 @@ CREATE TABLE bookings (
   vehicle_id UUID REFERENCES vehicles(id) ON DELETE SET NULL,
   start_datetime TIMESTAMPTZ NOT NULL,
   end_datetime TIMESTAMPTZ NOT NULL,
-  status booking_status NOT NULL DEFAULT 'pending',
+  status booking_status NOT NULL DEFAULT 'new_request',
   pickup_address TEXT,
   pickup_suburb TEXT,
   pickup_postcode TEXT,
@@ -1166,11 +1178,12 @@ CREATE TABLE bookings (
 );
 
 -- Exclusion constraint: prevent overlapping active bookings for the same instructor.
--- Only enforced for non-cancelled and non-rescheduled bookings.
+-- Only enforced for bookings that actually reserve a slot.
+-- Rejected/cancelled bookings must NOT block time slots.
 -- Uses tstzrange for time overlap detection + btree_gist for UUID equality.
 CREATE OR REPLACE FUNCTION booking_is_active(s booking_status) RETURNS BOOLEAN
   LANGUAGE sql IMMUTABLE STRICT AS $$
-  SELECT s NOT IN ('cancelled', 'rescheduled');
+  SELECT s NOT IN ('cancelled', 'rejected');
 $$;
 
 ALTER TABLE bookings ADD CONSTRAINT excl_instructor_overlap

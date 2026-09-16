@@ -68,6 +68,25 @@ export async function createAvailabilityRule(
   context: AuthorizedContext,
   input: CreateAvailabilityRuleInput
 ): Promise<AvailabilityRule> {
+  // Check for overlapping rules on the same day for the same instructor
+  const { data: existing } = await client
+    .from('availability_rules')
+    .select('start_time, end_time')
+    .eq('organization_id', context.organizationId)
+    .eq('instructor_id', input.instructor_id)
+    .eq('day_of_week', input.day_of_week);
+
+  if (existing) {
+    for (const rule of existing) {
+      // Two time ranges overlap if one starts before the other ends AND vice versa
+      if (input.start_time < rule.end_time && input.end_time > rule.start_time) {
+        throw new Error(
+          `This time block overlaps with an existing rule (${rule.start_time} – ${rule.end_time}). Split shifts must not overlap.`
+        );
+      }
+    }
+  }
+
   const { data, error } = await client
     .from('availability_rules')
     .insert({

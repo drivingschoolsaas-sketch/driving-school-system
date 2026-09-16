@@ -3,6 +3,8 @@
 // ==================================================
 // Shared layout for the admin dashboard with role-based
 // sidebar navigation. Requires authentication.
+// Navigation is grouped into sections with a "More" menu
+// on mobile so all pages are always discoverable.
 
 import Link from 'next/link';
 import { getDashboardContext } from '@/lib/auth';
@@ -10,6 +12,7 @@ import { isAtLeastRole, isOrgAdminRole } from '@/permissions/roles';
 import { USER_ROLES, type UserRole } from '@/config/constants';
 import type { Metadata } from 'next';
 import { SignOutButton } from './components/sign-out-button';
+import { MobileMoreMenu } from './components/mobile-more-menu';
 
 export const metadata: Metadata = {
   title: 'Dashboard',
@@ -23,30 +26,49 @@ interface NavItem {
   minRole?: UserRole;
   /** Only visible to admin roles (school_owner, school_admin) */
   adminOnly?: boolean;
+  /** Navigation group for sidebar organization */
+  group: 'main' | 'manage' | 'content' | 'system';
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Overview', href: '/dashboard', icon: '📊' },
-  { label: 'Today', href: '/dashboard/today', icon: '🎯' },
-  { label: 'Calendar', href: '/dashboard/calendar', icon: '📅' },
-  { label: 'Bookings', href: '/dashboard/bookings', icon: '📋' },
-  { label: 'Students', href: '/dashboard/students', icon: '🎓' },
-  { label: 'Instructors', href: '/dashboard/instructors', icon: '🚗', adminOnly: true },
-  { label: 'Availability', href: '/dashboard/availability', icon: '🕐' },
-  { label: 'Lesson Types', href: '/dashboard/lesson-types', icon: '📖', adminOnly: true },
-  { label: 'Packages', href: '/dashboard/packages', icon: '📦', adminOnly: true },
-  { label: 'Vehicles', href: '/dashboard/vehicles', icon: '🚙', adminOnly: true },
-  { label: 'Reviews', href: '/dashboard/reviews', icon: '⭐', adminOnly: true },
-  { label: 'Success Stories', href: '/dashboard/success-stories', icon: '🏆', adminOnly: true },
-  { label: 'Waitlist', href: '/dashboard/waitlist', icon: '⏳', adminOnly: true },
-  { label: 'Reports', href: '/dashboard/reports', icon: '📈', adminOnly: true },
-  { label: 'Payments', href: '/dashboard/payments', icon: '💳', adminOnly: true },
-  { label: 'Notifications', href: '/dashboard/notifications', icon: '🔔', adminOnly: true },
-  { label: 'Hero Slides', href: '/dashboard/hero-slides', icon: '🎠', adminOnly: true },
-  { label: 'Media', href: '/dashboard/media', icon: '🖼️', adminOnly: true },
-  { label: 'Billing', href: '/dashboard/billing', icon: '💰', minRole: USER_ROLES.SCHOOL_OWNER },
-  { label: 'Settings', href: '/dashboard/settings', icon: '⚙️', minRole: USER_ROLES.SCHOOL_OWNER },
+  // Main — daily operations
+  { label: 'Overview', href: '/dashboard', icon: '📊', group: 'main' },
+  { label: 'Today', href: '/dashboard/today', icon: '🎯', group: 'main' },
+  { label: 'Calendar', href: '/dashboard/calendar', icon: '📅', group: 'main' },
+  { label: 'Bookings', href: '/dashboard/bookings', icon: '📋', group: 'main' },
+  { label: 'Students', href: '/dashboard/students', icon: '🎓', group: 'main' },
+  { label: 'Payments', href: '/dashboard/payments', icon: '💳', adminOnly: true, group: 'main' },
+
+  // Manage — team & resources
+  { label: 'Instructors', href: '/dashboard/instructors', icon: '🚗', adminOnly: true, group: 'manage' },
+  { label: 'Availability', href: '/dashboard/availability', icon: '🕐', group: 'manage' },
+  { label: 'Lesson Types', href: '/dashboard/lesson-types', icon: '📖', adminOnly: true, group: 'manage' },
+  { label: 'Packages', href: '/dashboard/packages', icon: '📦', adminOnly: true, group: 'manage' },
+  { label: 'Vehicles', href: '/dashboard/vehicles', icon: '🚙', adminOnly: true, group: 'manage' },
+  { label: 'Waitlist', href: '/dashboard/waitlist', icon: '⏳', adminOnly: true, group: 'manage' },
+
+  // Content — website & marketing
+  { label: 'Reviews', href: '/dashboard/reviews', icon: '⭐', adminOnly: true, group: 'content' },
+  { label: 'Success Stories', href: '/dashboard/success-stories', icon: '🏆', adminOnly: true, group: 'content' },
+  { label: 'Hero Slides', href: '/dashboard/hero-slides', icon: '🎠', adminOnly: true, group: 'content' },
+  { label: 'Media', href: '/dashboard/media', icon: '🖼️', adminOnly: true, group: 'content' },
+
+  // System — settings & admin
+  { label: 'Notifications', href: '/dashboard/notifications', icon: '🔔', adminOnly: true, group: 'system' },
+  { label: 'Reports', href: '/dashboard/reports', icon: '📈', adminOnly: true, group: 'system' },
+  { label: 'Billing', href: '/dashboard/billing', icon: '💰', minRole: USER_ROLES.SCHOOL_OWNER, group: 'system' },
+  { label: 'Settings', href: '/dashboard/settings', icon: '⚙️', minRole: USER_ROLES.SCHOOL_OWNER, group: 'system' },
 ];
+
+// First 4 items shown in mobile bottom nav (5th slot is "More")
+const MOBILE_PRIMARY_COUNT = 4;
+
+const GROUP_LABELS: Record<string, string> = {
+  main: 'Main',
+  manage: 'Team & Resources',
+  content: 'Website',
+  system: 'Settings & Reports',
+};
 
 function getVisibleNav(role: UserRole): NavItem[] {
   return NAV_ITEMS.filter((item) => {
@@ -64,6 +86,19 @@ export default async function DashboardLayout({
   const { auth, organization, settings } = await getDashboardContext();
   const visibleNav = getVisibleNav(auth.role);
   const primaryColor = settings?.primary_color ?? '#2563eb';
+
+  // Mobile: first N items in bottom bar, rest in "More" menu
+  const mobileBottomItems = visibleNav.slice(0, MOBILE_PRIMARY_COUNT);
+  const mobileMoreItems = visibleNav.slice(MOBILE_PRIMARY_COUNT);
+
+  // Desktop sidebar: group items
+  const groups = ['main', 'manage', 'content', 'system'];
+  const groupedNav = groups
+    .map((group) => ({
+      label: GROUP_LABELS[group],
+      items: visibleNav.filter((item) => item.group === group),
+    }))
+    .filter((g) => g.items.length > 0);
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
@@ -85,17 +120,26 @@ export default async function DashboardLayout({
             </Link>
           </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 px-3 py-4 space-y-1">
-            {visibleNav.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              >
-                <span className="text-base">{item.icon}</span>
-                {item.label}
-              </Link>
+          {/* Grouped Navigation */}
+          <nav className="flex-1 px-3 py-4 space-y-5">
+            {groupedNav.map((group) => (
+              <div key={group.label}>
+                <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                  {group.label}
+                </p>
+                <div className="space-y-0.5">
+                  {group.items.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <span className="text-base">{item.icon}</span>
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
             ))}
           </nav>
 
@@ -146,7 +190,7 @@ export default async function DashboardLayout({
       {/* Mobile bottom nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-10 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
         <div className="flex justify-around py-2">
-          {visibleNav.slice(0, 5).map((item) => (
+          {mobileBottomItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -156,6 +200,9 @@ export default async function DashboardLayout({
               <span className="text-[10px]">{item.label}</span>
             </Link>
           ))}
+          {mobileMoreItems.length > 0 && (
+            <MobileMoreMenu items={mobileMoreItems} />
+          )}
         </div>
       </nav>
 
