@@ -123,13 +123,19 @@ export async function createExceptionAction(
 ): Promise<AvailabilityActionState> {
   try {
     const { auth } = await getDashboardContext();
-    requirePermission(auth, PERMISSIONS.AVAILABILITY_MANAGE);
+    const targetInstructorId = formData.get('instructor_id') as string;
+    const isOwnAvailability = await isInstructorSelf(auth, targetInstructorId);
+    if (isOwnAvailability) {
+      requirePermission(auth, PERMISSIONS.INSTRUCTOR_MANAGE_OWN_AVAILABILITY);
+    } else {
+      requirePermission(auth, PERMISSIONS.AVAILABILITY_MANAGE);
+    }
     const client = await createServerSupabaseClient();
 
     const isAvailable = formData.get('is_available') === 'true';
 
     const input = createAvailabilityExceptionSchema.parse({
-      instructor_id: formData.get('instructor_id'),
+      instructor_id: targetInstructorId,
       exception_date: formData.get('exception_date'),
       is_available: isAvailable,
       start_time: isAvailable ? formData.get('start_time') : null,
@@ -149,8 +155,25 @@ export async function createExceptionAction(
 export async function deleteExceptionAction(exceptionId: string): Promise<AvailabilityActionState> {
   try {
     const { auth } = await getDashboardContext();
-    requirePermission(auth, PERMISSIONS.AVAILABILITY_MANAGE);
     const client = await createServerSupabaseClient();
+
+    const { data: exception } = await client
+      .from('availability_exceptions')
+      .select('instructor_id')
+      .eq('id', exceptionId)
+      .eq('organization_id', auth.organizationId)
+      .maybeSingle();
+
+    if (!exception) {
+      return { success: false, error: 'Exception not found.' };
+    }
+
+    const isOwn = await isInstructorSelf(auth, exception.instructor_id);
+    if (isOwn) {
+      requirePermission(auth, PERMISSIONS.INSTRUCTOR_MANAGE_OWN_AVAILABILITY);
+    } else {
+      requirePermission(auth, PERMISSIONS.AVAILABILITY_MANAGE);
+    }
 
     await deleteAvailabilityException(client, auth, exceptionId);
     revalidatePath('/dashboard/availability');
@@ -169,7 +192,13 @@ export async function createBlockedTimeAction(
 ): Promise<AvailabilityActionState> {
   try {
     const { auth } = await getDashboardContext();
-    requirePermission(auth, PERMISSIONS.AVAILABILITY_MANAGE);
+    const targetInstructorId = formData.get('instructor_id') as string;
+    const isOwnAvailability = await isInstructorSelf(auth, targetInstructorId);
+    if (isOwnAvailability) {
+      requirePermission(auth, PERMISSIONS.INSTRUCTOR_MANAGE_OWN_AVAILABILITY);
+    } else {
+      requirePermission(auth, PERMISSIONS.AVAILABILITY_MANAGE);
+    }
     const client = await createServerSupabaseClient();
 
     const isAllDay = formData.get('is_all_day') === 'true';
@@ -209,8 +238,25 @@ export async function createBlockedTimeAction(
 export async function deleteBlockedTimeAction(blockedTimeId: string): Promise<AvailabilityActionState> {
   try {
     const { auth } = await getDashboardContext();
-    requirePermission(auth, PERMISSIONS.AVAILABILITY_MANAGE);
     const client = await createServerSupabaseClient();
+
+    const { data: blocked } = await client
+      .from('blocked_times')
+      .select('instructor_id')
+      .eq('id', blockedTimeId)
+      .eq('organization_id', auth.organizationId)
+      .maybeSingle();
+
+    if (!blocked) {
+      return { success: false, error: 'Blocked time not found.' };
+    }
+
+    const isOwn = await isInstructorSelf(auth, blocked.instructor_id);
+    if (isOwn) {
+      requirePermission(auth, PERMISSIONS.INSTRUCTOR_MANAGE_OWN_AVAILABILITY);
+    } else {
+      requirePermission(auth, PERMISSIONS.AVAILABILITY_MANAGE);
+    }
 
     await deleteBlockedTime(client, auth, blockedTimeId);
     revalidatePath('/dashboard/availability');

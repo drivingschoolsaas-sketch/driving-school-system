@@ -165,7 +165,7 @@ export async function createBooking(
       .select('id, start_datetime, end_datetime')
       .eq('organization_id', context.organizationId)
       .eq('vehicle_id', input.vehicle_id)
-      .in('status', ['confirmed'])
+      .in('status', ['new_request', 'contacted', 'confirmed'])
       .lt('start_datetime', input.end_datetime)
       .gt('end_datetime', input.start_datetime)
       .limit(1);
@@ -306,6 +306,9 @@ export async function transitionBookingStatus(
     .single();
 
   if (error) {
+    if (error.code === 'PGRST116') {
+      throw new Error('Booking was modified by another user. Please refresh and try again.');
+    }
     if (isConflictError(error)) {
       throw BookingErrors.slotUnavailable({ bookingId });
     }
@@ -373,10 +376,14 @@ export async function cancelBooking(
     })
     .eq('id', bookingId)
     .eq('organization_id', context.organizationId)
+    .eq('status', current.status)
     .select()
     .single();
 
   if (error) {
+    if (error.code === 'PGRST116') {
+      throw new Error('Booking was modified by another user. Please refresh and try again.');
+    }
     logger.error('Failed to cancel booking', error, {
       feature: 'bookings',
       operation: 'cancel',
@@ -467,6 +474,27 @@ export async function rescheduleBooking(
       throw BookingErrors.slotUnavailable({
         studentId: current.student_id,
         reason: 'Student already has a booking at the new time.',
+      });
+    }
+  }
+
+  // Vehicle overlap check for the new time
+  if (current.vehicle_id) {
+    const { data: vehicleConflicts } = await client
+      .from('bookings')
+      .select('id')
+      .eq('organization_id', context.organizationId)
+      .eq('vehicle_id', current.vehicle_id)
+      .in('status', ['new_request', 'contacted', 'confirmed'])
+      .neq('id', bookingId)
+      .lt('start_datetime', input.new_end_datetime)
+      .gt('end_datetime', input.new_start_datetime)
+      .limit(1);
+
+    if (vehicleConflicts && vehicleConflicts.length > 0) {
+      throw BookingErrors.slotUnavailable({
+        vehicleId: current.vehicle_id,
+        reason: 'Vehicle is already booked at the new time.',
       });
     }
   }

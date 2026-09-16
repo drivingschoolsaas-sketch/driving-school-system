@@ -675,9 +675,6 @@ function InstructorCard({
           <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-700 px-2.5 py-0.5 font-medium capitalize">
             {instructor.transmission_type}
           </span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-700 px-2.5 py-0.5 font-medium">
-            {instructor.default_lesson_duration} min
-          </span>
         </div>
       </div>
     </div>
@@ -744,7 +741,7 @@ function SuccessStoryCard({
 
         {/* Student message */}
         {story.message && (
-          <blockquote className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed italic border-l-3 pl-3"
+          <blockquote className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed italic border-l-4 pl-3"
             style={{ borderLeftColor: primaryColor }}
           >
             &ldquo;{story.message}&rdquo;

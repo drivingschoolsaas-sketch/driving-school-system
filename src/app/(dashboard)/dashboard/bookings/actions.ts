@@ -71,6 +71,7 @@ export async function createBookingAction(
 
     revalidatePath('/dashboard/bookings');
     revalidatePath('/dashboard/calendar');
+    revalidatePath('/dashboard');
     return { success: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to create booking';
@@ -127,14 +128,15 @@ export async function cancelBookingAction(
     const input = cancelBookingSchema.parse({ reason: reason || null });
 
     // Resolve notification params before cancellation (need booking data)
-    const notifParams = await resolveBookingNotificationParams(client, auth.organizationId, bookingId);
+    const ac = getAdminClient();
+    const notifParams = await resolveBookingNotificationParams(ac, auth.organizationId, bookingId);
 
     await cancelBooking(client, auth, bookingId, input);
     audit(client, auth, { action: 'booking.cancelled', resourceType: 'booking', resourceId: bookingId, details: { reason } });
 
-    // Notify student of cancellation (fire-and-forget)
+    // Notify student of cancellation (fire-and-forget, admin client survives after response)
     if (notifParams) {
-      notifyBookingCancelled(client, notifParams, reason ?? 'Cancelled by admin');
+      notifyBookingCancelled(ac, notifParams, reason ?? 'Cancelled by admin');
     }
 
     revalidatePath('/dashboard/bookings');
@@ -188,6 +190,7 @@ export async function rescheduleBookingAction(
 
     revalidatePath('/dashboard/bookings');
     revalidatePath('/dashboard/calendar');
+    revalidatePath('/dashboard');
     return { success: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to reschedule booking';

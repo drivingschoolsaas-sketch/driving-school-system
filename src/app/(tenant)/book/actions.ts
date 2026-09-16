@@ -12,6 +12,7 @@ import { getTenantData } from '@/lib/tenant';
 import { getAdminClient } from '@/lib/database/supabase-admin';
 import { computeAvailableSlots, type AvailableSlot } from '@/services/availability-engine';
 import { notifyPublicBookingReceived } from '@/services/booking-notifications';
+import { logger } from '@/lib/logging';
 import type { AvailabilityRule, AvailabilityException, BlockedTime, Booking } from '@/types/database';
 
 export interface BookingRequestState {
@@ -172,7 +173,7 @@ export async function submitBookingRequestAction(
       });
 
     if (insertError) {
-      console.error('Booking insert error:', insertError);
+      logger.error('Booking insert error', insertError);
       return { success: false, error: 'Failed to submit booking. Please try again.' };
     }
 

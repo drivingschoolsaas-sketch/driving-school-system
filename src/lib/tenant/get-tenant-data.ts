@@ -135,7 +135,7 @@ export async function getTenantPageData(): Promise<TenantPageData | null> {
     const [lessonTypesRes, packagesRes, instructorsRes, areasRes, reviewsRes, heroSlidesRes, successStoriesRes] = await Promise.all([
       adminClient
         .from('lesson_types')
-        .select('id, organization_id, name, description, duration_minutes, price_cents, transmission_type, status, is_public, sort_order, created_at')
+        .select('id, organization_id, name, description, duration_minutes, price_cents, transmission, status, is_public, sort_order, created_at')
         .eq('organization_id', orgId)
         .eq('status', 'active')
         .eq('is_public', true)
@@ -143,7 +143,7 @@ export async function getTenantPageData(): Promise<TenantPageData | null> {
         .order('name'),
       adminClient
         .from('lesson_packages')
-        .select('id, organization_id, name, description, lesson_count, price_cents, per_lesson_price_cents, savings_cents, lesson_type_id, status, is_public, sort_order, validity_days, created_at')
+        .select('id, organization_id, name, description, lesson_count, price_cents, savings_cents, lesson_type_id, status, is_public, sort_order, validity_days, created_at')
         .eq('organization_id', orgId)
         .eq('status', 'active')
         .eq('is_public', true)
