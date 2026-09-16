@@ -58,6 +58,8 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
 
     if (instData) {
       query = query.eq('instructor_id', instData.id);
+    } else {
+      query = query.eq('instructor_id', '00000000-0000-0000-0000-000000000000');
     }
   } else if (params.instructor) {
     query = query.eq('instructor_id', params.instructor);
@@ -69,7 +71,9 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
   }
   if (params.to) {
     // Append end-of-day time so bookings ON the "to" date are included
-    query = query.lt('start_datetime', params.to + 'T24:00:00');
+    const nextDay = new Date(params.to + 'T00:00:00');
+    nextDay.setDate(nextDay.getDate() + 1);
+    query = query.lt('start_datetime', nextDay.toISOString().split('T')[0] + 'T00:00:00');
   }
 
   const [bookingsRes, instructorsRes, studentsRes, lessonTypesRes, vehiclesRes] = await Promise.all([
@@ -231,7 +235,7 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
                       {booking.status.replaceAll('_', ' ')}
                     </span>
                     <p className="text-sm font-semibold text-gray-900 dark:text-white mt-1">
-                      ${(booking.price_cents / 100).toFixed(0)}
+                      ${((booking.price_cents ?? 0) / 100).toFixed(0)}
                     </p>
                   </div>
                 </div>
