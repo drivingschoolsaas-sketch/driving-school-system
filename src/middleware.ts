@@ -26,13 +26,19 @@ export async function middleware(request: NextRequest) {
 
   // Check for ?tenant= query parameter override (for testing on Vercel
   // where wildcard subdomains aren't available on .vercel.app domains).
-  // If no ?tenant= param, fall back to a previously-set cookie so that
-  // internal navigation (Link clicks) doesn't lose the tenant context.
-  let tenantOverride = request.nextUrl.searchParams.get('tenant');
+  // SECURITY: Only allow in non-production environments to prevent
+  // tenant spoofing on the live site.
+  const isProduction = process.env.NODE_ENV === 'production'
+    && !hostname.includes('vercel.app')
+    && !hostname.includes('localhost');
 
-  if (!tenantOverride) {
-    // Fall back to cookie set by a previous ?tenant= request
-    tenantOverride = request.cookies.get('x-tenant-slug')?.value ?? null;
+  let tenantOverride: string | null = null;
+
+  if (!isProduction) {
+    tenantOverride = request.nextUrl.searchParams.get('tenant');
+    if (!tenantOverride) {
+      tenantOverride = request.cookies.get('x-tenant-slug')?.value ?? null;
+    }
   }
 
   // Build request headers that Server Components will see via headers().

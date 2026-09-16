@@ -12,6 +12,7 @@ import { PERMISSIONS } from '@/permissions/roles';
 import { createInstructor, updateInstructor, deleteInstructor } from '@/services/instructor-service';
 import { createInstructorSchema, updateInstructorSchema } from '@/validators/instructor';
 import { audit } from '@/lib/audit';
+import { requireUsageLimit } from '@/services/entitlement-service';
 
 export interface InstructorActionState {
   success: boolean;
@@ -27,6 +28,8 @@ export async function createInstructorAction(
     requirePermission(auth, PERMISSIONS.INSTRUCTOR_CREATE);
     const client = await createServerSupabaseClient();
 
+    await requireUsageLimit(client, auth.organizationId, 'instructors');
+
     const adminClient = getAdminClient();
     const email = (formData.get('email') as string)?.trim();
     const displayName = (formData.get('display_name') as string)?.trim();
@@ -35,22 +38,27 @@ export async function createInstructorAction(
       return { success: false, error: 'Email is required to create an instructor account.' };
     }
 
-    // Try to create user first, fall back to lookup if already exists.
-    // This avoids the pagination problem of listUsers() which only returns page 1.
     let userId: string;
     const { data: createData, error: createError } = await adminClient.auth.admin.createUser({
       email,
-      email_confirm: true,
+      email_confirm: false,
       user_metadata: { full_name: displayName },
     });
     if (createError) {
-      // User likely already exists — try to find them
-      const { data: listData } = await adminClient.auth.admin.listUsers({ perPage: 1000, page: 1 });
-      const existingUser = listData?.users?.find((u) => u.email === email);
-      if (!existingUser) {
+      if (createError.message?.includes('already been registered') || createError.status === 422) {
+        const { data: { users }, error: lookupError } = await adminClient.auth.admin.listUsers({
+          perPage: 1,
+          page: 1,
+          filter: { email },
+        } as Parameters<typeof adminClient.auth.admin.listUsers>[0]);
+        const existingUser = users?.find((u) => u.email === email);
+        if (lookupError || !existingUser) {
+          return { success: false, error: 'A user with this email exists but could not be found. Please try again.' };
+        }
+        userId = existingUser.id;
+      } else {
         return { success: false, error: createError.message ?? 'Failed to create instructor account.' };
       }
-      userId = existingUser.id;
     } else if (!createData.user) {
       return { success: false, error: 'Failed to create instructor account.' };
     } else {

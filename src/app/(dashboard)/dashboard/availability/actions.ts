@@ -25,10 +25,24 @@ import {
 import { createAvailabilityRuleSchema } from '@/validators/availability-rule';
 import { createAvailabilityExceptionSchema } from '@/validators/availability-exception';
 import { createBlockedTimeSchema } from '@/validators/blocked-time';
+import type { AuthorizedContext } from '@/lib/auth/authorization';
+import { getAdminClient } from '@/lib/database/supabase-admin';
 
 export interface AvailabilityActionState {
   success: boolean;
   error?: string;
+}
+
+async function isInstructorSelf(auth: AuthorizedContext, instructorId: string): Promise<boolean> {
+  if (auth.membership.role !== 'instructor') return false;
+  const adminClient = getAdminClient();
+  const { data } = await adminClient
+    .from('instructors')
+    .select('user_id')
+    .eq('id', instructorId)
+    .eq('organization_id', auth.organizationId)
+    .maybeSingle();
+  return (data as { user_id: string } | null)?.user_id === auth.userId;
 }
 
 // ── Availability Rules ──────────────────────────────
@@ -39,11 +53,20 @@ export async function createRuleAction(
 ): Promise<AvailabilityActionState> {
   try {
     const { auth } = await getDashboardContext();
-    requirePermission(auth, PERMISSIONS.AVAILABILITY_MANAGE);
+    const targetInstructorId = formData.get('instructor_id') as string;
+
+    // Instructors can manage their own availability; admins/owners can manage any
+    const isOwnAvailability = await isInstructorSelf(auth, targetInstructorId);
+    if (isOwnAvailability) {
+      requirePermission(auth, PERMISSIONS.INSTRUCTOR_MANAGE_OWN_AVAILABILITY);
+    } else {
+      requirePermission(auth, PERMISSIONS.AVAILABILITY_MANAGE);
+    }
+
     const client = await createServerSupabaseClient();
 
     const input = createAvailabilityRuleSchema.parse({
-      instructor_id: formData.get('instructor_id'),
+      instructor_id: targetInstructorId,
       day_of_week: formData.get('day_of_week'),
       start_time: formData.get('start_time'),
       end_time: formData.get('end_time'),
@@ -62,8 +85,26 @@ export async function createRuleAction(
 export async function deleteRuleAction(ruleId: string): Promise<AvailabilityActionState> {
   try {
     const { auth } = await getDashboardContext();
-    requirePermission(auth, PERMISSIONS.AVAILABILITY_MANAGE);
     const client = await createServerSupabaseClient();
+
+    // Check if this rule belongs to the instructor themselves
+    const { data: rule } = await client
+      .from('availability_rules')
+      .select('instructor_id')
+      .eq('id', ruleId)
+      .eq('organization_id', auth.organizationId)
+      .maybeSingle();
+
+    if (!rule) {
+      return { success: false, error: 'Rule not found.' };
+    }
+
+    const isOwn = await isInstructorSelf(auth, rule.instructor_id);
+    if (isOwn) {
+      requirePermission(auth, PERMISSIONS.INSTRUCTOR_MANAGE_OWN_AVAILABILITY);
+    } else {
+      requirePermission(auth, PERMISSIONS.AVAILABILITY_MANAGE);
+    }
 
     await deleteAvailabilityRule(client, auth, ruleId);
     revalidatePath('/dashboard/availability');

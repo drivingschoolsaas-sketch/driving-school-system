@@ -1194,6 +1194,22 @@ ALTER TABLE bookings ADD CONSTRAINT excl_instructor_overlap
   )
   WHERE (booking_is_active(status));
 
+-- Student overlap: prevent a student from having two active bookings at the same time
+ALTER TABLE bookings ADD CONSTRAINT excl_student_overlap
+  EXCLUDE USING gist (
+    student_id WITH =,
+    tstzrange(start_datetime, end_datetime) WITH &&
+  )
+  WHERE (booking_is_active(status));
+
+-- Vehicle overlap: prevent a vehicle from being double-booked
+ALTER TABLE bookings ADD CONSTRAINT excl_vehicle_overlap
+  EXCLUDE USING gist (
+    vehicle_id WITH =,
+    tstzrange(start_datetime, end_datetime) WITH &&
+  )
+  WHERE (booking_is_active(status) AND vehicle_id IS NOT NULL);
+
 -- Indexes
 CREATE INDEX idx_bookings_org ON bookings(organization_id);
 CREATE INDEX idx_bookings_instructor ON bookings(organization_id, instructor_id, start_datetime);

@@ -136,6 +136,50 @@ export async function createBooking(
   context: AuthorizedContext,
   input: CreateBookingInput
 ): Promise<Booking> {
+  // Check for student overlap — a student cannot have two confirmed/active bookings at the same time
+  if (input.student_id) {
+    const { data: studentConflicts } = await client
+      .from('bookings')
+      .select('id, start_datetime, end_datetime')
+      .eq('organization_id', context.organizationId)
+      .eq('student_id', input.student_id)
+      .in('status', ['new_request', 'contacted', 'confirmed'])
+      .lt('start_datetime', input.end_datetime)
+      .gt('end_datetime', input.start_datetime)
+      .limit(1);
+
+    if (studentConflicts && studentConflicts.length > 0) {
+      throw BookingErrors.slotUnavailable({
+        studentId: input.student_id,
+        startDatetime: input.start_datetime,
+        endDatetime: input.end_datetime,
+        reason: 'Student already has a booking at this time.',
+      });
+    }
+  }
+
+  // Check for vehicle overlap if a vehicle is assigned
+  if (input.vehicle_id) {
+    const { data: vehicleConflicts } = await client
+      .from('bookings')
+      .select('id, start_datetime, end_datetime')
+      .eq('organization_id', context.organizationId)
+      .eq('vehicle_id', input.vehicle_id)
+      .in('status', ['confirmed'])
+      .lt('start_datetime', input.end_datetime)
+      .gt('end_datetime', input.start_datetime)
+      .limit(1);
+
+    if (vehicleConflicts && vehicleConflicts.length > 0) {
+      throw BookingErrors.slotUnavailable({
+        vehicleId: input.vehicle_id,
+        startDatetime: input.start_datetime,
+        endDatetime: input.end_datetime,
+        reason: 'Vehicle is already booked at this time.',
+      });
+    }
+  }
+
   const { data, error } = await client
     .from('bookings')
     .insert({
@@ -406,17 +450,42 @@ export async function rescheduleBooking(
     updates.instructor_id = input.new_instructor_id;
   }
 
+  // Student overlap check for the new time
+  if (current.student_id) {
+    const { data: studentConflicts } = await client
+      .from('bookings')
+      .select('id')
+      .eq('organization_id', context.organizationId)
+      .eq('student_id', current.student_id)
+      .in('status', ['new_request', 'contacted', 'confirmed'])
+      .neq('id', bookingId)
+      .lt('start_datetime', input.new_end_datetime)
+      .gt('end_datetime', input.new_start_datetime)
+      .limit(1);
+
+    if (studentConflicts && studentConflicts.length > 0) {
+      throw BookingErrors.slotUnavailable({
+        studentId: current.student_id,
+        reason: 'Student already has a booking at the new time.',
+      });
+    }
+  }
+
   const { data, error } = await client
     .from('bookings')
     .update(updates)
     .eq('id', bookingId)
     .eq('organization_id', context.organizationId)
+    .eq('status', current.status)
     .select()
     .single();
 
   if (error) {
     if (isConflictError(error)) {
       throw BookingErrors.slotUnavailable({ bookingId });
+    }
+    if (error.code === 'PGRST116') {
+      throw new Error('Booking was modified by another user. Please refresh and try again.');
     }
     logger.error('Failed to reschedule booking', error, {
       feature: 'bookings',
@@ -532,6 +601,9 @@ async function recordStatusChange(
  * (indicating a booking conflict).
  */
 function isConflictError(error: { code?: string; message?: string }): boolean {
-  // PostgreSQL exclusion violation code: 23P01
-  return error.code === '23P01' || error.message?.includes('excl_instructor_overlap') === true;
+  if (error.code === '23P01') return true;
+  const msg = error.message ?? '';
+  return msg.includes('excl_instructor_overlap')
+    || msg.includes('excl_student_overlap')
+    || msg.includes('excl_vehicle_overlap');
 }

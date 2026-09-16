@@ -135,7 +135,7 @@ export async function getTenantPageData(): Promise<TenantPageData | null> {
     const [lessonTypesRes, packagesRes, instructorsRes, areasRes, reviewsRes, heroSlidesRes, successStoriesRes] = await Promise.all([
       adminClient
         .from('lesson_types')
-        .select('*')
+        .select('id, organization_id, name, description, duration_minutes, price_cents, transmission_type, status, is_public, sort_order, created_at')
         .eq('organization_id', orgId)
         .eq('status', 'active')
         .eq('is_public', true)
@@ -143,7 +143,7 @@ export async function getTenantPageData(): Promise<TenantPageData | null> {
         .order('name'),
       adminClient
         .from('lesson_packages')
-        .select('*')
+        .select('id, organization_id, name, description, lesson_count, price_cents, per_lesson_price_cents, savings_cents, lesson_type_id, status, is_public, sort_order, validity_days, created_at')
         .eq('organization_id', orgId)
         .eq('status', 'active')
         .eq('is_public', true)
@@ -151,33 +151,33 @@ export async function getTenantPageData(): Promise<TenantPageData | null> {
         .order('name'),
       adminClient
         .from('instructors')
-        .select('*')
+        .select('id, organization_id, display_name, bio, photo_url, transmission_type, is_active')
         .eq('organization_id', orgId)
         .eq('is_active', true)
         .order('display_name'),
       adminClient
         .from('service_areas')
-        .select('*')
+        .select('id, organization_id, name, suburb, postcode, state, is_active')
         .eq('organization_id', orgId)
         .eq('is_active', true)
         .order('name'),
       adminClient
         .from('reviews')
-        .select('*')
+        .select('id, organization_id, reviewer_display_name, rating, review_text, status, created_at')
         .eq('organization_id', orgId)
         .in('status', ['approved', 'featured'])
         .order('created_at', { ascending: false })
         .limit(10),
       adminClient
         .from('hero_slides')
-        .select('*')
+        .select('id, organization_id, title, subtitle, image_url, cta_text, cta_link, is_active, sort_order')
         .eq('organization_id', orgId)
         .eq('is_active', true)
         .order('sort_order')
         .order('created_at'),
       adminClient
         .from('success_stories')
-        .select('*')
+        .select('id, organization_id, student_display_name, photo_url, quote, pass_date, instructor_name, status, sort_order')
         .eq('organization_id', orgId)
         .eq('status', 'published')
         .eq('consent_given', true)

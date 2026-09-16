@@ -97,24 +97,23 @@ async function safeSend(
  * Send booking confirmation email to student.
  * Called when a booking is confirmed.
  */
-export function notifyBookingConfirmed(
+export async function notifyBookingConfirmed(
   client: SupabaseClient,
   params: BookingNotificationParams
-): void {
-  // Fire and forget
-  void safeSend(client, params, 'booking_confirmed');
+): Promise<void> {
+  await safeSend(client, params, 'booking_confirmed');
 }
 
 /**
  * Send booking cancellation email to student.
  * Called when a booking is cancelled (by student or admin).
  */
-export function notifyBookingCancelled(
+export async function notifyBookingCancelled(
   client: SupabaseClient,
   params: BookingNotificationParams,
   cancellationReason?: string
-): void {
-  void safeSend(client, params, 'booking_cancelled', {
+): Promise<void> {
+  await safeSend(client, params, 'booking_cancelled', {
     cancellation_reason: cancellationReason ?? 'No reason provided',
   });
 }
@@ -123,12 +122,12 @@ export function notifyBookingCancelled(
  * Send review request email after lesson completion.
  * Called when a booking transitions to 'completed'.
  */
-export function notifyLessonCompleted(
+export async function notifyLessonCompleted(
   client: SupabaseClient,
   params: BookingNotificationParams,
   reviewUrl?: string
-): void {
-  void safeSend(client, params, 'review_request', {
+): Promise<void> {
+  await safeSend(client, params, 'review_request', {
     review_url: reviewUrl ?? '',
   });
 }
@@ -137,22 +136,22 @@ export function notifyLessonCompleted(
  * Send booking update notification.
  * Called when booking details change (time, instructor, etc.).
  */
-export function notifyBookingChanged(
+export async function notifyBookingChanged(
   client: SupabaseClient,
   params: BookingNotificationParams
-): void {
-  void safeSend(client, params, 'booking_changed');
+): Promise<void> {
+  await safeSend(client, params, 'booking_changed');
 }
 
 /**
  * Send instructor reassignment notification.
  */
-export function notifyInstructorReassigned(
+export async function notifyInstructorReassigned(
   client: SupabaseClient,
   params: BookingNotificationParams,
   newInstructorName: string
-): void {
-  void safeSend(client, params, 'instructor_reassigned', {
+): Promise<void> {
+  await safeSend(client, params, 'instructor_reassigned', {
     instructor_name: newInstructorName,
   });
 }
@@ -160,41 +159,39 @@ export function notifyInstructorReassigned(
 /**
  * Send welcome email when a student is first created.
  */
-export function notifyStudentWelcome(
+export async function notifyStudentWelcome(
   client: SupabaseClient,
   organizationId: string,
   studentUserId: string,
   studentName: string,
   studentEmail: string | null,
   schoolName: string
-): void {
+): Promise<void> {
   if (!studentEmail) return;
-  void (async () => {
-    try {
-      await sendNotification(client, {
-        organizationId,
-        notificationType: 'welcome' as Parameters<typeof sendNotification>[1]['notificationType'],
-        recipientUserId: studentUserId,
-        recipientEmail: studentEmail,
-        recipientName: studentName,
-        variables: {
-          student_name: studentName,
-          school_name: schoolName,
-        },
-      });
-    } catch (err) {
-      logger.error('Failed to send welcome notification', {
-        error: err instanceof Error ? err.message : String(err),
-      });
-    }
-  })();
+  try {
+    await sendNotification(client, {
+      organizationId,
+      notificationType: 'welcome' as Parameters<typeof sendNotification>[1]['notificationType'],
+      recipientUserId: studentUserId,
+      recipientEmail: studentEmail,
+      recipientName: studentName,
+      variables: {
+        student_name: studentName,
+        school_name: schoolName,
+      },
+    });
+  } catch (err) {
+    logger.error('Failed to send welcome notification', {
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
 }
 
 /**
  * Send a booking confirmation email for a public (unauthenticated) booking.
  * Since there is no student record, we send directly using the visitor's email.
  */
-export function notifyPublicBookingReceived(
+export async function notifyPublicBookingReceived(
   client: SupabaseClient,
   organizationId: string,
   customerEmail: string,
@@ -204,32 +201,30 @@ export function notifyPublicBookingReceived(
   startDatetime: string,
   endDatetime: string,
   schoolName: string
-): void {
-  void (async () => {
-    try {
-      await sendNotification(client, {
-        organizationId,
-        notificationType: 'booking_confirmed' as Parameters<typeof sendNotification>[1]['notificationType'],
-        recipientEmail: customerEmail,
-        recipientName: customerName,
-        variables: {
-          student_name: customerName,
-          instructor_name: instructorName,
-          lesson_type: lessonTypeName,
-          date: formatDate(startDatetime),
-          start_time: formatTime(startDatetime),
-          end_time: formatTime(endDatetime),
-          pickup_address: 'TBA',
-          school_name: schoolName,
-          cancellation_hours: '24',
-        },
-      });
-    } catch (err) {
-      logger.error('Failed to send public booking confirmation', {
-        error: err instanceof Error ? err.message : String(err),
-      });
-    }
-  })();
+): Promise<void> {
+  try {
+    await sendNotification(client, {
+      organizationId,
+      notificationType: 'booking_confirmed' as Parameters<typeof sendNotification>[1]['notificationType'],
+      recipientEmail: customerEmail,
+      recipientName: customerName,
+      variables: {
+        student_name: customerName,
+        instructor_name: instructorName,
+        lesson_type: lessonTypeName,
+        date: formatDate(startDatetime),
+        start_time: formatTime(startDatetime),
+        end_time: formatTime(endDatetime),
+        pickup_address: 'TBA',
+        school_name: schoolName,
+        cancellation_hours: '24',
+      },
+    });
+  } catch (err) {
+    logger.error('Failed to send public booking confirmation', {
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
 }
 
 // --------------------------------------------------

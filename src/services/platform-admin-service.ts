@@ -313,35 +313,34 @@ export async function createOrganization(
 
   if (orgError) throw orgError;
 
-  // 3. Create the owner via Supabase Auth. Try creating first — if user
-  //    already exists, look them up. This avoids the pagination problem
-  //    of listUsers() which only returns the first page of results.
   let ownerUserId: string;
   let inviteSent = false;
 
   const { data: createData, error: createErr } =
     await client.auth.admin.createUser({
       email: input.ownerEmail,
-      email_confirm: true,
+      email_confirm: false,
       user_metadata: { full_name: input.ownerName },
     });
 
   if (createErr) {
-    // User likely already exists — try to find them
-    const { data: listData } = await client.auth.admin.listUsers({
-      perPage: 1000,
-      page: 1,
-    });
-    const existingOwner = listData?.users?.find(
-      (u) => u.email === input.ownerEmail
-    );
-    if (!existingOwner) {
-      // Rollback: delete the org
+    if (createErr.message?.includes('already been registered') || (createErr as { status?: number }).status === 422) {
+      const { data: { users }, error: lookupErr } = await client.auth.admin.listUsers({
+        perPage: 1,
+        page: 1,
+        filter: { email: input.ownerEmail },
+      } as Parameters<typeof client.auth.admin.listUsers>[0]);
+      const existingOwner = users?.find((u) => u.email === input.ownerEmail);
+      if (lookupErr || !existingOwner) {
+        await client.from('organizations').delete().eq('id', org.id);
+        throw new Error('Owner email exists but could not be found. Please try again.');
+      }
+      ownerUserId = existingOwner.id;
+      inviteSent = false;
+    } else {
       await client.from('organizations').delete().eq('id', org.id);
       throw createErr;
     }
-    ownerUserId = existingOwner.id;
-    inviteSent = false;
   } else if (!createData.user) {
     await client.from('organizations').delete().eq('id', org.id);
     throw new Error('Failed to create owner account');

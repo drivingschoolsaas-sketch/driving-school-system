@@ -245,15 +245,24 @@ export async function createRefund(
     throw new Error(`Cannot refund payment with status "${payment.status}"`);
   }
 
-  // Check refundable amount
-  const refundableAmount = payment.amount_cents - payment.amount_refunded_cents;
+  // Check refundable amount (includes pending refunds to prevent concurrent over-refund)
+  const { data: pendingRefunds } = await client
+    .from('refunds')
+    .select('amount_cents')
+    .eq('payment_id', input.payment_id)
+    .eq('organization_id', context.organizationId)
+    .in('status', ['pending', 'processing']);
+
+  const pendingTotal = (pendingRefunds ?? []).reduce(
+    (sum: number, r: { amount_cents: number }) => sum + r.amount_cents, 0
+  );
+  const refundableAmount = payment.amount_cents - payment.amount_refunded_cents - pendingTotal;
   if (input.amount_cents > refundableAmount) {
     throw new Error(
       `Refund amount (${input.amount_cents}) exceeds refundable amount (${refundableAmount})`
     );
   }
 
-  // Create the refund record
   const { data, error } = await client
     .from('refunds')
     .insert({

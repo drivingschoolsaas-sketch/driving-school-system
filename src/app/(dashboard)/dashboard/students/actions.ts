@@ -13,6 +13,7 @@ import { createStudent, updateStudent, deleteStudent } from '@/services/student-
 import { createStudentSchema, updateStudentSchema } from '@/validators/student';
 import { audit } from '@/lib/audit';
 import { notifyStudentWelcome } from '@/services/booking-notifications';
+import { requireUsageLimit } from '@/services/entitlement-service';
 
 export interface StudentActionState {
   success: boolean;
@@ -28,7 +29,8 @@ export async function createStudentAction(
     requirePermission(auth, PERMISSIONS.STUDENT_CREATE);
     const client = await createServerSupabaseClient();
 
-    // Create a Supabase Auth user for the student via invite
+    await requireUsageLimit(client, auth.organizationId, 'students');
+
     const adminClient = getAdminClient();
     const email = (formData.get('email') as string)?.trim();
     const displayName = (formData.get('display_name') as string)?.trim();
@@ -37,22 +39,27 @@ export async function createStudentAction(
       return { success: false, error: 'Email is required to create a student account.' };
     }
 
-    // Try to create user first, fall back to lookup if already exists.
-    // This avoids the pagination problem of listUsers() which only returns page 1.
     let userId: string;
     const { data: createData, error: createError } = await adminClient.auth.admin.createUser({
       email,
-      email_confirm: true,
+      email_confirm: false,
       user_metadata: { full_name: displayName },
     });
     if (createError) {
-      // User likely already exists — try to find them
-      const { data: listData } = await adminClient.auth.admin.listUsers({ perPage: 1000, page: 1 });
-      const existingUser = listData?.users?.find((u) => u.email === email);
-      if (!existingUser) {
+      if (createError.message?.includes('already been registered') || createError.status === 422) {
+        const { data: { users }, error: lookupError } = await adminClient.auth.admin.listUsers({
+          perPage: 1,
+          page: 1,
+          filter: { email },
+        } as Parameters<typeof adminClient.auth.admin.listUsers>[0]);
+        const existingUser = users?.find((u) => u.email === email);
+        if (lookupError || !existingUser) {
+          return { success: false, error: 'A user with this email exists but could not be found. Please try again.' };
+        }
+        userId = existingUser.id;
+      } else {
         return { success: false, error: createError.message ?? 'Failed to create student account.' };
       }
-      userId = existingUser.id;
     } else if (!createData.user) {
       return { success: false, error: 'Failed to create student account.' };
     } else {
@@ -73,8 +80,12 @@ export async function createStudentAction(
     const student = await createStudent(client, auth, input);
     audit(client, auth, { action: 'student.created', resourceType: 'student', resourceId: student.id, details: { display_name: input.display_name } });
 
-    // Send welcome email (fire-and-forget)
-    notifyStudentWelcome(client, auth.organizationId, userId, displayName, email, organization.name);
+    // Send welcome email — await so failures are logged with context
+    try {
+      await notifyStudentWelcome(client, auth.organizationId, userId, displayName, email, organization.name);
+    } catch {
+      // Non-blocking: student was created successfully even if notification fails
+    }
 
     revalidatePath('/dashboard/students');
     return { success: true };
