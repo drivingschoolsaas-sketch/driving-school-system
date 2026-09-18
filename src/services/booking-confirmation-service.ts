@@ -5,7 +5,6 @@ import { getEmailProvider } from '@/lib/notification-provider';
 import {
   generateCalendarUid,
   generateBookingReference,
-  generateIcs,
   buildGoogleCalendarUrl,
   buildOutlookCalendarUrl,
 } from '@/services/calendar-service';
@@ -84,7 +83,6 @@ function formatTimeInTz(iso: string, tz: string): string {
 
 function buildEmailData(ctx: ConfirmationContext, appUrl: string) {
   const tz = ctx.org.timezone || 'Australia/Sydney';
-  const calendarUid = (ctx.booking.calendar_uid as string) || '';
   const calendarToken = (ctx.booking.calendar_token as string) || '';
   const bookingRef = (ctx.booking.booking_reference as string) || '';
 
