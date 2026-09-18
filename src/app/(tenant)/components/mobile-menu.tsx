@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -13,7 +14,12 @@ interface MobileMenuProps {
 
 export function MobileMenu({ links, phone, email, primaryColor }: MobileMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Close menu on route change
   useEffect(() => {
@@ -34,31 +40,12 @@ export function MobileMenu({ links, phone, email, primaryColor }: MobileMenuProp
 
   const toggle = useCallback(() => setIsOpen((v) => !v), []);
 
-  return (
+  const menuPanel = (
     <>
-      {/* Hamburger Button */}
-      <button
-        type="button"
-        onClick={toggle}
-        className="inline-flex items-center justify-center rounded-md p-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-        aria-label="Toggle menu"
-        aria-expanded={isOpen}
-      >
-        {isOpen ? (
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        ) : (
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        )}
-      </button>
-
       {/* Overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+          className="fixed inset-0 z-[9998] bg-black/50 backdrop-blur-sm"
           onClick={toggle}
           aria-hidden
         />
@@ -66,7 +53,7 @@ export function MobileMenu({ links, phone, email, primaryColor }: MobileMenuProp
 
       {/* Slide-in Panel */}
       <div
-        className={`fixed top-0 right-0 z-50 h-full w-72 max-w-[80vw] bg-white dark:bg-gray-900 shadow-2xl transform transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 right-0 z-[9999] h-full w-72 max-w-[80vw] bg-white dark:bg-gray-900 shadow-2xl transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -142,6 +129,32 @@ export function MobileMenu({ links, phone, email, primaryColor }: MobileMenuProp
           </Link>
         </div>
       </div>
+    </>
+  );
+
+  return (
+    <>
+      {/* Hamburger Button */}
+      <button
+        type="button"
+        onClick={toggle}
+        className="inline-flex items-center justify-center rounded-md p-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+        aria-label="Toggle menu"
+        aria-expanded={isOpen}
+      >
+        {isOpen ? (
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        ) : (
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        )}
+      </button>
+
+      {/* Portal the overlay + panel to document.body so they escape the header's stacking context */}
+      {mounted && createPortal(menuPanel, document.body)}
     </>
   );
 }
