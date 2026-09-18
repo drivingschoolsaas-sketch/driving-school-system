@@ -8,27 +8,25 @@
 export type { EmailProvider, SmsProvider, SendResult } from './types';
 export { LogEmailProvider } from './log-email-provider';
 export { LogSmsProvider } from './log-sms-provider';
+export { ResendEmailProvider } from './resend-email-provider';
 
 import type { EmailProvider } from './types';
 import type { SmsProvider } from './types';
 import { LogEmailProvider } from './log-email-provider';
 import { LogSmsProvider } from './log-sms-provider';
+import { ResendEmailProvider } from './resend-email-provider';
 
 let cachedEmailProvider: EmailProvider | null = null;
 let cachedSmsProvider: SmsProvider | null = null;
 
-/**
- * Get the configured email provider.
- * Override here to use Resend, SendGrid, etc.
- */
 export function getEmailProvider(): EmailProvider {
   if (!cachedEmailProvider) {
-    // TODO: Check env vars for a real provider
-    // if (process.env.RESEND_API_KEY) {
-    //   cachedEmailProvider = new ResendEmailProvider();
-    // } else {
-    cachedEmailProvider = new LogEmailProvider();
-    // }
+    const resendKey = process.env.RESEND_API_KEY;
+    if (resendKey) {
+      cachedEmailProvider = new ResendEmailProvider(resendKey);
+    } else {
+      cachedEmailProvider = new LogEmailProvider();
+    }
   }
   return cachedEmailProvider;
 }

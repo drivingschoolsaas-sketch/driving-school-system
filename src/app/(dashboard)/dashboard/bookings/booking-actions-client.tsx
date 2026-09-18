@@ -6,7 +6,7 @@
 // Status transition buttons + cancel with reason dialog.
 
 import { useState, useTransition } from 'react';
-import { transitionStatusAction, cancelBookingAction, rescheduleBookingAction } from './actions';
+import { transitionStatusAction, cancelBookingAction, rescheduleBookingAction, resendConfirmationAction } from './actions';
 
 // Valid transitions — mirrors booking-service VALID_TRANSITIONS
 const VALID_TRANSITIONS: Record<string, string[]> = {
@@ -40,19 +40,28 @@ const STATUS_BUTTON_STYLES: Record<string, string> = {
 interface BookingActionsProps {
   bookingId: string;
   currentStatus: string;
+  confirmationSentAt?: string | null;
+  bookingReference?: string | null;
+  studentName?: string;
+  lessonType?: string;
+  date?: string;
+  time?: string;
 }
 
 const TERMINAL_STATUSES = ['completed', 'cancelled', 'rejected', 'no_show'];
 
-export function BookingActions({ bookingId, currentStatus }: BookingActionsProps) {
+export function BookingActions({ bookingId, currentStatus, confirmationSentAt, bookingReference, studentName, lessonType, date, time }: BookingActionsProps) {
   const transitions = VALID_TRANSITIONS[currentStatus] ?? [];
   const [isPending, startTransition] = useTransition();
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showReschedule, setShowReschedule] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [rescheduleData, setRescheduleData] = useState({ date: '', start: '', end: '', reason: '' });
   const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const canReschedule = !TERMINAL_STATUSES.includes(currentStatus);
+  const isConfirmed = currentStatus === 'confirmed';
 
   if (transitions.length === 0 && !canReschedule) return null;
 
@@ -61,12 +70,44 @@ export function BookingActions({ bookingId, currentStatus }: BookingActionsProps
       setShowCancelDialog(true);
       return;
     }
+    if (newStatus === 'confirmed') {
+      setShowConfirmModal(true);
+      return;
+    }
 
     setError(null);
+    setSuccessMsg(null);
     startTransition(async () => {
       const result = await transitionStatusAction(bookingId, newStatus);
       if (!result.success) {
         setError(result.error ?? 'Failed');
+      }
+    });
+  }
+
+  function handleConfirmAndNotify() {
+    setError(null);
+    setSuccessMsg(null);
+    startTransition(async () => {
+      const result = await transitionStatusAction(bookingId, 'confirmed');
+      if (!result.success) {
+        setError(result.error ?? 'Failed to confirm');
+      } else {
+        setSuccessMsg('Booking confirmed and notification sent!');
+      }
+      setShowConfirmModal(false);
+    });
+  }
+
+  function handleResendConfirmation() {
+    setError(null);
+    setSuccessMsg(null);
+    startTransition(async () => {
+      const result = await resendConfirmationAction(bookingId);
+      if (!result.success) {
+        setError(result.error ?? 'Failed to resend');
+      } else {
+        setSuccessMsg('Confirmation email resent!');
       }
     });
   }
@@ -105,10 +146,64 @@ export function BookingActions({ bookingId, currentStatus }: BookingActionsProps
             🔄 Reschedule
           </button>
         )}
+        {isConfirmed && (
+          <button
+            onClick={handleResendConfirmation}
+            disabled={isPending}
+            className="rounded-lg bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 text-xs font-medium text-white transition-colors disabled:opacity-50"
+          >
+            📧 Resend Confirmation
+          </button>
+        )}
       </div>
+
+      {isConfirmed && confirmationSentAt && (
+        <p className="text-xs text-green-600 dark:text-green-400">
+          ✓ Confirmation sent {new Date(confirmationSentAt).toLocaleString()}
+          {bookingReference && <span className="ml-1 font-mono">({bookingReference})</span>}
+        </p>
+      )}
 
       {error && (
         <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+      )}
+
+      {successMsg && (
+        <p className="text-xs text-green-600 dark:text-green-400">{successMsg}</p>
+      )}
+
+      {showConfirmModal && (
+        <div className="mt-2 rounded-lg border border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-900/20 p-4 space-y-3">
+          <h3 className="text-sm font-semibold text-green-800 dark:text-green-200">
+            Confirm & Notify
+          </h3>
+          <p className="text-xs text-gray-700 dark:text-gray-300">
+            This will confirm the booking and send a confirmation email with calendar links to the student.
+          </p>
+          {(studentName || lessonType || date) && (
+            <div className="rounded-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 p-3 text-xs space-y-1">
+              {studentName && <div><span className="text-gray-500">Student:</span> <span className="font-medium text-gray-900 dark:text-white">{studentName}</span></div>}
+              {lessonType && <div><span className="text-gray-500">Lesson:</span> <span className="font-medium text-gray-900 dark:text-white">{lessonType}</span></div>}
+              {date && <div><span className="text-gray-500">Date:</span> <span className="font-medium text-gray-900 dark:text-white">{date}</span></div>}
+              {time && <div><span className="text-gray-500">Time:</span> <span className="font-medium text-gray-900 dark:text-white">{time}</span></div>}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <button
+              onClick={handleConfirmAndNotify}
+              disabled={isPending}
+              className="rounded-lg bg-green-600 px-4 py-2 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50"
+            >
+              {isPending ? 'Confirming…' : '✅ Confirm & Send Email'}
+            </button>
+            <button
+              onClick={() => setShowConfirmModal(false)}
+              className="rounded-lg bg-gray-200 dark:bg-gray-600 px-3 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
       )}
 
       {showReschedule && (

@@ -242,7 +242,16 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
 
                 {/* Action buttons */}
                 {isAdmin && (
-                  <BookingActions bookingId={booking.id} currentStatus={booking.status} />
+                  <BookingActions
+                    bookingId={booking.id}
+                    currentStatus={booking.status}
+                    confirmationSentAt={(booking as unknown as Record<string, unknown>).confirmation_email_sent_at as string | null}
+                    bookingReference={(booking as unknown as Record<string, unknown>).booking_reference as string | null}
+                    studentName={student?.display_name}
+                    lessonType={lt?.name}
+                    date={start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                    time={`${start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} – ${end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`}
+                  />
                 )}
               </div>
             );

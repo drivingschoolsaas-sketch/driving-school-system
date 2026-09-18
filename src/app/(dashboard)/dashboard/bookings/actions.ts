@@ -30,10 +30,43 @@ import {
   notifyBookingChanged,
   notifyLessonCompleted,
 } from '@/services/booking-notifications';
+import {
+  confirmBookingAndNotify,
+  sendRescheduleNotification,
+  sendCancellationNotification,
+} from '@/services/booking-confirmation-service';
 
 export interface BookingActionState {
   success: boolean;
   error?: string;
+}
+
+export async function resendConfirmationAction(
+  bookingId: string
+): Promise<BookingActionState> {
+  try {
+    const { auth } = await getDashboardContext();
+    requirePermission(auth, PERMISSIONS.BOOKING_EDIT);
+    const ac = getAdminClient();
+
+    const { data: booking } = await ac
+      .from('bookings')
+      .select('status, confirmation_email_sent_at')
+      .eq('id', bookingId)
+      .eq('organization_id', auth.organizationId)
+      .single();
+
+    const row = booking as { status: string; confirmation_email_sent_at: string | null } | null;
+    if (!row || row.status !== 'confirmed') {
+      return { success: false, error: 'Booking is not in confirmed status' };
+    }
+
+    const result = await confirmBookingAndNotify(ac, auth, bookingId);
+    return result;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to resend confirmation';
+    return { success: false, error: message };
+  }
 }
 
 export async function createBookingAction(
@@ -97,14 +130,16 @@ export async function transitionStatusAction(
     await transitionBookingStatus(client, auth, bookingId, input.status, input.reason);
     audit(client, auth, { action: `booking.${input.status}`, resourceType: 'booking', resourceId: bookingId });
 
-    // Send appropriate notification based on new status (admin client survives after response)
     const ac2 = getAdminClient();
-    resolveBookingNotificationParams(ac2, auth.organizationId, bookingId).then((params) => {
-      if (!params) return;
-      if (input.status === 'confirmed') notifyBookingConfirmed(ac2, params);
-      else if (input.status === 'completed') notifyLessonCompleted(ac2, params);
-      else if (input.status === 'cancelled') notifyBookingCancelled(ac2, params, input.reason ?? undefined);
-    });
+    if (input.status === 'confirmed') {
+      confirmBookingAndNotify(ac2, auth, bookingId).catch(() => {});
+    } else {
+      resolveBookingNotificationParams(ac2, auth.organizationId, bookingId).then((params) => {
+        if (!params) return;
+        if (input.status === 'completed') notifyLessonCompleted(ac2, params);
+        else if (input.status === 'cancelled') notifyBookingCancelled(ac2, params, input.reason ?? undefined);
+      });
+    }
 
     revalidatePath('/dashboard/bookings');
     revalidatePath('/dashboard/calendar');
@@ -134,10 +169,10 @@ export async function cancelBookingAction(
     await cancelBooking(client, auth, bookingId, input);
     audit(client, auth, { action: 'booking.cancelled', resourceType: 'booking', resourceId: bookingId, details: { reason } });
 
-    // Notify student of cancellation (fire-and-forget, admin client survives after response)
     if (notifParams) {
       notifyBookingCancelled(ac, notifParams, reason ?? 'Cancelled by admin');
     }
+    sendCancellationNotification(ac, auth.organizationId, bookingId, reason).catch(() => {});
 
     revalidatePath('/dashboard/bookings');
     revalidatePath('/dashboard/calendar');
@@ -182,11 +217,11 @@ export async function rescheduleBookingAction(
       details: { new_start: input.new_start_datetime, reason },
     });
 
-    // Notify student of the change (fire-and-forget, admin client survives after response)
     const ac3 = getAdminClient();
     resolveBookingNotificationParams(ac3, auth.organizationId, bookingId).then((params) => {
       if (params) notifyBookingChanged(ac3, params);
     });
+    sendRescheduleNotification(ac3, auth.organizationId, bookingId).catch(() => {});
 
     revalidatePath('/dashboard/bookings');
     revalidatePath('/dashboard/calendar');
