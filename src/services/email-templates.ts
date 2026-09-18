@@ -1,3 +1,11 @@
+function esc(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 interface BookingEmailData {
   studentName: string;
   lessonType: string;
@@ -27,7 +35,7 @@ function baseLayout(content: string, data: Pick<BookingEmailData, 'schoolName' |
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${data.schoolName}</title>
+<title>${esc(data.schoolName)}</title>
 </head>
 <body style="margin:0;padding:0;background-color:#f4f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f5f7;">
@@ -36,8 +44,8 @@ function baseLayout(content: string, data: Pick<BookingEmailData, 'schoolName' |
 
 <!-- Header -->
 <tr><td style="background-color:${color};padding:24px 32px;text-align:center;">
-${data.logoUrl ? `<img src="${data.logoUrl}" alt="${data.schoolName}" height="40" style="display:inline-block;margin-bottom:8px;">` : ''}
-<div style="color:#ffffff;font-size:20px;font-weight:700;letter-spacing:-0.3px;">${data.schoolName}</div>
+${data.logoUrl ? `<img src="${esc(data.logoUrl)}" alt="${esc(data.schoolName)}" height="40" style="display:inline-block;margin-bottom:8px;">` : ''}
+<div style="color:#ffffff;font-size:20px;font-weight:700;letter-spacing:-0.3px;">${esc(data.schoolName)}</div>
 </td></tr>
 
 <!-- Content -->
@@ -47,9 +55,9 @@ ${content}
 
 <!-- Footer -->
 <tr><td style="padding:24px 32px;border-top:1px solid #e5e7eb;text-align:center;color:#6b7280;font-size:13px;line-height:1.5;">
-${data.schoolPhone ? `<a href="tel:${data.schoolPhone}" style="color:${color};text-decoration:none;">${data.schoolPhone}</a>` : ''}
+${data.schoolPhone ? `<a href="tel:${esc(data.schoolPhone)}" style="color:${color};text-decoration:none;">${esc(data.schoolPhone)}</a>` : ''}
 ${data.schoolPhone && data.schoolEmail ? ' &middot; ' : ''}
-${data.schoolEmail ? `<a href="mailto:${data.schoolEmail}" style="color:${color};text-decoration:none;">${data.schoolEmail}</a>` : ''}
+${data.schoolEmail ? `<a href="mailto:${esc(data.schoolEmail)}" style="color:${color};text-decoration:none;">${esc(data.schoolEmail)}</a>` : ''}
 <br>Powered by DriveFlow
 </td></tr>
 
@@ -66,27 +74,27 @@ function bookingDetailsBlock(data: BookingEmailData, color: string): string {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
 <tr>
 <td style="padding:6px 0;color:#6b7280;font-size:13px;width:100px;">Date</td>
-<td style="padding:6px 0;font-size:14px;font-weight:600;color:#111827;">${data.date}</td>
+<td style="padding:6px 0;font-size:14px;font-weight:600;color:#111827;">${esc(data.date)}</td>
 </tr>
 <tr>
 <td style="padding:6px 0;color:#6b7280;font-size:13px;">Time</td>
-<td style="padding:6px 0;font-size:14px;font-weight:600;color:#111827;">${data.startTime} — ${data.endTime}</td>
+<td style="padding:6px 0;font-size:14px;font-weight:600;color:#111827;">${esc(data.startTime)} — ${esc(data.endTime)}</td>
 </tr>
 <tr>
 <td style="padding:6px 0;color:#6b7280;font-size:13px;">Lesson</td>
-<td style="padding:6px 0;font-size:14px;font-weight:600;color:#111827;">${data.lessonType}</td>
+<td style="padding:6px 0;font-size:14px;font-weight:600;color:#111827;">${esc(data.lessonType)}</td>
 </tr>
 <tr>
 <td style="padding:6px 0;color:#6b7280;font-size:13px;">Instructor</td>
-<td style="padding:6px 0;font-size:14px;font-weight:600;color:#111827;">${data.instructorName}</td>
+<td style="padding:6px 0;font-size:14px;font-weight:600;color:#111827;">${esc(data.instructorName)}</td>
 </tr>
 ${data.pickupAddress ? `<tr>
 <td style="padding:6px 0;color:#6b7280;font-size:13px;">Pickup</td>
-<td style="padding:6px 0;font-size:14px;font-weight:600;color:#111827;">${data.pickupAddress}</td>
+<td style="padding:6px 0;font-size:14px;font-weight:600;color:#111827;">${esc(data.pickupAddress)}</td>
 </tr>` : ''}
 <tr>
 <td style="padding:6px 0;color:#6b7280;font-size:13px;">Reference</td>
-<td style="padding:6px 0;font-size:14px;font-weight:600;color:${color};">${data.bookingReference}</td>
+<td style="padding:6px 0;font-size:14px;font-weight:600;color:${color};">${esc(data.bookingReference)}</td>
 </tr>
 </table>
 </td></tr>
@@ -113,7 +121,7 @@ export function renderConfirmationEmail(data: BookingEmailData): { subject: stri
   const content = `
 <h1 style="margin:0 0 8px;font-size:22px;color:#111827;font-weight:700;">Booking Confirmed!</h1>
 <p style="margin:0 0 20px;color:#4b5563;font-size:15px;line-height:1.5;">
-Hi ${data.studentName}, your driving lesson has been confirmed.
+Hi ${esc(data.studentName)}, your driving lesson has been confirmed.
 </p>
 
 ${bookingDetailsBlock(data, color)}
@@ -136,7 +144,7 @@ export function renderReminderEmail(data: BookingEmailData): { subject: string; 
   const content = `
 <h1 style="margin:0 0 8px;font-size:22px;color:#111827;font-weight:700;">Lesson Tomorrow!</h1>
 <p style="margin:0 0 20px;color:#4b5563;font-size:15px;line-height:1.5;">
-Hi ${data.studentName}, this is a friendly reminder about your driving lesson tomorrow.
+Hi ${esc(data.studentName)}, this is a friendly reminder about your driving lesson tomorrow.
 </p>
 
 ${bookingDetailsBlock(data, color)}
@@ -158,7 +166,7 @@ export function renderRescheduleEmail(data: BookingEmailData): { subject: string
   const content = `
 <h1 style="margin:0 0 8px;font-size:22px;color:#111827;font-weight:700;">Booking Rescheduled</h1>
 <p style="margin:0 0 20px;color:#4b5563;font-size:15px;line-height:1.5;">
-Hi ${data.studentName}, your driving lesson has been rescheduled. Here are the updated details:
+Hi ${esc(data.studentName)}, your driving lesson has been rescheduled. Here are the updated details:
 </p>
 
 ${bookingDetailsBlock(data, color)}
@@ -179,14 +187,14 @@ export function renderCancellationEmail(data: BookingEmailData): { subject: stri
   const content = `
 <h1 style="margin:0 0 8px;font-size:22px;color:#111827;font-weight:700;">Booking Cancelled</h1>
 <p style="margin:0 0 20px;color:#4b5563;font-size:15px;line-height:1.5;">
-Hi ${data.studentName}, your driving lesson has been cancelled.
+Hi ${esc(data.studentName)}, your driving lesson has been cancelled.
 </p>
 
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#fef2f2;border-radius:8px;border:1px solid #fecaca;margin:16px 0;">
 <tr><td style="padding:20px;">
-<div style="font-size:14px;font-weight:600;color:#991b1b;margin-bottom:4px;">${data.lessonType} on ${data.date} at ${data.startTime}</div>
-<div style="font-size:13px;color:#991b1b;">Reference: ${data.bookingReference}</div>
-${data.cancellationReason ? `<div style="margin-top:8px;font-size:13px;color:#7f1d1d;">Reason: ${data.cancellationReason}</div>` : ''}
+<div style="font-size:14px;font-weight:600;color:#991b1b;margin-bottom:4px;">${esc(data.lessonType)} on ${esc(data.date)} at ${esc(data.startTime)}</div>
+<div style="font-size:13px;color:#991b1b;">Reference: ${esc(data.bookingReference)}</div>
+${data.cancellationReason ? `<div style="margin-top:8px;font-size:13px;color:#7f1d1d;">Reason: ${esc(data.cancellationReason)}</div>` : ''}
 </td></tr>
 </table>
 

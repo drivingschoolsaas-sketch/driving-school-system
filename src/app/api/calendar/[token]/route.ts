@@ -18,16 +18,16 @@ export async function GET(
 
   const org = booking.organizations as { name: string; timezone: string; slug: string };
   const lessonType = booking.lesson_types as { name: string };
-  const instructor = booking.instructors as { profiles: { full_name: string; email: string } } | null;
+  const instructor = booking.instructors as { display_name: string; email: string } | null;
 
   const ics = generateIcs({
     title: `Driving Lesson — ${lessonType?.name || 'Lesson'}`,
-    description: `Instructor: ${instructor?.profiles?.full_name || 'TBA'}\nPickup: ${booking.pickup_address || 'TBA'}`,
+    description: `Instructor: ${instructor?.display_name || 'TBA'}\nPickup: ${booking.pickup_address || 'TBA'}`,
     location: booking.pickup_address || '',
     startDatetime: booking.start_datetime,
     endDatetime: booking.end_datetime,
     organizerName: org?.name || 'Driving School',
-    organizerEmail: instructor?.profiles?.email || `noreply@${org?.slug || 'school'}.driveflow.app`,
+    organizerEmail: instructor?.email || `noreply@${org?.slug || 'school'}.driveflow.app`,
     calendarUid: booking.calendar_uid || `booking-${booking.id}@driveflow.app`,
     sequence: booking.calendar_sequence || 0,
     bookingReference: booking.booking_reference,

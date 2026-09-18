@@ -174,9 +174,7 @@ export async function getBookingByCalendarToken(
       *,
       lesson_types(name),
       organizations(name, timezone, slug),
-      instructors:instructor_id(
-        profiles(full_name, email)
-      )
+      instructors:instructor_id(display_name, email)
     `)
     .eq('calendar_token', token)
     .single();

@@ -157,10 +157,10 @@ export async function confirmBookingAndNotify(
   const { subject, html } = renderConfirmationEmail(emailData);
 
   const provider = getEmailProvider();
-  const fromEmail = ctx.settings?.contact_email || `noreply@${ctx.org.slug}.driveflow.app`;
+  const fromEmail = process.env.RESEND_FROM_EMAIL || `noreply@${ctx.org.slug}.driveflow.app`;
 
   const result = await provider.send({
-    to: ctx.student.email,
+    to: ctx.student.email!,
     from: fromEmail,
     fromName: ctx.org.name,
     subject,
@@ -200,10 +200,10 @@ export async function sendRescheduleNotification(
   const { subject, html } = renderRescheduleEmail(emailData);
 
   const provider = getEmailProvider();
-  const fromEmail = ctx.settings?.contact_email || `noreply@${ctx.org.slug}.driveflow.app`;
+  const fromEmail = process.env.RESEND_FROM_EMAIL || `noreply@${ctx.org.slug}.driveflow.app`;
 
   await provider.send({
-    to: ctx.student.email,
+    to: ctx.student.email!,
     from: fromEmail,
     fromName: ctx.org.name,
     subject,
@@ -226,10 +226,10 @@ export async function sendCancellationNotification(
   const { subject, html } = renderCancellationEmail(emailData);
 
   const provider = getEmailProvider();
-  const fromEmail = ctx.settings?.contact_email || `noreply@${ctx.org.slug}.driveflow.app`;
+  const fromEmail = process.env.RESEND_FROM_EMAIL || `noreply@${ctx.org.slug}.driveflow.app`;
 
   await provider.send({
-    to: ctx.student.email,
+    to: ctx.student.email!,
     from: fromEmail,
     fromName: ctx.org.name,
     subject,
@@ -251,10 +251,10 @@ export async function sendReminderEmail(
   const { subject, html } = renderReminderEmail(emailData);
 
   const provider = getEmailProvider();
-  const fromEmail = ctx.settings?.contact_email || `noreply@${ctx.org.slug}.driveflow.app`;
+  const fromEmail = process.env.RESEND_FROM_EMAIL || `noreply@${ctx.org.slug}.driveflow.app`;
 
   const result = await provider.send({
-    to: ctx.student.email,
+    to: ctx.student.email!,
     from: fromEmail,
     fromName: ctx.org.name,
     subject,
