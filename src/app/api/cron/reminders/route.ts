@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 
   const client = getAdminClient();
   const now = new Date();
-  const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  const in28h = new Date(now.getTime() + 28 * 60 * 60 * 1000);
 
   const { data: bookings, error } = await client
     .from('bookings')
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     .eq('status', 'confirmed')
     .is('reminder_24h_sent_at', null)
     .gte('start_datetime', now.toISOString())
-    .lte('start_datetime', in24h.toISOString())
+    .lte('start_datetime', in28h.toISOString())
     .limit(50);
 
   if (error) {
