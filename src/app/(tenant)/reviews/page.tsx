@@ -15,7 +15,7 @@ import type { Metadata } from 'next';
 export async function generateMetadata(): Promise<Metadata> {
   const data = await getTenantData();
   if (!data) return { title: 'Reviews' };
-  return { title: `Reviews | ${data.organization.name}` };
+  return { title: 'Reviews' };
 }
 
 export default async function ReviewsPage() {

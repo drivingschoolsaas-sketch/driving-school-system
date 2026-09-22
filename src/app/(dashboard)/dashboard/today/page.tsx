@@ -69,6 +69,7 @@ export default async function TodayModePage() {
     const { data } = await client
       .from('students')
       .select('*')
+      .eq('organization_id', orgId)
       .in('id', studentIds);
     students = (data ?? []) as Student[];
   }
@@ -77,6 +78,7 @@ export default async function TodayModePage() {
     const { data } = await client
       .from('lesson_types')
       .select('*')
+      .eq('organization_id', orgId)
       .in('id', lessonTypeIds);
     lessonTypes = (data ?? []) as LessonType[];
   }
@@ -135,7 +137,7 @@ export default async function TodayModePage() {
         </div>
         <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 text-center">
           <p className="text-2xl font-bold text-gray-900 dark:text-white">
-            ${bookings.reduce((sum, b) => sum + b.price_cents, 0) / 100}
+            ${(bookings.reduce((sum, b) => sum + b.price_cents, 0) / 100).toFixed(2)}
           </p>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Revenue</p>
         </div>

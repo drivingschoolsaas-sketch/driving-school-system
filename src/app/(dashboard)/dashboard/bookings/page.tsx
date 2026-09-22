@@ -245,8 +245,8 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
                   <BookingActions
                     bookingId={booking.id}
                     currentStatus={booking.status}
-                    confirmationSentAt={(booking as unknown as Record<string, unknown>).confirmation_email_sent_at as string | null}
-                    bookingReference={(booking as unknown as Record<string, unknown>).booking_reference as string | null}
+                    confirmationSentAt={booking.confirmation_email_sent_at}
+                    bookingReference={booking.booking_reference}
                     studentName={student?.display_name}
                     lessonType={lt?.name}
                     date={start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}

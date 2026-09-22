@@ -291,6 +291,7 @@ export default async function InstructorDetailPage({ params }: PageProps) {
                             </p>
                           </div>
                           <div className="min-w-0 flex-1">
+                            {b.student_id ? (
                             <Link
                               href={`/dashboard/students/${b.student_id}`}
                               className="text-sm font-medium hover:underline"
@@ -298,6 +299,9 @@ export default async function InstructorDetailPage({ params }: PageProps) {
                             >
                               {studentName}
                             </Link>
+                            ) : (
+                            <span className="text-sm font-medium text-gray-500">{studentName}</span>
+                            )}
                             <p className="text-xs text-gray-500 dark:text-gray-400">
                               {lt?.name ?? 'Lesson'}
                               {b.pickup_address && ` · 📍 ${b.pickup_address}`}

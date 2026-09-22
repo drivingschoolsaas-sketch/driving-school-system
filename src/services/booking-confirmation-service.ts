@@ -128,17 +128,22 @@ export async function confirmBookingAndNotify(
     return { success: false, error: 'Student has no email address' };
   }
 
-  const calendarUid = generateCalendarUid(auth.organizationId, bookingId);
+  const calendarUid = (ctx.booking.calendar_uid as string) || generateCalendarUid(auth.organizationId, bookingId);
   const bookingReference = (ctx.booking.booking_reference as string) || generateBookingReference();
+
+  const isFirstConfirmation = !ctx.booking.confirmed_at;
+  const updateFields: Record<string, unknown> = {
+    calendar_uid: calendarUid,
+    booking_reference: bookingReference,
+  };
+  if (isFirstConfirmation) {
+    updateFields.confirmed_at = new Date().toISOString();
+    updateFields.confirmed_by = auth.userId;
+  }
 
   const { error: updateErr } = await client
     .from('bookings')
-    .update({
-      confirmed_at: new Date().toISOString(),
-      confirmed_by: auth.userId,
-      calendar_uid: calendarUid,
-      booking_reference: bookingReference,
-    })
+    .update(updateFields)
     .eq('id', bookingId)
     .eq('organization_id', auth.organizationId);
 

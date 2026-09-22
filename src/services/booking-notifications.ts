@@ -25,22 +25,25 @@ interface BookingNotificationParams {
   pickupAddress: string | null;
   priceCents: number;
   schoolName: string;
+  timezone?: string;
   cancellationHours?: number;
 }
 
-function formatDate(iso: string): string {
+function formatDate(iso: string, tz?: string): string {
   return new Date(iso).toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
     year: 'numeric',
+    ...(tz ? { timeZone: tz } : {}),
   });
 }
 
-function formatTime(iso: string): string {
+function formatTime(iso: string, tz?: string): string {
   return new Date(iso).toLocaleTimeString('en-US', {
     hour: '2-digit',
     minute: '2-digit',
+    ...(tz ? { timeZone: tz } : {}),
   });
 }
 
@@ -49,9 +52,9 @@ function buildVariables(params: BookingNotificationParams): Record<string, strin
     student_name: params.studentName,
     instructor_name: params.instructorName,
     lesson_type: params.lessonTypeName,
-    date: formatDate(params.startDatetime),
-    start_time: formatTime(params.startDatetime),
-    end_time: formatTime(params.endDatetime),
+    date: formatDate(params.startDatetime, params.timezone),
+    start_time: formatTime(params.startDatetime, params.timezone),
+    end_time: formatTime(params.endDatetime, params.timezone),
     pickup_address: params.pickupAddress ?? 'TBA',
     school_name: params.schoolName,
     amount: `$${(params.priceCents / 100).toFixed(2)}`,
@@ -276,7 +279,7 @@ export async function resolveBookingNotificationParams(
         .single(),
       client
         .from('organizations')
-        .select('name')
+        .select('name, timezone')
         .eq('id', organizationId)
         .single(),
       client
@@ -289,7 +292,7 @@ export async function resolveBookingNotificationParams(
     const student = studentRes.data as { display_name: string; email: string | null; phone: string | null; user_id: string } | null;
     const instructor = instructorRes.data as { display_name: string } | null;
     const lt = ltRes.data as { name: string } | null;
-    const org = orgRes.data as { name: string } | null;
+    const org = orgRes.data as { name: string; timezone: string } | null;
     const settings = settingsRes.data as { cancellation_notice_hours: number | null } | null;
 
     if (!student || !instructor || !lt || !org) return null;
@@ -308,6 +311,7 @@ export async function resolveBookingNotificationParams(
       pickupAddress: booking.pickup_address,
       priceCents: booking.price_cents,
       schoolName: org.name,
+      timezone: org.timezone || undefined,
       cancellationHours: settings?.cancellation_notice_hours ?? 24,
     };
   } catch (err) {

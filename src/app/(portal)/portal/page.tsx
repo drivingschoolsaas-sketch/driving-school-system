@@ -196,7 +196,15 @@ export default async function PortalDashboardPage() {
                     )}
                   </div>
                   <span
-                    className="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium capitalize bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium capitalize ${
+                      booking.status === 'confirmed'
+                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                        : booking.status === 'new_request'
+                          ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                          : booking.status === 'contacted'
+                            ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
+                            : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                    }`}
                   >
                     {booking.status.replaceAll('_', ' ')}
                   </span>

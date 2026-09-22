@@ -77,7 +77,7 @@ export default async function PortalPackagesPage() {
             {activePurchases.map((purchase) => {
               const pkg = packageMap.get(purchase.lesson_package_id);
               const remaining = purchase.lessons_total - purchase.lessons_used;
-              const usedPercent = (purchase.lessons_used / purchase.lessons_total) * 100;
+              const usedPercent = purchase.lessons_total > 0 ? (purchase.lessons_used / purchase.lessons_total) * 100 : 0;
 
               return (
                 <div

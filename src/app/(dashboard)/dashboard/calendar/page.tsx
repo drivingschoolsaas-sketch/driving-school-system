@@ -44,8 +44,9 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
   const isAdmin = isOrgAdminRole(auth.role);
   const view = params.view ?? 'day';
 
-  // Parse date
-  const baseDate = params.date ? new Date(params.date) : new Date();
+  // Parse date (fallback to today if invalid)
+  const parsedDate = params.date ? new Date(params.date) : new Date();
+  const baseDate = isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
   const dayStart = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
 
   let rangeStart: Date;

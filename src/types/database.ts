@@ -383,6 +383,14 @@ export interface Booking {
   cancelled_by: string | null;
   cancellation_reason: string | null;
   rescheduled_from_id: string | null;
+  confirmed_at: string | null;
+  confirmed_by: string | null;
+  booking_reference: string | null;
+  calendar_uid: string | null;
+  calendar_token: string | null;
+  calendar_sequence: number;
+  confirmation_email_sent_at: string | null;
+  reminder_24h_sent_at: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
