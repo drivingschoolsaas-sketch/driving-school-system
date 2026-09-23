@@ -116,6 +116,12 @@ export async function checkUsageLimit(
   organizationId: string,
   resource: 'instructors' | 'students' | 'locations' | 'vehicles' | 'bookings_per_month'
 ): Promise<{ allowed: boolean; limit: number | null; current: number }> {
+  // Check org-level overrides first (set by platform admin)
+  const orgOverride = await getOrgLevelLimit(client, organizationId, resource);
+  if (orgOverride !== undefined) {
+    return checkAgainstLimit(client, organizationId, resource, orgOverride);
+  }
+
   const entitlements = await getEntitlements(client, organizationId);
 
   if (!entitlements || !entitlements.isActive) {
@@ -237,4 +243,73 @@ export async function requireUsageLimit(
       `${resource} (limit: ${result.limit}, current: ${result.current})`
     );
   }
+}
+
+// --------------------------------------------------
+// Org-level limit overrides (set by platform admin)
+// --------------------------------------------------
+
+async function getOrgLevelLimit(
+  client: SupabaseClient,
+  organizationId: string,
+  resource: string
+): Promise<number | null | undefined> {
+  if (resource !== 'instructors' && resource !== 'students') return undefined;
+
+  const column = resource === 'instructors' ? 'max_instructors' : 'max_students';
+  const { data } = await client
+    .from('organizations')
+    .select(column)
+    .eq('id', organizationId)
+    .single();
+
+  if (!data) return undefined;
+  const value = (data as Record<string, number | null>)[column];
+  return value === null ? undefined : value;
+}
+
+async function checkAgainstLimit(
+  client: SupabaseClient,
+  organizationId: string,
+  resource: string,
+  limit: number | null
+): Promise<{ allowed: boolean; limit: number | null; current: number }> {
+  if (limit === null) {
+    return { allowed: true, limit: null, current: 0 };
+  }
+
+  const tableMap: Record<string, { table: string; activeField?: string }> = {
+    instructors: { table: 'instructors', activeField: 'is_active' },
+    students: { table: 'students', activeField: 'is_active' },
+  };
+
+  const config = tableMap[resource];
+  let current = 0;
+
+  if (config) {
+    let query = client
+      .from(config.table)
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', organizationId);
+
+    if (config.activeField) {
+      query = query.eq(config.activeField, true);
+    }
+
+    const { count } = await query;
+    current = count ?? 0;
+  }
+
+  const allowed = current < limit;
+
+  if (!allowed) {
+    logger.info('Org-level usage limit reached', {
+      organizationId,
+      resource,
+      limit,
+      current,
+    });
+  }
+
+  return { allowed, limit, current };
 }

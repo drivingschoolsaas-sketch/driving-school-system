@@ -48,6 +48,8 @@ export interface Organization {
   phone: string | null;
   email: string | null;
   subscription_status: string | null;
+  max_instructors: number | null;
+  max_students: number | null;
   created_at: string;
   updated_at: string;
 }

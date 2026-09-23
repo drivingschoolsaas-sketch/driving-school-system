@@ -156,6 +156,43 @@ export function AddSchoolForm() {
                 </div>
               </fieldset>
 
+              {/* Usage Limits */}
+              <fieldset className="space-y-3 border-t border-gray-200 dark:border-gray-700 pt-4">
+                <legend className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  📊 Usage Limits
+                </legend>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Max Instructors
+                    </label>
+                    <input
+                      name="maxInstructors"
+                      type="number"
+                      min="1"
+                      placeholder="Unlimited"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Max Students
+                    </label>
+                    <input
+                      name="maxStudents"
+                      type="number"
+                      min="1"
+                      placeholder="Unlimited"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Leave empty for unlimited. These override plan-level limits.
+                </p>
+              </fieldset>
+
               {/* Owner User */}
               <fieldset className="space-y-3 border-t border-gray-200 dark:border-gray-700 pt-4">
                 <legend className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">

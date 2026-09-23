@@ -13,6 +13,7 @@ import { getAdminClient } from '@/lib/database';
 import {
   createOrganization,
   addDomainToOrganization,
+  updateOrganizationLimits,
 } from '@/services/platform-admin-service';
 import { logger } from '@/lib/logging';
 
@@ -41,6 +42,8 @@ export async function createOrganizationAction(
     const ownerName = formData.get('ownerName') as string;
     const email = formData.get('email') as string;
     const phone = formData.get('phone') as string;
+    const maxInstructorsRaw = formData.get('maxInstructors') as string;
+    const maxStudentsRaw = formData.get('maxStudents') as string;
 
     // Validate required fields
     if (!name?.trim()) {
@@ -62,6 +65,16 @@ export async function createOrganizationAction(
       return { success: false, error: 'Owner name is required' };
     }
 
+    const maxInstructors = maxInstructorsRaw ? parseInt(maxInstructorsRaw, 10) : null;
+    const maxStudents = maxStudentsRaw ? parseInt(maxStudentsRaw, 10) : null;
+
+    if (maxInstructors !== null && (isNaN(maxInstructors) || maxInstructors < 1)) {
+      return { success: false, error: 'Max instructors must be at least 1' };
+    }
+    if (maxStudents !== null && (isNaN(maxStudents) || maxStudents < 1)) {
+      return { success: false, error: 'Max students must be at least 1' };
+    }
+
     const result = await createOrganization(
       client,
       {
@@ -71,6 +84,8 @@ export async function createOrganizationAction(
         ownerName: ownerName.trim(),
         email: email?.trim() || undefined,
         phone: phone?.trim() || undefined,
+        maxInstructors,
+        maxStudents,
       },
       admin.userId
     );
@@ -166,6 +181,64 @@ export async function addDomainAction(
     logger.error('Add domain action failed', {
       feature: 'platform_admin',
       operation: 'add_domain',
+      errorMessage: message,
+    });
+
+    return { success: false, error: message };
+  }
+}
+
+// --------------------------------------------------
+// Update Organization Limits
+// --------------------------------------------------
+
+interface UpdateLimitsFormState {
+  success: boolean;
+  error?: string;
+}
+
+export async function updateLimitsAction(
+  _prevState: UpdateLimitsFormState,
+  formData: FormData
+): Promise<UpdateLimitsFormState> {
+  try {
+    const admin = await getPlatformAdminContext();
+    const client = getAdminClient();
+
+    const organizationId = formData.get('organizationId') as string;
+    const maxInstructorsRaw = formData.get('maxInstructors') as string;
+    const maxStudentsRaw = formData.get('maxStudents') as string;
+
+    if (!organizationId) {
+      return { success: false, error: 'Organization is required' };
+    }
+
+    const maxInstructors = maxInstructorsRaw ? parseInt(maxInstructorsRaw, 10) : null;
+    const maxStudents = maxStudentsRaw ? parseInt(maxStudentsRaw, 10) : null;
+
+    if (maxInstructors !== null && (isNaN(maxInstructors) || maxInstructors < 1)) {
+      return { success: false, error: 'Max instructors must be at least 1' };
+    }
+    if (maxStudents !== null && (isNaN(maxStudents) || maxStudents < 1)) {
+      return { success: false, error: 'Max students must be at least 1' };
+    }
+
+    await updateOrganizationLimits(
+      client,
+      organizationId,
+      { maxInstructors, maxStudents },
+      admin.userId
+    );
+
+    revalidatePath(`/admin/organizations/${organizationId}`);
+    return { success: true };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Failed to update limits';
+
+    logger.error('Update limits action failed', {
+      feature: 'platform_admin',
+      operation: 'update_limits',
       errorMessage: message,
     });
 

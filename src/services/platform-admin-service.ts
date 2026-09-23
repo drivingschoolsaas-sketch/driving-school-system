@@ -230,6 +230,46 @@ export async function updateOrganizationStatus(
   return data as Organization;
 }
 
+/**
+ * Update per-organization usage limits (instructor/student caps).
+ */
+export async function updateOrganizationLimits(
+  client: SupabaseClient,
+  organizationId: string,
+  limits: { maxInstructors?: number | null; maxStudents?: number | null },
+  adminUserId: string
+): Promise<Organization> {
+  const updates: Record<string, number | null> = {};
+  if (limits.maxInstructors !== undefined) updates.max_instructors = limits.maxInstructors;
+  if (limits.maxStudents !== undefined) updates.max_students = limits.maxStudents;
+
+  const { data, error } = await client
+    .from('organizations')
+    .update(updates)
+    .eq('id', organizationId)
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  await createAuditLog(client, {
+    organizationId,
+    userId: adminUserId,
+    action: 'organization.limits_updated',
+    resourceType: 'organization',
+    resourceId: organizationId,
+    details: updates,
+  });
+
+  logger.info('Organization limits updated by platform admin', {
+    organizationId,
+    ...updates,
+    adminUserId,
+  });
+
+  return data as Organization;
+}
+
 // --------------------------------------------------
 // Create Organization (Add New School)
 // --------------------------------------------------
@@ -244,6 +284,8 @@ export interface CreateOrganizationInput {
   timezone?: string;
   country?: string;
   status?: string;
+  maxInstructors?: number | null;
+  maxStudents?: number | null;
 }
 
 export interface CreateOrganizationResult {
@@ -307,6 +349,8 @@ export async function createOrganization(
       country: input.country ?? 'AU',
       currency: 'AUD',
       subscription_status: 'trialing',
+      max_instructors: input.maxInstructors ?? null,
+      max_students: input.maxStudents ?? null,
     })
     .select()
     .single();

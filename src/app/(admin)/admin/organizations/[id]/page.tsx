@@ -13,6 +13,7 @@ import {
   getOrganizationDetails,
 } from '@/services/platform-admin-service';
 import { OrgStatusActions } from './org-status-actions';
+import { EditLimitsForm } from './edit-limits-form';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -136,6 +137,15 @@ export default async function OrganizationDetailPage({ params }: PageProps) {
           </div>
         ))}
       </div>
+
+      {/* Usage Limits */}
+      <EditLimitsForm
+        organizationId={id}
+        currentMaxInstructors={org.max_instructors ?? null}
+        currentMaxStudents={org.max_students ?? null}
+        currentInstructorCount={instructorCount}
+        currentStudentCount={studentCount}
+      />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Subscription */}
