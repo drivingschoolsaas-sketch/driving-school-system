@@ -248,11 +248,22 @@ export async function updateBooking(
   bookingId: string,
   input: UpdateBookingInput
 ): Promise<Booking> {
+  const current = await getBooking(client, context, bookingId);
+  if (!current) {
+    throw BookingErrors.notFound({ bookingId });
+  }
+
+  const terminalStatuses: BookingStatus[] = ['completed', 'cancelled', 'rejected', 'no_show'];
+  if (terminalStatuses.includes(current.status)) {
+    throw new Error(`Cannot update a booking with status "${current.status}".`);
+  }
+
   const { data, error } = await client
     .from('bookings')
     .update(input)
     .eq('id', bookingId)
     .eq('organization_id', context.organizationId)
+    .eq('status', current.status)
     .select()
     .single();
 

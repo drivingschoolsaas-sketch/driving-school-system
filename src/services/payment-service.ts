@@ -198,10 +198,16 @@ export async function cancelPayment(
     .update({ status: 'cancelled' })
     .eq('id', paymentId)
     .eq('organization_id', context.organizationId)
+    .eq('status', existing.status)
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    if (error.code === 'PGRST116') {
+      throw new Error('Payment was modified by another user. Please refresh and try again.');
+    }
+    throw error;
+  }
   return data as Payment;
 }
 
@@ -309,7 +315,11 @@ export async function markRefundSucceeded(
   if (refundError) throw refundError;
   const typedRefund = refund as Refund;
 
-  // Update refund status
+  if (typedRefund.status !== 'pending' && typedRefund.status !== 'processing') {
+    throw new Error(`Cannot mark refund as succeeded with status "${typedRefund.status}"`);
+  }
+
+  // Update refund status with TOCTOU guard
   const { data: updatedRefund, error: updateError } = await client
     .from('refunds')
     .update({
@@ -319,6 +329,7 @@ export async function markRefundSucceeded(
     })
     .eq('id', refundId)
     .eq('organization_id', organizationId)
+    .eq('status', typedRefund.status)
     .select()
     .single();
 

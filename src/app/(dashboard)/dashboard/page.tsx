@@ -74,7 +74,7 @@ export default async function DashboardOverviewPage() {
     instructorsWorking: instructorIdsToday.size,
     expectedRevenueCents: todaysBookings
       .filter((b) => b.status !== 'cancelled' && b.status !== 'no_show')
-      .reduce((sum, b) => sum + b.price_cents, 0),
+      .reduce((sum, b) => sum + (b.price_cents ?? 0), 0),
   };
 
   const isAdmin = isOrgAdminRole(auth.role);
@@ -295,7 +295,7 @@ function BookingCard({
       </span>
       {/* Price */}
       <span className="shrink-0 text-sm font-semibold text-gray-900 dark:text-white">
-        ${(booking.price_cents / 100).toFixed(0)}
+        ${((booking.price_cents ?? 0) / 100).toFixed(0)}
       </span>
     </div>
   );

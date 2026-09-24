@@ -29,6 +29,10 @@ export async function getAvailableSlotsAction(
   date: string,
   durationMinutes: number
 ): Promise<AvailableSlot[]> {
+  if (!instructorId || typeof instructorId !== 'string') return [];
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return [];
+  const safeDuration = Math.max(15, Math.min(480, Math.round(durationMinutes || 60)));
+
   const data = await getTenantData();
   if (!data) return [];
 
@@ -94,7 +98,7 @@ export async function getAvailableSlotsAction(
       start_datetime: b.start_datetime,
       end_datetime: b.end_datetime,
     })),
-    lessonDurationMinutes: durationMinutes,
+    lessonDurationMinutes: safeDuration,
   });
 }
 
@@ -129,6 +133,9 @@ export async function submitBookingRequestAction(
     }
     if (!customerName || !customerEmail) {
       return { success: false, error: 'Name and email are required.' };
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
+      return { success: false, error: 'Please enter a valid email address.' };
     }
 
     // Get the lesson type and instructor info for price + email

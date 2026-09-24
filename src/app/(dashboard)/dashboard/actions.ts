@@ -265,11 +265,17 @@ export async function updateOrganizationAction(formData: FormData) {
 // Photo Upload Helper
 // --------------------------------------------------
 
+const ALLOWED_UPLOAD_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
 async function uploadPhoto(
   file: File,
   organizationId: string,
   folder: string = 'photos'
 ): Promise<string> {
+  if (!ALLOWED_UPLOAD_TYPES.includes(file.type)) {
+    throw new Error('Invalid file type. Only JPEG, PNG, WebP, and GIF images are allowed.');
+  }
+
   const serviceClient = getAdminClient();
 
   // Ensure bucket exists
@@ -283,9 +289,10 @@ async function uploadPhoto(
     });
   }
 
-  // Generate unique filename
-  const ext = file.name.split('.').pop() ?? 'jpg';
-  const fileName = `${organizationId}/${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const MIME_TO_EXT: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' };
+  const ext = MIME_TO_EXT[file.type] ?? 'jpg';
+  const sanitizedFolder = folder.replace(/\.\./g, '').replace(/[^a-zA-Z0-9_-]/g, '');
+  const fileName = `${organizationId}/${sanitizedFolder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
   // Upload
   const arrayBuffer = await file.arrayBuffer();

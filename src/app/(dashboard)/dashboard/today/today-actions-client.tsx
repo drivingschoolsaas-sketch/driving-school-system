@@ -71,7 +71,7 @@ export function TodayLessonActions({ bookingId, status, studentPhone, pickupAddr
         )}
 
         {/* Start Lesson */}
-        {(status === 'new_request' || status === 'contacted' || status === 'confirmed') && status !== 'confirmed' && (
+        {(status === 'new_request' || status === 'contacted') && (
           <button
             onClick={() => handleAction(startLessonAction)}
             disabled={isPending}

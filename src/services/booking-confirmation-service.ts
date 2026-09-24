@@ -205,14 +205,21 @@ export async function sendRescheduleNotification(
   const provider = getEmailProvider();
   const fromEmail = process.env.RESEND_FROM_EMAIL || `noreply@${ctx.org.slug}.driveflow.app`;
 
-  await provider.send({
-    to: ctx.student.email!,
-    from: fromEmail,
-    fromName: ctx.org.name,
-    subject,
-    html,
-    replyTo: ctx.settings?.contact_email || undefined,
-  });
+  try {
+    await provider.send({
+      to: ctx.student.email!,
+      from: fromEmail,
+      fromName: ctx.org.name,
+      subject,
+      html,
+      replyTo: ctx.settings?.contact_email || undefined,
+    });
+  } catch (err) {
+    logger.error('Failed to send reschedule notification', {
+      bookingId,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
 }
 
 export async function sendCancellationNotification(
@@ -231,14 +238,21 @@ export async function sendCancellationNotification(
   const provider = getEmailProvider();
   const fromEmail = process.env.RESEND_FROM_EMAIL || `noreply@${ctx.org.slug}.driveflow.app`;
 
-  await provider.send({
-    to: ctx.student.email!,
-    from: fromEmail,
-    fromName: ctx.org.name,
-    subject,
-    html,
-    replyTo: ctx.settings?.contact_email || undefined,
-  });
+  try {
+    await provider.send({
+      to: ctx.student.email!,
+      from: fromEmail,
+      fromName: ctx.org.name,
+      subject,
+      html,
+      replyTo: ctx.settings?.contact_email || undefined,
+    });
+  } catch (err) {
+    logger.error('Failed to send cancellation notification', {
+      bookingId,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
 }
 
 export async function sendReminderEmail(

@@ -202,7 +202,7 @@ export async function rescheduleBookingAction(
     const ac3 = getAdminClient();
     resolveBookingNotificationParams(ac3, auth.organizationId, bookingId).then((params) => {
       if (params) notifyBookingChanged(ac3, params);
-    });
+    }).catch(() => {});
     sendRescheduleNotification(ac3, auth.organizationId, bookingId).catch(() => {});
 
     revalidatePath('/dashboard/bookings');

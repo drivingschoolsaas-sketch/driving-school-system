@@ -121,6 +121,17 @@ export async function deleteInstructor(
   context: AuthorizedContext,
   instructorId: string
 ): Promise<void> {
+  const { count } = await client
+    .from('bookings')
+    .select('id', { count: 'exact', head: true })
+    .eq('organization_id', context.organizationId)
+    .eq('instructor_id', instructorId)
+    .in('status', ['new_request', 'contacted', 'confirmed']);
+
+  if (count && count > 0) {
+    throw new Error('Cannot delete instructor with active bookings. Cancel or complete their bookings first.');
+  }
+
   const { error } = await client
     .from('instructors')
     .delete()

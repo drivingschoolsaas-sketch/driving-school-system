@@ -120,6 +120,17 @@ export async function deleteStudent(
   context: AuthorizedContext,
   studentId: string
 ): Promise<void> {
+  const { count } = await client
+    .from('bookings')
+    .select('id', { count: 'exact', head: true })
+    .eq('organization_id', context.organizationId)
+    .eq('student_id', studentId)
+    .in('status', ['new_request', 'contacted', 'confirmed']);
+
+  if (count && count > 0) {
+    throw new Error('Cannot delete student with active bookings. Cancel or complete their bookings first.');
+  }
+
   const { error } = await client
     .from('students')
     .delete()

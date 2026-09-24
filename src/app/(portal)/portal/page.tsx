@@ -55,6 +55,7 @@ export default async function PortalDashboardPage() {
     const { data } = await client
       .from('instructors')
       .select('*')
+      .eq('organization_id', orgId)
       .in('id', instructorIds);
     instructors = (data ?? []) as Instructor[];
   }

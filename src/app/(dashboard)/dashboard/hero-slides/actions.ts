@@ -41,11 +41,23 @@ export async function uploadHeroSlideAction(
       return { success: false, error: 'Please select an image file.' };
     }
 
+    const linkUrl = (formData.get('link_url') as string) || undefined;
+    if (linkUrl) {
+      try {
+        const parsed = new URL(linkUrl, 'https://placeholder.com');
+        if (!['http:', 'https:'].includes(parsed.protocol)) {
+          return { success: false, error: 'Link URL must use http or https protocol.' };
+        }
+      } catch {
+        return { success: false, error: 'Invalid link URL format.' };
+      }
+    }
+
     const slide = await createHeroSlide(client, adminClient, auth, {
       file,
       title: (formData.get('title') as string) || undefined,
       subtitle: (formData.get('subtitle') as string) || undefined,
-      link_url: (formData.get('link_url') as string) || undefined,
+      link_url: linkUrl,
       link_text: (formData.get('link_text') as string) || undefined,
     });
 
