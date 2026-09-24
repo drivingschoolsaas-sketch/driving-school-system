@@ -296,7 +296,7 @@ function BookingCard({
       </span>
       {/* Price */}
       <span className="shrink-0 text-sm font-semibold text-gray-900 dark:text-white">
-        {((booking.price_cents ?? 0) / 100).toFixed(0)}
+        {formatPrice(booking.price_cents ?? 0)}
       </span>
     </div>
   );
