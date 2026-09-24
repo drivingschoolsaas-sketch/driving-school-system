@@ -149,7 +149,7 @@ export default async function WaitlistPage({ searchParams }: PageProps) {
                 return (
                   <tr key={entry.id}>
                     <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
-                      {entry.student_id.substring(0, 8)}…
+                      {(entry as unknown as { students?: { display_name: string } | null }).students?.display_name ?? entry.student_id.substring(0, 8) + '…'}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
                       {entry.preferred_days.length > 0

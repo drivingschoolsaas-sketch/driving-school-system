@@ -8,6 +8,7 @@ import { createServerSupabaseClient } from '@/lib/database';
 import type { Booking, Instructor, LessonType } from '@/types/database';
 import type { Metadata } from 'next';
 import { CancelBookingButton } from './cancel-button';
+import { formatPrice } from '@/lib/format';
 
 export const metadata: Metadata = {
   title: 'My Bookings',
@@ -18,7 +19,7 @@ interface BookingsPageProps {
 }
 
 export default async function PortalBookingsPage({ searchParams }: BookingsPageProps) {
-  const { auth, student, settings } = await getPortalContext();
+  const { auth, student, organization, settings } = await getPortalContext();
   const client = await createServerSupabaseClient();
   const orgId = auth.organizationId;
   const primaryColor = settings?.primary_color ?? '#2563eb';
@@ -154,7 +155,7 @@ export default async function PortalBookingsPage({ searchParams }: BookingsPageP
                     <span />
                   )}
                   <span className="text-sm font-semibold" style={{ color: primaryColor }}>
-                    ${(booking.price_cents / 100).toFixed(0)}
+                    {formatPrice(booking.price_cents, organization.currency)}
                   </span>
                 </div>
               </div>

@@ -6,6 +6,7 @@
 
 import { useActionState, useEffect, useState } from 'react';
 import { createBookingAction, type BookingActionState } from './actions';
+import { formatPrice } from '@/lib/format';
 
 interface Props {
   instructors: { id: string; display_name: string }[];
@@ -13,11 +14,12 @@ interface Props {
   lessonTypes: { id: string; name: string; price_cents: number; duration_minutes: number }[];
   vehicles: { id: string; name: string }[];
   primaryColor: string;
+  currency?: string | null;
 }
 
 const initialState: BookingActionState = { success: false };
 
-export function CreateBookingForm({ instructors, students, lessonTypes, vehicles, primaryColor }: Props) {
+export function CreateBookingForm({ instructors, students, lessonTypes, vehicles, primaryColor, currency }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [state, formAction, isPending] = useActionState(createBookingAction, initialState);
   const [selectedLessonType, setSelectedLessonType] = useState('');
@@ -104,7 +106,7 @@ export function CreateBookingForm({ instructors, students, lessonTypes, vehicles
                   <option value="">Select lesson type…</option>
                   {lessonTypes.map((lt) => (
                     <option key={lt.id} value={lt.id}>
-                      {lt.name} — ${(lt.price_cents / 100).toFixed(0)} ({lt.duration_minutes}min)
+                      {lt.name} — {formatPrice(lt.price_cents, currency)} ({lt.duration_minutes}min)
                     </option>
                   ))}
                 </select>
@@ -198,7 +200,7 @@ export function CreateBookingForm({ instructors, students, lessonTypes, vehicles
                 />
                 {lessonType && (
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Suggested: ${(lessonType.price_cents / 100).toFixed(2)}
+                    Suggested: {formatPrice(lessonType.price_cents, currency)}
                   </p>
                 )}
               </div>

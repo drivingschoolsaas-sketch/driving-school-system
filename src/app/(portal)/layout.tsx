@@ -9,6 +9,7 @@ import { redirect } from 'next/navigation';
 import { getPortalContext } from '@/lib/auth';
 import { isFeatureFlagEnabled } from '@/services/platform-admin-service';
 import { getAdminClient } from '@/lib/database/supabase-admin';
+import { SignOutButton } from './sign-out-button';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -70,6 +71,7 @@ export default async function PortalLayout({
             >
               Website →
             </Link>
+            <SignOutButton />
           </div>
         </div>
       </header>

@@ -11,6 +11,7 @@ import { createServerSupabaseClient } from '@/lib/database';
 import { isOrgAdminRole } from '@/permissions/roles';
 import type { Booking, Instructor } from '@/types/database';
 import type { Metadata } from 'next';
+import { formatPrice } from '@/lib/format';
 
 export const metadata: Metadata = {
   title: 'Calendar',
@@ -35,7 +36,7 @@ const STATUS_COLORS: Record<string, { bg: string; text: string; border: string }
 };
 
 export default async function CalendarPage({ searchParams }: CalendarPageProps) {
-  const { auth, settings } = await getDashboardContext();
+  const { auth, organization, settings } = await getDashboardContext();
   const client = await createServerSupabaseClient();
   const orgId = auth.organizationId;
   const primaryColor = settings?.primary_color ?? '#2563eb';
@@ -220,7 +221,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
 
       {/* Calendar content */}
       {view === 'day' ? (
-        <DayView bookings={bookings} instructorMap={instructorMap} />
+        <DayView bookings={bookings} instructorMap={instructorMap} currency={organization.currency} />
       ) : (
         <WeekView dayGroups={dayGroups} instructorMap={instructorMap} today={todayStr} />
       )}
@@ -231,9 +232,11 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
 function DayView({
   bookings,
   instructorMap,
+  currency,
 }: {
   bookings: Booking[];
   instructorMap: Map<string, Instructor>;
+  currency?: string | null;
 }) {
   if (bookings.length === 0) {
     return (
@@ -250,6 +253,7 @@ function DayView({
           key={booking.id}
           booking={booking}
           instructor={instructorMap.get(booking.instructor_id)}
+          currency={currency}
         />
       ))}
     </div>
@@ -318,9 +322,11 @@ function WeekView({
 function CalendarBookingCard({
   booking,
   instructor,
+  currency,
 }: {
   booking: Booking;
   instructor?: Instructor;
+  currency?: string | null;
 }) {
   const colors = STATUS_COLORS[booking.status] ?? STATUS_COLORS.confirmed;
   const start = new Date(booking.start_datetime);
@@ -352,7 +358,7 @@ function CalendarBookingCard({
         {booking.status.replaceAll('_', ' ')}
       </span>
       <span className="shrink-0 text-sm font-semibold text-gray-900 dark:text-white">
-        ${(booking.price_cents / 100).toFixed(0)}
+        {formatPrice(booking.price_cents, currency)}
       </span>
     </div>
   );

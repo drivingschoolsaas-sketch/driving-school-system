@@ -10,13 +10,14 @@ import type { LessonPackage, LessonType } from '@/types/database';
 import type { Metadata } from 'next';
 import { AddPackageForm } from './package-form-client';
 import { PackageCardActions } from './package-card-actions';
+import { formatPrice } from '@/lib/format';
 
 export const metadata: Metadata = {
   title: 'Packages',
 };
 
 export default async function PackagesPage() {
-  const { auth, settings } = await getDashboardContext();
+  const { auth, organization, settings } = await getDashboardContext();
   requirePermission(auth, PERMISSIONS.PACKAGE_MANAGE);
   const client = await createServerSupabaseClient();
   const orgId = auth.organizationId;
@@ -88,6 +89,7 @@ export default async function PackagesPage() {
                       pkg={pkg}
                       lessonTypes={lessonTypes.map((lt) => ({ id: lt.id, name: lt.name }))}
                       primaryColor={primaryColor}
+                      currency={organization.currency}
                     />
                   </div>
                 </div>
@@ -106,14 +108,14 @@ export default async function PackagesPage() {
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500 dark:text-gray-400">Price</span>
                     <span className="font-bold" style={{ color: primaryColor }}>
-                      ${(pkg.price_cents / 100).toFixed(0)}
+                      {formatPrice(pkg.price_cents, organization.currency)}
                     </span>
                   </div>
                   {pkg.savings_cents > 0 && (
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500 dark:text-gray-400">Savings</span>
                       <span className="font-medium text-green-600 dark:text-green-400">
-                        Save ${(pkg.savings_cents / 100).toFixed(0)}
+                        Save {formatPrice(pkg.savings_cents, organization.currency)}
                       </span>
                     </div>
                   )}

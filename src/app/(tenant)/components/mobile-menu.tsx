@@ -118,8 +118,14 @@ export function MobileMenu({ links, phone, email, primaryColor }: MobileMenuProp
           )}
         </div>
 
-        {/* Book CTA */}
-        <div className="p-4">
+        {/* Sign In + Book CTA */}
+        <div className="p-4 space-y-2">
+          <Link
+            href="/portal"
+            className="block w-full rounded-lg py-3 text-center text-sm font-semibold border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
+            Sign In
+          </Link>
           <Link
             href="/book"
             className="block w-full rounded-lg py-3 text-center text-sm font-semibold text-white transition-all hover:opacity-90"

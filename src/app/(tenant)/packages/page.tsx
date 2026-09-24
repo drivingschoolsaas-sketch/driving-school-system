@@ -3,6 +3,7 @@ import { getAdminClient } from '@/lib/database/supabase-admin';
 import type { LessonPackage } from '@/types/database';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { formatPrice } from '@/lib/format';
 
 export const metadata: Metadata = {
   title: 'Packages',
@@ -61,7 +62,7 @@ export default async function PackagesPage() {
                     className="text-3xl font-bold"
                     style={{ color: primaryColor }}
                   >
-                    ${(pkg.price_cents / 100).toFixed(0)}
+                    {formatPrice(pkg.price_cents, data.organization.currency)}
                   </span>
                   <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">
                     for {pkg.lesson_count} lesson{pkg.lesson_count !== 1 ? 's' : ''}
@@ -69,7 +70,7 @@ export default async function PackagesPage() {
                 </div>
                 {pkg.savings_cents > 0 && (
                   <p className="mt-2 text-sm font-medium text-green-600 dark:text-green-400">
-                    💰 Save ${(pkg.savings_cents / 100).toFixed(0)} compared to individual lessons
+                    💰 Save {formatPrice(pkg.savings_cents, data.organization.currency)} compared to individual lessons
                   </p>
                 )}
                 {pkg.validity_days && (

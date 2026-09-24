@@ -75,6 +75,7 @@ export default async function BookPage() {
             }))}
             primaryColor={primaryColor}
             phone={phone}
+            currency={data.organization.currency}
           />
         </div>
       </div>

@@ -18,6 +18,7 @@ import type {
   Review,
 } from '@/types/database';
 import type { Metadata } from 'next';
+import { formatPrice } from '@/lib/format';
 
 export const metadata: Metadata = {
   title: 'Instructor Details',
@@ -38,7 +39,7 @@ interface PageProps {
 
 export default async function InstructorDetailPage({ params }: PageProps) {
   const { id: instructorId } = await params;
-  const { auth, settings } = await getDashboardContext();
+  const { auth, organization, settings } = await getDashboardContext();
   requirePermission(auth, PERMISSIONS.INSTRUCTOR_VIEW);
   const client = await createServerSupabaseClient();
   const orgId = auth.organizationId;
@@ -236,7 +237,7 @@ export default async function InstructorDetailPage({ params }: PageProps) {
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
         <StatCard icon="✅" label="Completed" value={completedCount.toString()} primaryColor={primaryColor} />
         <StatCard icon="👥" label="Students" value={uniqueStudentIds.size.toString()} primaryColor={primaryColor} />
-        <StatCard icon="💰" label="Revenue" value={`$${(totalRevenueCents / 100).toFixed(0)}`} primaryColor={primaryColor} />
+        <StatCard icon="💰" label="Revenue" value={formatPrice(totalRevenueCents, organization.currency)} primaryColor={primaryColor} />
         <StatCard
           icon="⭐"
           label="Rating"
@@ -404,7 +405,7 @@ export default async function InstructorDetailPage({ params }: PageProps) {
                         {lt?.name ?? '—'}
                       </td>
                       <td className="py-2 whitespace-nowrap text-xs text-right font-medium">
-                        ${(b.price_cents / 100).toFixed(0)}
+                        {formatPrice(b.price_cents, organization.currency)}
                       </td>
                     </tr>
                   );

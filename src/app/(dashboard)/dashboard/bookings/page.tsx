@@ -11,6 +11,7 @@ import type { Booking, Instructor, Student, LessonType, Vehicle } from '@/types/
 import type { Metadata } from 'next';
 import { BookingActions } from './booking-actions-client';
 import { CreateBookingForm } from './create-booking-form';
+import { formatPrice } from '@/lib/format';
 
 export const metadata: Metadata = {
   title: 'Bookings',
@@ -26,7 +27,7 @@ interface BookingsPageProps {
 }
 
 export default async function BookingsPage({ searchParams }: BookingsPageProps) {
-  const { auth, settings } = await getDashboardContext();
+  const { auth, organization, settings } = await getDashboardContext();
   const client = await createServerSupabaseClient();
   const orgId = auth.organizationId;
   const primaryColor = settings?.primary_color ?? '#2563eb';
@@ -121,6 +122,7 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
             lessonTypes={lessonTypes.map((lt) => ({ id: lt.id, name: lt.name, price_cents: lt.price_cents, duration_minutes: lt.duration_minutes }))}
             vehicles={vehicles.map((v) => ({ id: v.id, name: v.name }))}
             primaryColor={primaryColor}
+            currency={organization.currency}
           />
         )}
       </div>
@@ -235,7 +237,7 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
                       {booking.status.replaceAll('_', ' ')}
                     </span>
                     <p className="text-sm font-semibold text-gray-900 dark:text-white mt-1">
-                      ${((booking.price_cents ?? 0) / 100).toFixed(0)}
+                      {formatPrice(booking.price_cents ?? 0, organization.currency)}
                     </p>
                   </div>
                 </div>

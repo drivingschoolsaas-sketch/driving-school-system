@@ -15,6 +15,7 @@ import {
 import { OrgStatusActions } from './org-status-actions';
 import { EditLimitsForm } from './edit-limits-form';
 import type { Metadata } from 'next';
+import { formatPrice } from '@/lib/format';
 
 export const metadata: Metadata = {
   title: 'Organization Detail — Platform Admin',
@@ -125,7 +126,7 @@ export default async function OrganizationDetailPage({ params }: PageProps) {
           { label: 'Students', value: studentCount, icon: '🎓' },
           { label: 'Instructors', value: instructorCount, icon: '🚗' },
           { label: 'Total Bookings', value: bookingCount, icon: '📋' },
-          { label: 'Revenue', value: `$${(totalRevenueCents / 100).toFixed(0)}`, icon: '💰' },
+          { label: 'Revenue', value: formatPrice(totalRevenueCents, org.currency), icon: '💰' },
         ].map((stat) => (
           <div
             key={stat.label}

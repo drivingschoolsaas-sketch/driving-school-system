@@ -129,6 +129,12 @@ export default async function TenantLayout({
                 </a>
               )}
               <Link
+                href="/portal"
+                className="text-sm font-medium text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition-colors"
+              >
+                Sign In
+              </Link>
+              <Link
                 href="/book"
                 className="rounded-lg px-5 py-2.5 text-sm font-semibold text-white transition-all hover:opacity-90 hover:shadow-md"
                 style={{ backgroundColor: primaryColor }}

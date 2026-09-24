@@ -3,6 +3,7 @@ import { getAdminClient } from '@/lib/database/supabase-admin';
 import type { LessonType } from '@/types/database';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { formatPrice } from '@/lib/format';
 
 export const metadata: Metadata = {
   title: 'Lessons',
@@ -64,7 +65,7 @@ export default async function LessonsPage() {
                       className="text-3xl font-bold"
                       style={{ color: primaryColor }}
                     >
-                      ${(lt.price_cents / 100).toFixed(0)}
+                      {formatPrice(lt.price_cents, data.organization.currency)}
                     </span>
                     <span className="text-sm text-gray-500 dark:text-gray-400 ml-1">
                       / {lt.duration_minutes} min

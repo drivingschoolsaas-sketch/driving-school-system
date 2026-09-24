@@ -10,6 +10,7 @@ import { createServerSupabaseClient } from '@/lib/database';
 import { isOrgAdminRole } from '@/permissions/roles';
 import type { Booking, Instructor } from '@/types/database';
 import { SetupChecklist, type SetupStep } from './setup-checklist';
+import { formatPrice } from '@/lib/format';
 
 interface DashboardStats {
   todaysLessons: number;
@@ -137,12 +138,12 @@ export default async function DashboardOverviewPage() {
         <StatCard
           icon="💰"
           label="Expected Revenue"
-          value={`$${(stats.expectedRevenueCents / 100).toFixed(0)}`}
+          value={formatPrice(stats.expectedRevenueCents, organization.currency)}
           primaryColor={primaryColor}
         />
         <StatCard
-          icon="📊"
-          label="Total Students"
+          icon="🎓"
+          label="Active Students"
           value={totalStudents.toString()}
           primaryColor={primaryColor}
         />
@@ -295,7 +296,7 @@ function BookingCard({
       </span>
       {/* Price */}
       <span className="shrink-0 text-sm font-semibold text-gray-900 dark:text-white">
-        ${((booking.price_cents ?? 0) / 100).toFixed(0)}
+        {((booking.price_cents ?? 0) / 100).toFixed(0)}
       </span>
     </div>
   );

@@ -1,9 +1,5 @@
 'use client';
 
-// ==================================================
-// Forgot Password Page
-// ==================================================
-
 import { useActionState } from 'react';
 import Link from 'next/link';
 import { forgotPasswordAction, type AuthActionResult } from '@/lib/auth/auth-actions';
@@ -20,11 +16,11 @@ export default function ForgotPasswordPage() {
 
   if (state.success) {
     return (
-      <div className="rounded-lg bg-white p-8 shadow-sm ring-1 ring-gray-900/5">
+      <div className="rounded-lg bg-white dark:bg-gray-900 p-8 shadow-sm ring-1 ring-gray-900/5 dark:ring-gray-700">
         <div className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
             <svg
-              className="h-6 w-6 text-blue-600"
+              className="h-6 w-6 text-blue-600 dark:text-blue-400"
               fill="none"
               viewBox="0 0 24 24"
               strokeWidth="1.5"
@@ -37,14 +33,14 @@ export default function ForgotPasswordPage() {
               />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold text-gray-900">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
             Check your email
           </h2>
-          <p className="mt-2 text-sm text-gray-600">{state.message}</p>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{state.message}</p>
           <p className="mt-4 text-sm">
             <Link
               href="/auth/sign-in"
-              className="text-blue-600 hover:text-blue-500"
+              className="text-blue-600 dark:text-blue-400 hover:text-blue-500"
             >
               Back to sign in
             </Link>
@@ -55,16 +51,16 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="rounded-lg bg-white p-8 shadow-sm ring-1 ring-gray-900/5">
-      <h2 className="mb-2 text-center text-xl font-semibold text-gray-900">
+    <div className="rounded-lg bg-white dark:bg-gray-900 p-8 shadow-sm ring-1 ring-gray-900/5 dark:ring-gray-700">
+      <h2 className="mb-2 text-center text-xl font-semibold text-gray-900 dark:text-white">
         Reset your password
       </h2>
-      <p className="mb-6 text-center text-sm text-gray-600">
+      <p className="mb-6 text-center text-sm text-gray-600 dark:text-gray-400">
         Enter your email and we&apos;ll send you a reset link.
       </p>
 
       {state.error && (
-        <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">
+        <div className="mb-4 rounded-md bg-red-50 dark:bg-red-900/30 p-3 text-sm text-red-800 dark:text-red-300">
           {state.error}
         </div>
       )}
@@ -73,7 +69,7 @@ export default function ForgotPasswordPage() {
         <div>
           <label
             htmlFor="email"
-            className="block text-sm font-medium text-gray-700"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
           >
             Email address
           </label>
@@ -83,7 +79,7 @@ export default function ForgotPasswordPage() {
             type="email"
             autoComplete="email"
             required
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
+            className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-gray-900 dark:text-white shadow-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
             placeholder="you@example.com"
           />
         </div>
@@ -91,17 +87,17 @@ export default function ForgotPasswordPage() {
         <button
           type="submit"
           disabled={isPending}
-          className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isPending ? 'Sending…' : 'Send reset link'}
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-gray-600">
+      <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
         Remember your password?{' '}
         <Link
           href="/auth/sign-in"
-          className="text-blue-600 hover:text-blue-500"
+          className="text-blue-600 dark:text-blue-400 hover:text-blue-500"
         >
           Sign in
         </Link>

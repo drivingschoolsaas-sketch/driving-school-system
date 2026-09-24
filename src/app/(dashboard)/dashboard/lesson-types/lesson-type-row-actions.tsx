@@ -3,13 +3,15 @@
 import { useState, useTransition } from 'react';
 import { updateLessonTypeAction, deleteLessonTypeAction, type LessonTypeActionState } from './actions';
 import type { LessonType } from '@/types/database';
+import { formatPrice } from '@/lib/format';
 
 interface Props {
   lessonType: LessonType;
   primaryColor: string;
+  currency?: string | null;
 }
 
-export function LessonTypeRowActions({ lessonType, primaryColor }: Props) {
+export function LessonTypeRowActions({ lessonType, primaryColor, currency }: Props) {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
@@ -36,6 +38,7 @@ export function LessonTypeRowActions({ lessonType, primaryColor }: Props) {
         <EditLessonTypeModal
           lessonType={lessonType}
           primaryColor={primaryColor}
+          currency={currency}
           onClose={() => setEditOpen(false)}
         />
       )}
@@ -56,10 +59,12 @@ export function LessonTypeRowActions({ lessonType, primaryColor }: Props) {
 function EditLessonTypeModal({
   lessonType,
   primaryColor,
+  currency,
   onClose,
 }: {
   lessonType: LessonType;
   primaryColor: string;
+  currency?: string | null;
   onClose: () => void;
 }) {
   const [error, setError] = useState<string | null>(null);
@@ -158,7 +163,7 @@ function EditLessonTypeModal({
                 className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white"
               />
               <p className="text-xs text-gray-500 mt-1">
-                {lessonType.price_cents} = ${(lessonType.price_cents / 100).toFixed(2)}
+                {lessonType.price_cents} = {formatPrice(lessonType.price_cents, currency)}
               </p>
             </div>
           </div>

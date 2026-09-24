@@ -51,11 +51,11 @@ function AuthErrorContent() {
   const errorInfo = ERROR_MESSAGES[code] ?? DEFAULT_ERROR;
 
   return (
-    <div className="rounded-lg bg-white p-8 shadow-sm ring-1 ring-gray-900/5">
+    <div className="rounded-lg bg-white dark:bg-gray-900 p-8 shadow-sm ring-1 ring-gray-900/5 dark:ring-gray-700">
       <div className="text-center">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
           <svg
-            className="h-6 w-6 text-red-600"
+            className="h-6 w-6 text-red-600 dark:text-red-400"
             fill="none"
             viewBox="0 0 24 24"
             strokeWidth="1.5"
@@ -68,10 +68,10 @@ function AuthErrorContent() {
             />
           </svg>
         </div>
-        <h2 className="text-xl font-semibold text-gray-900">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
           {errorInfo.title}
         </h2>
-        <p className="mt-2 text-sm text-gray-600">{errorInfo.description}</p>
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{errorInfo.description}</p>
         <div className="mt-6 space-y-2">
           <Link
             href="/auth/sign-in"
@@ -81,7 +81,7 @@ function AuthErrorContent() {
           </Link>
           <Link
             href="/"
-            className="block text-sm text-blue-600 hover:text-blue-500"
+            className="block text-sm text-blue-600 dark:text-blue-400 hover:text-blue-500"
           >
             Go to home page
           </Link>
@@ -95,8 +95,8 @@ export default function AuthErrorPage() {
   return (
     <Suspense
       fallback={
-        <div className="rounded-lg bg-white p-8 shadow-sm ring-1 ring-gray-900/5">
-          <div className="text-center text-sm text-gray-500">Loading…</div>
+        <div className="rounded-lg bg-white dark:bg-gray-900 p-8 shadow-sm ring-1 ring-gray-900/5 dark:ring-gray-700">
+          <div className="text-center text-sm text-gray-500 dark:text-gray-400">Loading…</div>
         </div>
       }
     >

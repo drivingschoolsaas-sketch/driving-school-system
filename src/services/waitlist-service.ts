@@ -24,7 +24,7 @@ export async function getWaitlistEntries(
 ): Promise<WaitlistEntry[]> {
   let query = client
     .from('waitlist_entries')
-    .select('*')
+    .select('*, students(display_name)')
     .eq('organization_id', context.organizationId)
     .order('priority', { ascending: false })
     .order('created_at');

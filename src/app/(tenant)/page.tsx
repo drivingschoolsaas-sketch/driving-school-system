@@ -4,6 +4,7 @@ import type { LessonType, LessonPackage, Instructor, SuccessStory } from '@/type
 import { TestimonialCarousel } from './components/testimonial-carousel';
 import { FAQAccordion } from './components/faq-accordion';
 import { HeroSlider } from './components/hero-slider';
+import { formatPrice } from '@/lib/format';
 
 /**
  * Tenant home page — the public-facing landing page for a driving school.
@@ -252,7 +253,7 @@ export default async function HomePage() {
             </div>
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {lessonTypes.slice(0, 6).map((lt) => (
-                <LessonTypeCard key={lt.id} lessonType={lt} primaryColor={primaryColor} />
+                <LessonTypeCard key={lt.id} lessonType={lt} primaryColor={primaryColor} currency={organization.currency} />
               ))}
             </div>
             {lessonTypes.length > 6 && (
@@ -298,6 +299,7 @@ export default async function HomePage() {
                   pkg={pkg}
                   primaryColor={primaryColor}
                   popular={settings?.popular_package_id === pkg.id}
+                  currency={organization.currency}
                 />
               ))}
             </div>
@@ -542,9 +544,11 @@ export default async function HomePage() {
 function LessonTypeCard({
   lessonType,
   primaryColor,
+  currency,
 }: {
   lessonType: LessonType;
   primaryColor: string;
+  currency?: string;
 }) {
   return (
     <div className="group rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-6 flex flex-col hover:shadow-lg transition-all hover:-translate-y-1"
@@ -561,7 +565,7 @@ function LessonTypeCard({
       <div className="mt-5 flex items-end justify-between pt-4 border-t border-gray-100 dark:border-gray-700">
         <div>
           <span className="text-3xl font-extrabold" style={{ color: primaryColor }}>
-            ${(lessonType.price_cents / 100).toFixed(0)}
+            {formatPrice(lessonType.price_cents, currency)}
           </span>
           <span className="text-sm text-gray-500 dark:text-gray-400 ml-1">
             / {lessonType.duration_minutes} min
@@ -579,10 +583,12 @@ function PackageCard({
   pkg,
   primaryColor,
   popular,
+  currency,
 }: {
   pkg: LessonPackage;
   primaryColor: string;
   popular?: boolean;
+  currency?: string;
 }) {
   return (
     <div
@@ -612,7 +618,7 @@ function PackageCard({
       <div className="mt-5 pt-4 border-t border-gray-100 dark:border-gray-700">
         <div className="flex items-baseline gap-2">
           <span className="text-3xl font-extrabold" style={{ color: primaryColor }}>
-            ${(pkg.price_cents / 100).toFixed(0)}
+            {formatPrice(pkg.price_cents, currency)}
           </span>
           <span className="text-sm text-gray-500 dark:text-gray-400">
             {pkg.lesson_count} lesson{pkg.lesson_count !== 1 ? 's' : ''}
@@ -623,7 +629,7 @@ function PackageCard({
             <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
             </svg>
-            Save ${(pkg.savings_cents / 100).toFixed(0)}
+            Save {formatPrice(pkg.savings_cents, currency)}
           </p>
         )}
       </div>

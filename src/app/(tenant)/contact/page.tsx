@@ -61,7 +61,7 @@ export default async function ContactPage() {
             <ContactCard
               icon="🕐"
               title="Business Hours"
-              content="Monday – Saturday"
+              content="Contact us for our current hours"
             />
           </div>
 
@@ -160,15 +160,16 @@ function SocialButton({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="rounded-lg border px-4 py-2 text-sm font-medium transition-colors hover:text-white"
-      style={
-        {
-          borderColor: primaryColor,
-          color: primaryColor,
-          '--hover-bg': primaryColor,
-        } as React.CSSProperties
-      }
-      onMouseEnter={undefined}
+      className="inline-block rounded-lg border px-4 py-2 text-sm font-medium transition-colors"
+      style={{ borderColor: primaryColor, color: primaryColor }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.backgroundColor = primaryColor;
+        e.currentTarget.style.color = '#fff';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = 'transparent';
+        e.currentTarget.style.color = primaryColor;
+      }}
     >
       {label}
     </a>

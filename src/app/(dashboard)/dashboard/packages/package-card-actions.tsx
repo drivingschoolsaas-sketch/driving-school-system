@@ -3,14 +3,16 @@
 import { useState, useTransition } from 'react';
 import { updatePackageAction, deletePackageAction, type PackageActionState } from './actions';
 import type { LessonPackage } from '@/types/database';
+import { formatPrice } from '@/lib/format';
 
 interface Props {
   pkg: LessonPackage;
   lessonTypes: { id: string; name: string }[];
   primaryColor: string;
+  currency?: string | null;
 }
 
-export function PackageCardActions({ pkg, lessonTypes, primaryColor }: Props) {
+export function PackageCardActions({ pkg, lessonTypes, primaryColor, currency }: Props) {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
@@ -38,6 +40,7 @@ export function PackageCardActions({ pkg, lessonTypes, primaryColor }: Props) {
           pkg={pkg}
           lessonTypes={lessonTypes}
           primaryColor={primaryColor}
+          currency={currency}
           onClose={() => setEditOpen(false)}
         />
       )}
@@ -58,11 +61,13 @@ function EditPackageModal({
   pkg,
   lessonTypes,
   primaryColor,
+  currency,
   onClose,
 }: {
   pkg: LessonPackage;
   lessonTypes: { id: string; name: string }[];
   primaryColor: string;
+  currency?: string | null;
   onClose: () => void;
 }) {
   const [error, setError] = useState<string | null>(null);
@@ -163,7 +168,7 @@ function EditPackageModal({
                 className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white"
               />
               <p className="text-xs text-gray-500 mt-1">
-                {pkg.price_cents} = ${(pkg.price_cents / 100).toFixed(2)}
+                {pkg.price_cents} = {formatPrice(pkg.price_cents, currency)}
               </p>
             </div>
           </div>

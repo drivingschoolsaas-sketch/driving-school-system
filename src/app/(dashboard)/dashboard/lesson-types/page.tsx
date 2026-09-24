@@ -11,13 +11,14 @@ import type { LessonType } from '@/types/database';
 import type { Metadata } from 'next';
 import { AddLessonTypeForm } from './lesson-type-form-client';
 import { LessonTypeRowActions } from './lesson-type-row-actions';
+import { formatPrice } from '@/lib/format';
 
 export const metadata: Metadata = {
   title: 'Lesson Types',
 };
 
 export default async function LessonTypesPage() {
-  const { auth, settings } = await getDashboardContext();
+  const { auth, organization, settings } = await getDashboardContext();
   requirePermission(auth, PERMISSIONS.LESSON_TYPE_MANAGE);
   const client = await createServerSupabaseClient();
   const orgId = auth.organizationId;
@@ -85,7 +86,7 @@ export default async function LessonTypesPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">
-                    ${(lt.price_cents / 100).toFixed(2)}
+                    {formatPrice(lt.price_cents, organization.currency)}
                   </td>
                   <td className="px-4 py-3 text-center whitespace-nowrap">
                     <span className={`text-sm ${lt.is_public ? 'text-green-600' : 'text-gray-400'}`}>
@@ -104,7 +105,7 @@ export default async function LessonTypesPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <LessonTypeRowActions lessonType={lt} primaryColor={primaryColor} />
+                    <LessonTypeRowActions lessonType={lt} primaryColor={primaryColor} currency={organization.currency} />
                   </td>
                 </tr>
               ))}

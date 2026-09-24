@@ -13,6 +13,7 @@ import { getDrivingSkills, getStudentProgress } from '@/services/student-progres
 import type { Student } from '@/types/database';
 import type { Metadata } from 'next';
 import { ProgressEditor } from './progress-editor';
+import { formatPrice } from '@/lib/format';
 
 export const metadata: Metadata = {
   title: 'Student Detail',
@@ -24,7 +25,7 @@ interface PageProps {
 
 export default async function StudentDetailPage({ params }: PageProps) {
   const { id: studentId } = await params;
-  const { auth, settings } = await getDashboardContext();
+  const { auth, organization, settings } = await getDashboardContext();
   requirePermission(auth, PERMISSIONS.STUDENT_VIEW);
   const client = await createServerSupabaseClient();
   const orgId = auth.organizationId;
@@ -154,7 +155,7 @@ export default async function StudentDetailPage({ params }: PageProps) {
           { label: 'Completed', value: String(completedLessons), icon: '✅' },
           { label: 'Upcoming', value: String(upcomingBookings.length), icon: '📅' },
           { label: 'Total Bookings', value: String(allBookings.length), icon: '📋' },
-          { label: 'Total Spent', value: totalSpentCents > 0 ? `$${(totalSpentCents / 100).toFixed(0)}` : '$0', icon: '💰' },
+          { label: 'Total Spent', value: formatPrice(totalSpentCents, organization.currency), icon: '💰' },
         ].map((stat) => (
           <div
             key={stat.label}
@@ -223,7 +224,7 @@ export default async function StudentDetailPage({ params }: PageProps) {
                             })}
                           </p>
                           <span className="text-xs text-gray-500 dark:text-gray-400">
-                            ${(b.price_cents / 100).toFixed(0)}
+                            {formatPrice(b.price_cents, organization.currency)}
                           </span>
                         </div>
                         <div className="flex items-center gap-2 mt-0.5">

@@ -3,6 +3,7 @@
 import { useActionState, useState, useTransition } from 'react';
 import { getAvailableSlotsAction, submitBookingRequestAction, type BookingRequestState } from './actions';
 import type { AvailableSlot } from '@/services/availability-engine';
+import { formatPrice } from '@/lib/format';
 
 interface LessonTypeOption {
   id: string;
@@ -25,11 +26,12 @@ interface Props {
   instructors: InstructorOption[];
   primaryColor: string;
   phone?: string | null;
+  currency?: string | null;
 }
 
 const initialState: BookingRequestState = { success: false };
 
-export function BookingWidget({ lessonTypes, instructors, primaryColor, phone }: Props) {
+export function BookingWidget({ lessonTypes, instructors, primaryColor, phone, currency }: Props) {
   const [selectedLessonType, setSelectedLessonType] = useState<string | null>(null);
   const [selectedInstructor, setSelectedInstructor] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState('');
@@ -84,30 +86,96 @@ export function BookingWidget({ lessonTypes, instructors, primaryColor, phone }:
   const maxDate = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
   if (state.success) {
+    const bookedInstructor = filteredInstructors.find((i) => i.id === selectedInstructor);
     return (
-      <div className="rounded-xl border-2 border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20 p-8 text-center">
-        <div className="text-4xl mb-4">✅</div>
-        <h2 className="text-xl font-semibold text-green-800 dark:text-green-200">
-          Booking Request Submitted!
-        </h2>
-        <p className="mt-2 text-green-700 dark:text-green-300">
-          We&apos;ll get back to you shortly to confirm your lesson.
-        </p>
-        {phone && (
-          <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-            Questions? Call us at{' '}
-            <a href={`tel:${phone}`} className="font-semibold hover:underline" style={{ color: primaryColor }}>
-              {phone}
-            </a>
+      <div className="rounded-xl border-2 border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20 p-8">
+        <div className="text-center">
+          <div className="text-4xl mb-4">✅</div>
+          <h2 className="text-xl font-semibold text-green-800 dark:text-green-200">
+            Booking Request Submitted!
+          </h2>
+          <p className="mt-2 text-green-700 dark:text-green-300">
+            We&apos;ll get back to you shortly to confirm your lesson.
+            Check your email for a confirmation.
           </p>
-        )}
-        <button
-          onClick={() => window.location.reload()}
-          className="mt-6 rounded-lg px-6 py-2 text-sm font-medium text-white"
-          style={{ backgroundColor: primaryColor }}
-        >
-          Book Another Lesson
-        </button>
+        </div>
+
+        <div className="mt-6 rounded-lg bg-white dark:bg-gray-800 border border-green-200 dark:border-green-800 p-5 space-y-3">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider">
+            Booking Details
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            <div>
+              <span className="text-gray-500 dark:text-gray-400">Lesson</span>
+              <p className="font-medium text-gray-900 dark:text-white">{selectedLT?.name}</p>
+            </div>
+            <div>
+              <span className="text-gray-500 dark:text-gray-400">Instructor</span>
+              <p className="font-medium text-gray-900 dark:text-white">{bookedInstructor?.display_name}</p>
+            </div>
+            {selectedSlot && (
+              <>
+                <div>
+                  <span className="text-gray-500 dark:text-gray-400">Date</span>
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    {new Date(selectedSlot.start).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-gray-500 dark:text-gray-400">Time</span>
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    {new Date(selectedSlot.start).toLocaleTimeString('en-US', {
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      hour12: true,
+                    })}
+                    {' – '}
+                    {new Date(selectedSlot.end).toLocaleTimeString('en-US', {
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      hour12: true,
+                    })}
+                  </p>
+                </div>
+              </>
+            )}
+            {selectedLT && (
+              <div>
+                <span className="text-gray-500 dark:text-gray-400">Price</span>
+                <p className="font-medium text-gray-900 dark:text-white">
+                  {formatPrice(selectedLT.price_cents, currency)}
+                </p>
+              </div>
+            )}
+            <div>
+              <span className="text-gray-500 dark:text-gray-400">Status</span>
+              <p className="font-medium text-yellow-700 dark:text-yellow-300">Pending Confirmation</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 text-center space-y-3">
+          {phone && (
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Questions? Call us at{' '}
+              <a href={`tel:${phone}`} className="font-semibold hover:underline" style={{ color: primaryColor }}>
+                {phone}
+              </a>
+            </p>
+          )}
+          <button
+            onClick={() => window.location.reload()}
+            className="rounded-lg px-6 py-2 text-sm font-medium text-white"
+            style={{ backgroundColor: primaryColor }}
+          >
+            Book Another Lesson
+          </button>
+        </div>
       </div>
     );
   }
@@ -151,7 +219,7 @@ export function BookingWidget({ lessonTypes, instructors, primaryColor, phone }:
                     )}
                   </div>
                   <span className="text-lg font-bold whitespace-nowrap ml-4" style={{ color: primaryColor }}>
-                    ${(lt.price_cents / 100).toFixed(0)}
+                    {formatPrice(lt.price_cents, currency)}
                   </span>
                 </div>
                 <div className="mt-3 flex gap-2 text-xs text-gray-500 dark:text-gray-400">
@@ -308,7 +376,7 @@ export function BookingWidget({ lessonTypes, instructors, primaryColor, phone }:
             {/* Summary */}
             <div className="rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 text-sm space-y-1">
               <p className="font-medium text-gray-900 dark:text-white">
-                {selectedLT?.name} — ${((selectedLT?.price_cents ?? 0) / 100).toFixed(0)}
+                {selectedLT?.name} — {formatPrice(selectedLT?.price_cents ?? 0, currency)}
               </p>
               <p className="text-gray-600 dark:text-gray-400">
                 {new Date(selectedSlot.start).toLocaleDateString('en-US', {

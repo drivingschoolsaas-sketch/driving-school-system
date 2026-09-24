@@ -9,13 +9,14 @@ import { getPortalContext } from '@/lib/auth';
 import { createServerSupabaseClient } from '@/lib/database';
 import type { Booking, LessonType, StudentPackagePurchase, LessonPackage } from '@/types/database';
 import type { Metadata } from 'next';
+import { formatPrice } from '@/lib/format';
 
 export const metadata: Metadata = {
   title: 'My Payments',
 };
 
 export default async function PortalPaymentsPage() {
-  const { auth, student, settings } = await getPortalContext();
+  const { auth, student, organization, settings } = await getPortalContext();
   const client = await createServerSupabaseClient();
   const orgId = auth.organizationId;
   const primaryColor = settings?.primary_color ?? '#2563eb';
@@ -96,7 +97,7 @@ export default async function PortalPaymentsPage() {
       <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6">
         <p className="text-sm text-gray-500 dark:text-gray-400">Total Spent</p>
         <p className="text-3xl font-bold mt-1" style={{ color: primaryColor }}>
-          ${(totalPaidCents / 100).toFixed(2)}
+          {formatPrice(totalPaidCents, organization.currency)}
         </p>
         <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
           {items.length} transaction{items.length !== 1 ? 's' : ''}
@@ -131,7 +132,7 @@ export default async function PortalPaymentsPage() {
                   </p>
                 </div>
                 <span className="shrink-0 text-sm font-semibold text-gray-900 dark:text-white">
-                  ${(item.amountCents / 100).toFixed(0)}
+                  {formatPrice(item.amountCents, organization.currency)}
                 </span>
               </div>
             );

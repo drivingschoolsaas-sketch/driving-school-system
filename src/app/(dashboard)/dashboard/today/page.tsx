@@ -13,13 +13,14 @@ import { createServerSupabaseClient } from '@/lib/database';
 import type { Booking, Student, LessonType } from '@/types/database';
 import type { Metadata } from 'next';
 import { TodayLessonActions } from './today-actions-client';
+import { formatPrice } from '@/lib/format';
 
 export const metadata: Metadata = {
   title: 'Today',
 };
 
 export default async function TodayModePage() {
-  const { auth, settings } = await getDashboardContext();
+  const { auth, organization, settings } = await getDashboardContext();
   await requirePermission(auth, PERMISSIONS.BOOKING_VIEW);
   const client = await createServerSupabaseClient();
   const orgId = auth.organizationId;
@@ -137,7 +138,7 @@ export default async function TodayModePage() {
         </div>
         <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 text-center">
           <p className="text-2xl font-bold text-gray-900 dark:text-white">
-            ${(bookings.reduce((sum, b) => sum + b.price_cents, 0) / 100).toFixed(2)}
+            {formatPrice(bookings.reduce((sum, b) => sum + b.price_cents, 0), organization.currency)}
           </p>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Revenue</p>
         </div>
@@ -155,6 +156,7 @@ export default async function TodayModePage() {
             lessonType={lessonTypeMap.get(nextLesson.lesson_type_id)}
             statusColors={statusColors}
             primaryColor={primaryColor}
+            currency={organization.currency}
             isNext
           />
         </section>
@@ -175,6 +177,7 @@ export default async function TodayModePage() {
                 lessonType={lessonTypeMap.get(booking.lesson_type_id)}
                 statusColors={statusColors}
                 primaryColor={primaryColor}
+                currency={organization.currency}
               />
             ))}
           </div>
@@ -196,6 +199,7 @@ export default async function TodayModePage() {
                 lessonType={lessonTypeMap.get(booking.lesson_type_id)}
                 statusColors={statusColors}
                 primaryColor={primaryColor}
+                currency={organization.currency}
                 isDone
               />
             ))}
@@ -227,6 +231,7 @@ function LessonCard({
   primaryColor,
   isNext,
   isDone,
+  currency,
 }: {
   booking: Booking;
   student?: Student;
@@ -235,6 +240,7 @@ function LessonCard({
   primaryColor: string;
   isNext?: boolean;
   isDone?: boolean;
+  currency?: string | null;
 }) {
   const start = new Date(booking.start_datetime);
   const end = new Date(booking.end_datetime);
@@ -298,7 +304,7 @@ function LessonCard({
 
         {lessonType && (
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            📖 {lessonType.name} · {lessonType.duration_minutes} min · ${(booking.price_cents / 100).toFixed(0)}
+            📖 {lessonType.name} · {lessonType.duration_minutes} min · {formatPrice(booking.price_cents, currency)}
           </p>
         )}
       </div>
