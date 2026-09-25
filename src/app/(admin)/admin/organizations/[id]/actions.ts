@@ -55,6 +55,7 @@ export async function updateMemberEmailAction(
 
     const { error } = await client.auth.admin.updateUserById(userId, {
       email: newEmail,
+      email_confirm: true,
     });
 
     if (error) {
@@ -75,10 +76,16 @@ export async function updateMemberEmailAction(
   }
 }
 
+export interface ResendInviteState {
+  success: boolean;
+  error?: string;
+  recoveryLink?: string;
+}
+
 export async function resendInviteAction(
   userEmail: string,
   organizationId: string
-): Promise<OrgActionState> {
+): Promise<ResendInviteState> {
   try {
     await getPlatformAdminContext();
     const client = getAdminClient();
@@ -92,21 +99,42 @@ export async function resendInviteAction(
 
     if (error) {
       if (error.message?.includes('already been registered')) {
-        // User exists — send a password reset email instead
-        const { createServerSupabaseClient } = await import('@/lib/database/supabase-server');
-        const serverClient = await createServerSupabaseClient();
-        const { error: resetErr } = await serverClient.auth.resetPasswordForEmail(
-          userEmail,
-          { redirectTo }
-        );
-        if (resetErr) {
-          logger.error('Failed to send password reset email', resetErr, {
+        // User exists — ensure email is confirmed first
+        const { data: listData } = await client.auth.admin.listUsers({
+          perPage: 50,
+          page: 1,
+        });
+        const user = listData?.users?.find((u) => u.email === userEmail);
+
+        if (user) {
+          await client.auth.admin.updateUserById(user.id, {
+            email_confirm: true,
+          });
+        }
+
+        // Generate a recovery link via admin API
+        const { data: linkData, error: linkErr } = await client.auth.admin.generateLink({
+          type: 'recovery',
+          email: userEmail,
+          options: { redirectTo },
+        });
+
+        if (linkErr || !linkData) {
+          logger.error('Failed to generate recovery link', linkErr, {
             feature: 'platform_admin',
             operation: 'resend_invite',
             email: userEmail,
           });
-          return { success: false, error: 'Failed to send password reset email.' };
+          return { success: false, error: linkErr?.message ?? 'Failed to generate recovery link.' };
         }
+
+        // Build the redirect URL with the token from the generated link
+        const actionLink = linkData.properties?.action_link;
+        if (actionLink) {
+          return { success: true, recoveryLink: actionLink };
+        }
+
+        return { success: false, error: 'Could not generate recovery link.' };
       } else {
         return { success: false, error: error.message };
       }
