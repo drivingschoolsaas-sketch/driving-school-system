@@ -16,6 +16,7 @@ import { OrgStatusActions } from './org-status-actions';
 import { EditLimitsForm } from './edit-limits-form';
 import { ResendInviteButton } from './resend-invite-button';
 import { EditEmailButton } from './edit-email-button';
+import { SetPasswordButton } from './set-password-button';
 import type { Metadata } from 'next';
 import { formatPrice } from '@/lib/format';
 
@@ -298,9 +299,12 @@ export default async function OrganizationDetailPage({ params }: PageProps) {
                       {new Date(m.created_at).toLocaleDateString('en-AU')}
                     </td>
                     <td className="py-2">
-                      {m.email && (
-                        <ResendInviteButton email={m.email} organizationId={id} />
-                      )}
+                      <div className="flex items-center gap-3">
+                        {m.email && (
+                          <ResendInviteButton email={m.email} organizationId={id} />
+                        )}
+                        <SetPasswordButton userId={m.user_id} organizationId={id} />
+                      </div>
                     </td>
                   </tr>
                 ))}

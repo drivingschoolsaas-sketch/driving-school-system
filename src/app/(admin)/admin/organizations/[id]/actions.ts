@@ -76,6 +76,42 @@ export async function updateMemberEmailAction(
   }
 }
 
+export async function setMemberPasswordAction(
+  userId: string,
+  newPassword: string,
+  organizationId: string
+): Promise<OrgActionState> {
+  try {
+    await getPlatformAdminContext();
+    const client = getAdminClient();
+
+    if (newPassword.length < 8) {
+      return { success: false, error: 'Password must be at least 8 characters.' };
+    }
+
+    // Confirm email and set the password
+    const { error } = await client.auth.admin.updateUserById(userId, {
+      password: newPassword,
+      email_confirm: true,
+    });
+
+    if (error) {
+      logger.error('Failed to set member password', error, {
+        feature: 'platform_admin',
+        operation: 'set_member_password',
+        userId,
+      });
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath(`/admin/organizations/${organizationId}`);
+    return { success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to set password';
+    return { success: false, error: message };
+  }
+}
+
 export interface ResendInviteState {
   success: boolean;
   error?: string;
