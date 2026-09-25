@@ -39,6 +39,42 @@ export async function updateOrgStatusAction(
   }
 }
 
+export async function updateMemberEmailAction(
+  userId: string,
+  newEmail: string,
+  organizationId: string
+): Promise<OrgActionState> {
+  try {
+    await getPlatformAdminContext();
+    const client = getAdminClient();
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      return { success: false, error: 'Invalid email address.' };
+    }
+
+    const { error } = await client.auth.admin.updateUserById(userId, {
+      email: newEmail,
+    });
+
+    if (error) {
+      logger.error('Failed to update member email', error, {
+        feature: 'platform_admin',
+        operation: 'update_member_email',
+        userId,
+        newEmail,
+      });
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath(`/admin/organizations/${organizationId}`);
+    return { success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to update email';
+    return { success: false, error: message };
+  }
+}
+
 export async function resendInviteAction(
   userEmail: string,
   organizationId: string

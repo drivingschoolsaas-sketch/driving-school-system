@@ -15,6 +15,7 @@ import {
 import { OrgStatusActions } from './org-status-actions';
 import { EditLimitsForm } from './edit-limits-form';
 import { ResendInviteButton } from './resend-invite-button';
+import { EditEmailButton } from './edit-email-button';
 import type { Metadata } from 'next';
 import { formatPrice } from '@/lib/format';
 
@@ -277,8 +278,17 @@ export default async function OrganizationDetailPage({ params }: PageProps) {
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                 {members.map((m) => (
                   <tr key={m.user_id} className="text-gray-700 dark:text-gray-300">
-                    <td className="py-2 pr-4 text-xs truncate max-w-[200px]">
-                      {m.email ?? <span className="font-mono text-gray-400">{m.user_id.slice(0, 8)}…</span>}
+                    <td className="py-2 pr-4 text-xs max-w-[300px]">
+                      <div className="flex items-center gap-1">
+                        <span className="truncate">{m.email ?? <span className="font-mono text-gray-400">{m.user_id.slice(0, 8)}…</span>}</span>
+                        {m.email && (
+                          <EditEmailButton
+                            userId={m.user_id}
+                            currentEmail={m.email}
+                            organizationId={id}
+                          />
+                        )}
+                      </div>
                     </td>
                     <td className="py-2 pr-4 capitalize">
                       {m.role.replaceAll('_', ' ')}
