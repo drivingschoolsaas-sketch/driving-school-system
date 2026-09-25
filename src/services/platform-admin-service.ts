@@ -370,13 +370,17 @@ export async function createOrganization(
 
   if (inviteErr) {
     if (inviteErr.message?.includes('already been registered') || (inviteErr as { status?: number }).status === 422) {
-      const { data: { users }, error: lookupErr } = await client.auth.admin.listUsers({
-        perPage: 1,
+      // Look up existing user by email — listUsers with filter is unreliable,
+      // so fetch a page and search manually
+      let existingOwner: { id: string; email?: string } | undefined;
+      const { data: listData, error: lookupErr } = await client.auth.admin.listUsers({
+        perPage: 50,
         page: 1,
-        filter: { email: input.ownerEmail },
-      } as Parameters<typeof client.auth.admin.listUsers>[0]);
-      const existingOwner = users?.find((u) => u.email === input.ownerEmail);
-      if (lookupErr || !existingOwner) {
+      });
+      if (!lookupErr && listData?.users) {
+        existingOwner = listData.users.find((u) => u.email === input.ownerEmail);
+      }
+      if (!existingOwner) {
         await client.from('organizations').delete().eq('id', org.id);
         throw new Error('Owner email exists but could not be found. Please try again.');
       }
