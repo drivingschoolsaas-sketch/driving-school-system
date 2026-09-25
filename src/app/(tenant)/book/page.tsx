@@ -47,7 +47,7 @@ export default async function BookPage() {
 
   return (
     <div className="py-16 sm:py-24">
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white sm:text-4xl">
             Book a Lesson
