@@ -150,6 +150,9 @@ export async function middleware(request: NextRequest) {
     if (!hasAuthCookie) {
       const signInUrl = new URL('/auth/sign-in', request.url);
       signInUrl.searchParams.set('returnTo', pathname);
+      if (tenantOverride) {
+        signInUrl.searchParams.set('tenant', tenantOverride);
+      }
       return NextResponse.redirect(signInUrl);
     }
   }
