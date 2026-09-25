@@ -14,6 +14,7 @@ import {
 } from '@/services/platform-admin-service';
 import { OrgStatusActions } from './org-status-actions';
 import { EditLimitsForm } from './edit-limits-form';
+import { ResendInviteButton } from './resend-invite-button';
 import type { Metadata } from 'next';
 import { formatPrice } from '@/lib/format';
 
@@ -57,12 +58,34 @@ export default async function OrganizationDetailPage({ params }: PageProps) {
     is_primary: boolean;
     verified_at: string | null;
   }>;
-  const members = (membersRes.data ?? []) as Array<{
+  const membersRaw = (membersRes.data ?? []) as Array<{
     user_id: string;
     role: string;
     status: string;
     created_at: string;
   }>;
+
+  // Look up user emails for all members
+  const memberUserIds = membersRaw.map((m) => m.user_id);
+  let userEmailMap = new Map<string, string>();
+  if (memberUserIds.length > 0) {
+    const { data: { users: authUsers } } = await client.auth.admin.listUsers({
+      perPage: 100,
+      page: 1,
+    });
+    if (authUsers) {
+      for (const u of authUsers) {
+        if (memberUserIds.includes(u.id) && u.email) {
+          userEmailMap.set(u.id, u.email);
+        }
+      }
+    }
+  }
+
+  const members = membersRaw.map((m) => ({
+    ...m,
+    email: userEmailMap.get(m.user_id) ?? null,
+  }));
   const activeBookings = (recentBookingsRes.data ?? []) as Array<{
     price_cents: number;
     status: string;
@@ -244,17 +267,18 @@ export default async function OrganizationDetailPage({ params }: PageProps) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                  <th className="pb-2 pr-4">User ID</th>
+                  <th className="pb-2 pr-4">Email</th>
                   <th className="pb-2 pr-4">Role</th>
                   <th className="pb-2 pr-4">Status</th>
-                  <th className="pb-2">Joined</th>
+                  <th className="pb-2 pr-4">Joined</th>
+                  <th className="pb-2">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                 {members.map((m) => (
                   <tr key={m.user_id} className="text-gray-700 dark:text-gray-300">
-                    <td className="py-2 pr-4 font-mono text-xs truncate max-w-[150px]">
-                      {m.user_id}
+                    <td className="py-2 pr-4 text-xs truncate max-w-[200px]">
+                      {m.email ?? <span className="font-mono text-gray-400">{m.user_id.slice(0, 8)}…</span>}
                     </td>
                     <td className="py-2 pr-4 capitalize">
                       {m.role.replaceAll('_', ' ')}
@@ -262,6 +286,11 @@ export default async function OrganizationDetailPage({ params }: PageProps) {
                     <td className="py-2 pr-4 capitalize">{m.status}</td>
                     <td className="py-2 text-xs text-gray-500 dark:text-gray-400">
                       {new Date(m.created_at).toLocaleDateString('en-AU')}
+                    </td>
+                    <td className="py-2">
+                      {m.email && (
+                        <ResendInviteButton email={m.email} organizationId={id} />
+                      )}
                     </td>
                   </tr>
                 ))}

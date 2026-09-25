@@ -81,8 +81,8 @@ export function AddSchoolForm() {
               <div className="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-700 dark:bg-green-900/30 dark:text-green-300">
                 School created successfully.
                 {state.inviteSent
-                  ? ' An invitation email has been sent to the owner.'
-                  : ' The owner (existing user) has been added as school owner.'}
+                  ? ' An invitation email has been sent to the owner with a link to set their password.'
+                  : ' The owner (existing user) has been added as school owner. They can sign in with their existing password.'}
               </div>
             )}
 

@@ -38,8 +38,8 @@ export async function GET(request: Request) {
       }
 
       // Determine where to redirect after successful auth
-      if (type === 'recovery') {
-        // Password recovery — redirect to reset password page
+      if (type === 'recovery' || type === 'invite') {
+        // Password recovery or invite — redirect to set password page
         return NextResponse.redirect(
           `${origin}/auth/reset-password`
         );

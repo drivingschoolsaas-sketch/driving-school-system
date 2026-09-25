@@ -360,15 +360,16 @@ export async function createOrganization(
   let ownerUserId: string;
   let inviteSent = false;
 
-  const { data: createData, error: createErr } =
-    await client.auth.admin.createUser({
-      email: input.ownerEmail,
-      email_confirm: false,
-      user_metadata: { full_name: input.ownerName },
+  // Try to invite the owner via email — they'll receive a link to set their password
+  const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?type=recovery`;
+  const { data: inviteData, error: inviteErr } =
+    await client.auth.admin.inviteUserByEmail(input.ownerEmail, {
+      data: { full_name: input.ownerName },
+      redirectTo,
     });
 
-  if (createErr) {
-    if (createErr.message?.includes('already been registered') || (createErr as { status?: number }).status === 422) {
+  if (inviteErr) {
+    if (inviteErr.message?.includes('already been registered') || (inviteErr as { status?: number }).status === 422) {
       const { data: { users }, error: lookupErr } = await client.auth.admin.listUsers({
         perPage: 1,
         page: 1,
@@ -383,13 +384,13 @@ export async function createOrganization(
       inviteSent = false;
     } else {
       await client.from('organizations').delete().eq('id', org.id);
-      throw createErr;
+      throw inviteErr;
     }
-  } else if (!createData.user) {
+  } else if (!inviteData.user) {
     await client.from('organizations').delete().eq('id', org.id);
     throw new Error('Failed to create owner account');
   } else {
-    ownerUserId = createData.user.id;
+    ownerUserId = inviteData.user.id;
     inviteSent = true;
   }
 
