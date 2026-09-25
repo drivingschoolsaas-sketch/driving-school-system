@@ -8,13 +8,12 @@ import Link from 'next/link';
 import { getDashboardContext } from '@/lib/auth';
 import { createServerSupabaseClient } from '@/lib/database';
 import { isOrgAdminRole } from '@/permissions/roles';
-import type { Booking, Instructor } from '@/types/database';
+import type { Booking, Instructor, Student } from '@/types/database';
 import { SetupChecklist, type SetupStep } from './setup-checklist';
 import { formatPrice } from '@/lib/format';
 
 interface DashboardStats {
   todaysLessons: number;
-  availableSlots: number;
   instructorsWorking: number;
   expectedRevenueCents: number;
 }
@@ -67,11 +66,21 @@ export default async function DashboardOverviewPage() {
   const upcomingBookings = (upcomingRes.data ?? []) as Booking[];
   const totalStudents = studentsRes.count ?? 0;
 
+  // Fetch student names for upcoming bookings
+  const studentIds = [...new Set(upcomingBookings.map((b) => b.student_id).filter(Boolean))] as string[];
+  let studentsMap = new Map<string, string>();
+  if (studentIds.length > 0) {
+    const { data: studentData } = await client
+      .from('students')
+      .select('id, display_name')
+      .in('id', studentIds);
+    studentsMap = new Map((studentData ?? []).map((s: Pick<Student, 'id' | 'display_name'>) => [s.id, s.display_name]));
+  }
+
   // Calculate stats
   const instructorIdsToday = new Set(todaysBookings.map((b) => b.instructor_id));
   const stats: DashboardStats = {
     todaysLessons: todaysBookings.length,
-    availableSlots: 0, // Would need availability engine — simplified
     instructorsWorking: instructorIdsToday.size,
     expectedRevenueCents: todaysBookings
       .filter((b) => b.status !== 'cancelled' && b.status !== 'no_show')
@@ -182,14 +191,24 @@ export default async function DashboardOverviewPage() {
 
         {upcomingBookings.length === 0 ? (
           <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
+            <p className="text-2xl mb-2">📅</p>
             <p className="text-gray-500 dark:text-gray-400">
               No upcoming lessons scheduled.
             </p>
+            {isAdmin && (
+              <Link
+                href="/dashboard/bookings"
+                className="mt-3 inline-block text-sm font-medium hover:underline"
+                style={{ color: primaryColor }}
+              >
+                Create a booking →
+              </Link>
+            )}
           </div>
         ) : (
           <div className="space-y-3">
             {upcomingBookings.map((booking) => (
-              <BookingCard key={booking.id} booking={booking} instructors={instructors} />
+              <BookingCard key={booking.id} booking={booking} instructors={instructors} studentsMap={studentsMap} currency={organization.currency} />
             ))}
           </div>
         )}
@@ -249,13 +268,27 @@ function QuickAction({
 function BookingCard({
   booking,
   instructors,
+  studentsMap,
+  currency,
 }: {
   booking: Booking;
   instructors: Instructor[];
+  studentsMap: Map<string, string>;
+  currency: string;
 }) {
   const instructor = instructors.find((i) => i.id === booking.instructor_id);
   const start = new Date(booking.start_datetime);
   const end = new Date(booking.end_datetime);
+
+  // Resolve student name from linked student or from notes (public bookings)
+  let studentName: string | null = null;
+  if (booking.student_id) {
+    studentName = studentsMap.get(booking.student_id) ?? null;
+  }
+  if (!studentName && booking.notes) {
+    const match = booking.notes.match(/^Public booking by:\s*(.+)/m);
+    if (match) studentName = match[1].trim();
+  }
 
   const statusColors: Record<string, string> = {
     new_request: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
@@ -280,13 +313,12 @@ function BookingCard({
       {/* Details */}
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-          {instructor?.display_name ?? 'Unknown instructor'}
+          {studentName ?? 'Walk-in'}
         </p>
-        {booking.pickup_address && (
-          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-            📍 {booking.pickup_address}
-          </p>
-        )}
+        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+          {instructor?.display_name ?? 'Unknown instructor'}
+          {booking.pickup_address ? ` · 📍 ${booking.pickup_address}` : ''}
+        </p>
       </div>
       {/* Status */}
       <span
@@ -296,7 +328,7 @@ function BookingCard({
       </span>
       {/* Price */}
       <span className="shrink-0 text-sm font-semibold text-gray-900 dark:text-white">
-        {formatPrice(booking.price_cents ?? 0)}
+        {formatPrice(booking.price_cents ?? 0, currency)}
       </span>
     </div>
   );

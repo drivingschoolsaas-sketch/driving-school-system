@@ -6,6 +6,7 @@
 // Navigation is grouped into sections with a "More" menu
 // on mobile so all pages are always discoverable.
 
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { getDashboardContext } from '@/lib/auth';
 import { isAtLeastRole, isOrgAdminRole } from '@/permissions/roles';
@@ -13,6 +14,8 @@ import { USER_ROLES, type UserRole } from '@/config/constants';
 import type { Metadata } from 'next';
 import { SignOutButton } from './components/sign-out-button';
 import { MobileMoreMenu } from './components/mobile-more-menu';
+import { SidebarNav } from './components/sidebar-nav';
+import { MobileBottomNav } from './components/mobile-bottom-nav';
 
 export const metadata: Metadata = {
   title: 'Dashboard',
@@ -120,28 +123,8 @@ export default async function DashboardLayout({
             </Link>
           </div>
 
-          {/* Grouped Navigation */}
-          <nav className="flex-1 px-3 py-4 space-y-5">
-            {groupedNav.map((group) => (
-              <div key={group.label}>
-                <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-                  {group.label}
-                </p>
-                <div className="space-y-0.5">
-                  {group.items.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                    >
-                      <span className="text-base">{item.icon}</span>
-                      {item.label}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </nav>
+          {/* Grouped Navigation — client component for active state */}
+          <SidebarNav groups={groupedNav} primaryColor={primaryColor} />
 
           {/* User info at bottom */}
           <div className="border-t border-gray-200 dark:border-gray-700 p-4">
@@ -190,16 +173,7 @@ export default async function DashboardLayout({
       {/* Mobile bottom nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-10 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
         <div className="flex justify-around py-2">
-          {mobileBottomItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="flex flex-col items-center gap-0.5 px-2 py-1 text-gray-600 dark:text-gray-400"
-            >
-              <span className="text-lg">{item.icon}</span>
-              <span className="text-[10px]">{item.label}</span>
-            </Link>
-          ))}
+          <MobileBottomNav items={mobileBottomItems} primaryColor={primaryColor} />
           {mobileMoreItems.length > 0 && (
             <MobileMoreMenu items={mobileMoreItems} />
           )}
@@ -209,9 +183,35 @@ export default async function DashboardLayout({
       {/* Main content */}
       <main className="md:ml-64 flex-1 overflow-y-auto pt-14 md:pt-0 pb-20 md:pb-0">
         <div className="p-4 sm:p-6 lg:p-8">
-          {children}
+          <Suspense fallback={<DashboardSkeleton />}>
+            {children}
+          </Suspense>
         </div>
       </main>
+    </div>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="animate-pulse space-y-6">
+      <div className="space-y-2">
+        <div className="h-7 w-40 rounded bg-gray-200 dark:bg-gray-700" />
+        <div className="h-4 w-64 rounded bg-gray-200 dark:bg-gray-700" />
+      </div>
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 space-y-3">
+            <div className="h-4 w-24 rounded bg-gray-200 dark:bg-gray-700" />
+            <div className="h-8 w-16 rounded bg-gray-200 dark:bg-gray-700" />
+          </div>
+        ))}
+      </div>
+      <div className="space-y-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 h-16" />
+        ))}
+      </div>
     </div>
   );
 }

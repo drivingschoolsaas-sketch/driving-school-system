@@ -67,9 +67,10 @@ export default async function PaymentsPage(props: {
   searchParams: Promise<{ status?: string }>;
 }) {
   const searchParams = await props.searchParams;
-  const { auth, settings } = await getDashboardContext();
+  const { auth, organization, settings } = await getDashboardContext();
   requirePermission(auth, PERMISSIONS.PAYMENT_VIEW);
   const primaryColor = settings?.primary_color ?? '#2563eb';
+  const currency = organization.currency ?? 'USD';
   const isAdmin = isOrgAdminRole(auth.role);
 
   // P1-8: Payments are non-MVP — gated behind feature flag
@@ -126,7 +127,7 @@ export default async function PaymentsPage(props: {
             Net Revenue
           </p>
           <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
-            {formatCents(totalRevenue, 'AUD')}
+            {formatCents(totalRevenue, currency)}
           </p>
         </div>
         <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
