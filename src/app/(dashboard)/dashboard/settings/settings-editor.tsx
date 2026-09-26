@@ -96,7 +96,7 @@ export function SettingsEditor({ organization, settings }: Props) {
     { id: 'branding' as const, label: 'Branding', icon: '🎨' },
     { id: 'contact' as const, label: 'Contact', icon: '📞' },
     { id: 'booking' as const, label: 'Booking', icon: '📋' },
-    { id: 'seo' as const, label: 'SEO & Content', icon: '🔍' },
+    { id: 'seo' as const, label: 'SEO', icon: '🔍' },
     { id: 'social' as const, label: 'Social', icon: '🌐' },
   ];
 
@@ -177,14 +177,14 @@ export function SettingsEditor({ organization, settings }: Props) {
 
       {/* Tabbed Settings */}
       <section className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
-        <div className="border-b border-gray-200 dark:border-gray-700 px-5 overflow-x-auto">
-          <div className="flex gap-1 -mb-px">
+        <div className="border-b border-gray-200 dark:border-gray-700 px-2 sm:px-5 overflow-x-auto">
+          <div className="flex gap-0.5 sm:gap-1 -mb-px">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 type="button"
                 onClick={() => { setActiveTab(tab.id); setMessage(null); }}
-                className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
                     : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'

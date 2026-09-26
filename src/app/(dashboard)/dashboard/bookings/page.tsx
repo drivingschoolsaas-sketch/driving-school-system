@@ -130,7 +130,7 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
       </div>
 
       {/* Filter bar */}
-      <form className="flex flex-wrap gap-3" method="GET">
+      <form className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3" method="GET">
         <select
           name="status"
           defaultValue={params.status ?? 'all'}

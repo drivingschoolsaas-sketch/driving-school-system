@@ -20,7 +20,7 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  contacted: '📞 Mark Contacted',
+  contacted: '📞 Contacted',
   confirmed: '✅ Confirm',
   completed: '🏁 Complete',
   rejected: '❌ Reject',
@@ -147,13 +147,13 @@ export function BookingActions({ bookingId, currentStatus, confirmationSentAt, b
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap gap-2">
+      <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-1.5 sm:gap-2">
         {transitions.map((status) => (
           <button
             key={status}
             onClick={() => handleTransition(status)}
             disabled={isPending}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${STATUS_BUTTON_STYLES[status] ?? 'bg-gray-200 text-gray-800'}`}
+            className={`rounded-lg px-2 sm:px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${STATUS_BUTTON_STYLES[status] ?? 'bg-gray-200 text-gray-800'}`}
           >
             {STATUS_LABELS[status] ?? status}
           </button>
@@ -162,7 +162,7 @@ export function BookingActions({ bookingId, currentStatus, confirmationSentAt, b
           <button
             onClick={() => setShowReschedule(!showReschedule)}
             disabled={isPending}
-            className="rounded-lg bg-purple-600 hover:bg-purple-700 px-3 py-1.5 text-xs font-medium text-white transition-colors disabled:opacity-50"
+            className="rounded-lg bg-purple-600 hover:bg-purple-700 px-2 sm:px-3 py-1.5 text-xs font-medium text-white transition-colors disabled:opacity-50"
           >
             🔄 Reschedule
           </button>
@@ -171,7 +171,7 @@ export function BookingActions({ bookingId, currentStatus, confirmationSentAt, b
           <button
             onClick={handleResendConfirmation}
             disabled={isPending}
-            className="rounded-lg bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 text-xs font-medium text-white transition-colors disabled:opacity-50"
+            className="col-span-2 sm:col-span-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 px-2 sm:px-3 py-1.5 text-xs font-medium text-white transition-colors disabled:opacity-50"
           >
             📧 Resend Confirmation
           </button>

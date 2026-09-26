@@ -187,82 +187,98 @@ export default async function ReportsPage() {
             No instructor data available
           </p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-800">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-                    Instructor
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-                    Bookings
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-                    Completed
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-                    Rate
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-                    Revenue
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-                    Rating
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-                    No-Shows
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
-                {instructors.map((inst) => (
-                  <tr key={inst.instructorId}>
-                    <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
-                      {inst.instructorName}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-right text-sm text-gray-500 dark:text-gray-400">
-                      {inst.totalBookings}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-right text-sm text-gray-500 dark:text-gray-400">
-                      {inst.completedBookings}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-right text-sm">
-                      <span
-                        className={
+          <>
+            {/* Mobile: Card layout */}
+            <div className="space-y-3 sm:hidden">
+              {instructors.map((inst) => (
+                <div key={inst.instructorId} className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{inst.instructorName}</p>
+                    <span className={`text-sm font-bold ${
+                      inst.completionRate >= 0.8
+                        ? 'text-green-600 dark:text-green-400'
+                        : inst.completionRate >= 0.6
+                          ? 'text-yellow-600 dark:text-yellow-400'
+                          : 'text-red-600 dark:text-red-400'
+                    }`}>
+                      {formatPercent(inst.completionRate)}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Bookings</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{inst.totalBookings}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Completed</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{inst.completedBookings}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Revenue</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{formatCents(inst.totalRevenueCents, currency)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">No-Shows</span>
+                      <span className={`font-medium ${inst.noShowBookings > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                        {inst.noShowBookings}
+                      </span>
+                    </div>
+                  </div>
+                  {inst.averageRating !== null && (
+                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                      {inst.averageRating.toFixed(1)} ⭐ ({inst.reviewCount} reviews)
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop: Table layout */}
+            <div className="hidden sm:block overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-800">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Instructor</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Bookings</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Completed</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Rate</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Revenue</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Rating</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500 dark:text-gray-400">No-Shows</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
+                  {instructors.map((inst) => (
+                    <tr key={inst.instructorId}>
+                      <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{inst.instructorName}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-right text-sm text-gray-500 dark:text-gray-400">{inst.totalBookings}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-right text-sm text-gray-500 dark:text-gray-400">{inst.completedBookings}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-right text-sm">
+                        <span className={
                           inst.completionRate >= 0.8
                             ? 'text-green-600 dark:text-green-400'
                             : inst.completionRate >= 0.6
                               ? 'text-yellow-600 dark:text-yellow-400'
                               : 'text-red-600 dark:text-red-400'
-                        }
-                      >
-                        {formatPercent(inst.completionRate)}
-                      </span>
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">
-                      {formatCents(inst.totalRevenueCents, currency)}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-right text-sm text-gray-500 dark:text-gray-400">
-                      {inst.averageRating !== null
-                        ? `${inst.averageRating.toFixed(1)} ⭐ (${inst.reviewCount})`
-                        : '—'}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-right text-sm">
-                      <span
-                        className={
-                          inst.noShowBookings > 0
-                            ? 'text-red-600 dark:text-red-400'
-                            : 'text-gray-500 dark:text-gray-400'
-                        }
-                      >
-                        {inst.noShowBookings}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                        }>
+                          {formatPercent(inst.completionRate)}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">{formatCents(inst.totalRevenueCents, currency)}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-right text-sm text-gray-500 dark:text-gray-400">
+                        {inst.averageRating !== null ? `${inst.averageRating.toFixed(1)} ⭐ (${inst.reviewCount})` : '—'}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-right text-sm">
+                        <span className={inst.noShowBookings > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'}>
+                          {inst.noShowBookings}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </section>
 
