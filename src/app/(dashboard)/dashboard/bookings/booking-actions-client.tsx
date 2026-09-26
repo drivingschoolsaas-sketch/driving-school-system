@@ -232,7 +232,7 @@ export function BookingActions({ bookingId, currentStatus, confirmationSentAt, b
           <p className="text-xs font-medium text-purple-800 dark:text-purple-200">
             Reschedule to a new date/time
           </p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <div>
               <label className="block text-xs text-gray-600 dark:text-gray-400 mb-0.5">Date</label>
               <input

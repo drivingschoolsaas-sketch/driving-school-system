@@ -276,7 +276,13 @@ function LessonCard({
       <div className="space-y-1">
         <div className="flex items-center justify-between">
           <p className="text-base font-semibold text-gray-900 dark:text-white">
-            {student?.display_name ?? 'Unknown Student'}
+            {student?.display_name ?? (() => {
+              if (booking.notes) {
+                const match = booking.notes.match(/^Public booking by:\s*(.+)/m);
+                if (match) return match[1].trim();
+              }
+              return 'Walk-in';
+            })()}
           </p>
           {student && (
             <Link

@@ -182,7 +182,7 @@ export default async function DashboardLayout({
         <div className="flex justify-around py-2">
           <MobileBottomNav items={mobileBottomItems} primaryColor={primaryColor} />
           {mobileMoreItems.length > 0 && (
-            <MobileMoreMenu items={mobileMoreItems} />
+            <MobileMoreMenu items={mobileMoreItems} primaryColor={primaryColor} />
           )}
         </div>
       </nav>

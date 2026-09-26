@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 interface MoreMenuItem {
   label: string;
@@ -9,9 +10,12 @@ interface MoreMenuItem {
   icon: string;
 }
 
-export function MobileMoreMenu({ items }: { items: MoreMenuItem[] }) {
+export function MobileMoreMenu({ items, primaryColor }: { items: MoreMenuItem[]; primaryColor?: string }) {
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
+
+  const isMoreActive = items.some((item) => pathname.startsWith(item.href));
 
   const toggle = useCallback(() => setOpen((prev) => !prev), []);
 
@@ -43,7 +47,12 @@ export function MobileMoreMenu({ items }: { items: MoreMenuItem[] }) {
       <button
         type="button"
         onClick={toggle}
-        className="flex flex-col items-center gap-0.5 px-2 py-1 text-gray-600 dark:text-gray-400"
+        className={`flex flex-col items-center gap-0.5 px-2 py-1 transition-colors ${
+          isMoreActive
+            ? 'font-semibold'
+            : 'text-gray-600 dark:text-gray-400'
+        }`}
+        style={isMoreActive ? { color: primaryColor } : undefined}
         aria-expanded={open}
         aria-label="More navigation"
       >
