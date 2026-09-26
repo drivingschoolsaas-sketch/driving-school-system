@@ -60,18 +60,19 @@ export function AddPackageForm({ lessonTypes, primaryColor }: Props) {
                     className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Price (cents) *</label>
-                  <input type="number" name="price_cents" required min={0} defaultValue={35000}
-                    className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white" />
-                  <p className="text-xs text-gray-500 mt-1">35000 = $350.00</p>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Price *</label>
+                  <input type="number" name="price_dollars" required min={0} step="0.01" defaultValue="350.00"
+                    className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white"
+                    placeholder="0.00" />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Savings (cents)</label>
-                  <input type="number" name="savings_cents" min={0} defaultValue={2500}
-                    className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white" />
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Savings</label>
+                  <input type="number" name="savings_dollars" min={0} step="0.01" defaultValue="25.00"
+                    className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white"
+                    placeholder="0.00" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Valid (days)</label>

@@ -152,18 +152,20 @@ function EditLessonTypeModal({
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Price (cents) *
+                Price *
               </label>
               <input
                 type="number"
-                name="price_cents"
+                name="price_dollars"
                 required
                 min={0}
-                defaultValue={lessonType.price_cents}
+                step="0.01"
+                defaultValue={(lessonType.price_cents / 100).toFixed(2)}
                 className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white"
+                placeholder="0.00"
               />
               <p className="text-xs text-gray-500 mt-1">
-                {lessonType.price_cents} = {formatPrice(lessonType.price_cents, currency)}
+                Current: {formatPrice(lessonType.price_cents, currency)}
               </p>
             </div>
           </div>

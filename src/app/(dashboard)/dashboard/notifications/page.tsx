@@ -193,7 +193,7 @@ export default async function NotificationsPage(props: {
                     className="text-gray-700 dark:text-gray-300"
                   >
                     <td className="py-3 pr-4 whitespace-nowrap text-xs">
-                      {new Date(notif.created_at).toLocaleString()}
+                      {new Date(notif.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                     </td>
                     <td className="py-3 pr-4 whitespace-nowrap">
                       {TYPE_LABELS[notif.notification_type] ??

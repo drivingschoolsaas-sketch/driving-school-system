@@ -42,7 +42,7 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   },
 };
 
-function formatCents(cents: number, currency = 'AUD'): string {
+function formatCents(cents: number, currency: string): string {
   return new Intl.NumberFormat('en-AU', {
     style: 'currency',
     currency,

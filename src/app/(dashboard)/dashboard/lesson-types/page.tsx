@@ -46,8 +46,12 @@ export default async function LessonTypesPage() {
       </div>
 
       {lessonTypes.length === 0 ? (
-        <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-8 text-center">
-          <p className="text-gray-500 dark:text-gray-400">No lesson types configured yet.</p>
+        <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-12 text-center">
+          <p className="text-3xl mb-3">📖</p>
+          <p className="font-medium text-gray-900 dark:text-white">No lesson types configured yet</p>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Create your first lesson type to set up pricing and start taking bookings.
+          </p>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">

@@ -70,7 +70,7 @@ export default async function PaymentsPage(props: {
   const { auth, organization, settings } = await getDashboardContext();
   requirePermission(auth, PERMISSIONS.PAYMENT_VIEW);
   const primaryColor = settings?.primary_color ?? '#2563eb';
-  const currency = organization.currency ?? 'USD';
+  const currency = organization.currency ?? 'AUD';
   const isAdmin = isOrgAdminRole(auth.role);
 
   // P1-8: Payments are non-MVP — gated behind feature flag
@@ -212,7 +212,7 @@ export default async function PaymentsPage(props: {
                 return (
                   <tr key={payment.id} className="text-gray-700 dark:text-gray-300">
                     <td className="py-3 pr-4 whitespace-nowrap">
-                      {new Date(payment.created_at).toLocaleDateString()}
+                      {new Date(payment.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </td>
                     <td className="py-3 pr-4 whitespace-nowrap">
                       {TYPE_LABELS[payment.payment_type] ?? payment.payment_type}

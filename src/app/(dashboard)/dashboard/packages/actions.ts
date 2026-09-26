@@ -30,8 +30,8 @@ export async function createPackageAction(
       description: formData.get('description') || null,
       lesson_type_id: formData.get('lesson_type_id'),
       lesson_count: parseInt(formData.get('lesson_count') as string, 10) || 1,
-      price_cents: parseInt(formData.get('price_cents') as string, 10) || 0,
-      savings_cents: parseInt(formData.get('savings_cents') as string, 10) || 0,
+      price_cents: Math.round(parseFloat(formData.get('price_dollars') as string) * 100) || 0,
+      savings_cents: Math.round(parseFloat(formData.get('savings_dollars') as string) * 100) || 0,
       validity_days: formData.get('validity_days') ? parseInt(formData.get('validity_days') as string, 10) : null,
       is_public: formData.get('is_public') !== 'false',
     });
@@ -59,8 +59,8 @@ export async function updatePackageAction(
     if (formData.has('description')) updates.description = (formData.get('description') as string)?.trim() || null;
     if (formData.has('lesson_type_id')) updates.lesson_type_id = formData.get('lesson_type_id');
     if (formData.has('lesson_count')) updates.lesson_count = parseInt(formData.get('lesson_count') as string, 10);
-    if (formData.has('price_cents')) updates.price_cents = parseInt(formData.get('price_cents') as string, 10);
-    if (formData.has('savings_cents')) updates.savings_cents = parseInt(formData.get('savings_cents') as string, 10);
+    if (formData.has('price_dollars')) updates.price_cents = Math.round(parseFloat(formData.get('price_dollars') as string) * 100);
+    if (formData.has('savings_dollars')) updates.savings_cents = Math.round(parseFloat(formData.get('savings_dollars') as string) * 100);
     if (formData.has('validity_days')) {
       const val = formData.get('validity_days') as string;
       updates.validity_days = val ? parseInt(val, 10) : null;

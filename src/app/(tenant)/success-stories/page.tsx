@@ -13,7 +13,7 @@ import type { Metadata } from 'next';
 export async function generateMetadata(): Promise<Metadata> {
   const data = await getTenantData();
   if (!data) return { title: 'Success Stories' };
-  return { title: 'Success Stories' };
+  return { title: `Success Stories | ${data.organization.name}` };
 }
 
 export default async function SuccessStoriesPage() {

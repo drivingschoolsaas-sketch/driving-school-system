@@ -54,10 +54,10 @@ export function AddLessonTypeForm({ primaryColor }: Props) {
                     className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Price (cents) *</label>
-                  <input type="number" name="price_cents" required min={0} defaultValue={7500}
-                    className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white" />
-                  <p className="text-xs text-gray-500 mt-1">7500 = $75.00</p>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Price *</label>
+                  <input type="number" name="price_dollars" required min={0} step="0.01" defaultValue="75.00"
+                    className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white"
+                    placeholder="0.00" />
                 </div>
               </div>
 

@@ -77,11 +77,11 @@ export function TestimonialCarousel({ reviews, primaryColor }: TestimonialCarous
                 className="flex h-10 w-10 items-center justify-center rounded-full text-white text-sm font-bold shrink-0"
                 style={{ backgroundColor: primaryColor }}
               >
-                {(review.is_anonymous ? 'A' : review.reviewer_name.charAt(0)).toUpperCase()}
+                {(review.is_anonymous || !review.reviewer_name ? 'A' : review.reviewer_name.charAt(0)).toUpperCase()}
               </div>
               <div>
                 <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {review.is_anonymous ? 'Anonymous' : review.reviewer_name}
+                  {review.is_anonymous || !review.reviewer_name ? 'Anonymous' : review.reviewer_name}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   {new Date(review.created_at).toLocaleDateString('en-AU', {

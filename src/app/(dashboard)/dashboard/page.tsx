@@ -125,8 +125,8 @@ export default async function DashboardOverviewPage() {
         </p>
       </div>
 
-      {/* Setup Checklist (for new schools) */}
-      {isAdmin && setupSteps.length > 0 && (
+      {/* Setup Checklist (for new schools — hidden once all complete) */}
+      {isAdmin && setupSteps.length > 0 && setupSteps.some((s) => !s.done) && (
         <SetupChecklist steps={setupSteps} primaryColor={primaryColor} />
       )}
 

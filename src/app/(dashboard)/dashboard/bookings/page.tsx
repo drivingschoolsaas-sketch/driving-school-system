@@ -112,7 +112,9 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Bookings</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {bookings.length} booking{bookings.length !== 1 ? 's' : ''} found
+            {bookings.length >= 50
+              ? 'Showing latest 50 bookings — use filters to narrow results'
+              : `${bookings.length} booking${bookings.length !== 1 ? 's' : ''} found`}
           </p>
         </div>
         {isAdmin && (
@@ -179,12 +181,26 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
         >
           Filter
         </button>
+        {(params.status || params.instructor || params.from || params.to) && (
+          <a
+            href="/dashboard/bookings"
+            className="rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          >
+            Clear
+          </a>
+        )}
       </form>
 
       {/* Bookings list */}
       {bookings.length === 0 ? (
-        <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-8 text-center">
-          <p className="text-gray-500 dark:text-gray-400">No bookings match your filters.</p>
+        <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-12 text-center">
+          <p className="text-3xl mb-3">📋</p>
+          <p className="font-medium text-gray-900 dark:text-white">No bookings found</p>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            {params.status || params.instructor || params.from || params.to
+              ? 'Try adjusting your filters to see more results.'
+              : 'Create your first booking to get started.'}
+          </p>
         </div>
       ) : (
         <div className="space-y-3">

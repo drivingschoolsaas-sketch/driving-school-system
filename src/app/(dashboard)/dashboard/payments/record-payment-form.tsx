@@ -58,7 +58,7 @@ export function RecordPaymentForm({ students, primaryColor }: Props) {
           {/* Amount */}
           <div>
             <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Amount ($) *
+              Amount *
             </label>
             <input
               type="number"

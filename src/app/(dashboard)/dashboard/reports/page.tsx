@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   title: 'Reports',
 };
 
-function formatCents(cents: number, currency = 'AUD'): string {
+function formatCents(cents: number, currency: string): string {
   return new Intl.NumberFormat('en-AU', {
     style: 'currency',
     currency,
@@ -37,8 +37,9 @@ const PAYMENT_TYPE_LABELS: Record<string, string> = {
 };
 
 export default async function ReportsPage() {
-  const { auth } = await getDashboardContext();
+  const { auth, organization } = await getDashboardContext();
   requirePermission(auth, PERMISSIONS.REPORT_VIEW);
+  const currency = organization.currency ?? 'AUD';
   const client = await createServerSupabaseClient();
 
   const [revenue, instructors, bookingAnalytics] = await Promise.all([
@@ -69,7 +70,7 @@ export default async function ReportsPage() {
               Total Revenue (All Time)
             </p>
             <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
-              {formatCents(revenue.totalRevenueCents)}
+              {formatCents(revenue.totalRevenueCents, currency)}
             </p>
           </div>
           <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
@@ -77,13 +78,13 @@ export default async function ReportsPage() {
               Period Revenue
             </p>
             <p className="mt-1 text-2xl font-bold text-green-600 dark:text-green-400">
-              {formatCents(revenue.periodRevenueCents)}
+              {formatCents(revenue.periodRevenueCents, currency)}
             </p>
           </div>
           <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
             <p className="text-sm text-gray-500 dark:text-gray-400">Refunded</p>
             <p className="mt-1 text-2xl font-bold text-red-600 dark:text-red-400">
-              {formatCents(revenue.refundedCents)}
+              {formatCents(revenue.refundedCents, currency)}
             </p>
           </div>
           <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
@@ -91,7 +92,7 @@ export default async function ReportsPage() {
               Net Revenue
             </p>
             <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
-              {formatCents(revenue.netRevenueCents)}
+              {formatCents(revenue.netRevenueCents, currency)}
             </p>
           </div>
         </div>
@@ -123,7 +124,7 @@ export default async function ReportsPage() {
                       {rt.count}
                     </td>
                     <td className="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">
-                      {formatCents(rt.total_cents)}
+                      {formatCents(rt.total_cents, currency)}
                     </td>
                   </tr>
                 ))}
@@ -159,7 +160,7 @@ export default async function ReportsPage() {
                       {rm.count}
                     </td>
                     <td className="px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">
-                      {formatCents(rm.total_cents)}
+                      {formatCents(rm.total_cents, currency)}
                     </td>
                   </tr>
                 ))}
@@ -232,7 +233,7 @@ export default async function ReportsPage() {
                       </span>
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">
-                      {formatCents(inst.totalRevenueCents)}
+                      {formatCents(inst.totalRevenueCents, currency)}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-right text-sm text-gray-500 dark:text-gray-400">
                       {inst.averageRating !== null

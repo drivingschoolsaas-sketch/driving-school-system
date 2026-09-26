@@ -56,8 +56,12 @@ export default async function PackagesPage() {
       </div>
 
       {packages.length === 0 ? (
-        <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-8 text-center">
-          <p className="text-gray-500 dark:text-gray-400">No packages configured yet.</p>
+        <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-12 text-center">
+          <p className="text-3xl mb-3">📦</p>
+          <p className="font-medium text-gray-900 dark:text-white">No packages configured yet</p>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Create lesson bundles to offer discounts and encourage multi-lesson bookings.
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

@@ -191,7 +191,7 @@ export default async function HomePage() {
       </section>
 
       {/* ========== SUCCESS STORIES ========== */}
-      {successStories.length > 0 && (
+      {sections.includes('reviews') && successStories.length > 0 && (
         <section className="py-20 sm:py-28 bg-gray-50 dark:bg-gray-900/50">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
@@ -349,7 +349,7 @@ export default async function HomePage() {
       )}
 
       {/* ========== TESTIMONIALS ========== */}
-      {reviews.length > 0 && (
+      {sections.includes('reviews') && reviews.length > 0 && (
         <section className="py-20 sm:py-28">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">

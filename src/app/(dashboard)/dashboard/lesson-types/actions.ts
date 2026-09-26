@@ -29,7 +29,7 @@ export async function createLessonTypeAction(
       name: formData.get('name'),
       description: formData.get('description') || null,
       duration_minutes: parseInt(formData.get('duration_minutes') as string, 10) || 60,
-      price_cents: parseInt(formData.get('price_cents') as string, 10) || 0,
+      price_cents: Math.round(parseFloat(formData.get('price_dollars') as string) * 100) || 0,
       transmission: formData.get('transmission') || 'automatic',
       is_public: formData.get('is_public') !== 'false',
     });
@@ -56,7 +56,7 @@ export async function updateLessonTypeAction(
     if (formData.has('name')) updates.name = (formData.get('name') as string)?.trim();
     if (formData.has('description')) updates.description = (formData.get('description') as string)?.trim() || null;
     if (formData.has('duration_minutes')) updates.duration_minutes = parseInt(formData.get('duration_minutes') as string, 10);
-    if (formData.has('price_cents')) updates.price_cents = parseInt(formData.get('price_cents') as string, 10);
+    if (formData.has('price_dollars')) updates.price_cents = Math.round(parseFloat(formData.get('price_dollars') as string) * 100);
     if (formData.has('transmission')) updates.transmission = formData.get('transmission');
     if (formData.has('is_public')) updates.is_public = formData.get('is_public') === 'true';
     if (formData.has('status')) updates.status = formData.get('status');

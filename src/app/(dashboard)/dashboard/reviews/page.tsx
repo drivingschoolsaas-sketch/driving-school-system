@@ -55,7 +55,7 @@ export default async function ReviewsAdminPage(props: {
             Reviews
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Moderate student reviews before they appear on your website.
+            {reviews.length} review{reviews.length !== 1 ? 's' : ''} — moderate before they appear on your website.
           </p>
         </div>
         {pendingCount > 0 && !statusFilter && (
@@ -168,12 +168,12 @@ export default async function ReviewsAdminPage(props: {
                     <div className="mt-3 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
                       <time dateTime={review.created_at}>
                         Submitted{' '}
-                        {new Date(review.created_at).toLocaleDateString()}
+                        {new Date(review.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </time>
                       {review.moderated_at && (
                         <span>
                           Moderated{' '}
-                          {new Date(review.moderated_at).toLocaleDateString()}
+                          {new Date(review.moderated_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </span>
                       )}
                       {review.moderation_notes && (

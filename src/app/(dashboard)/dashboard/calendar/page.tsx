@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { getDashboardContext } from '@/lib/auth';
 import { createServerSupabaseClient } from '@/lib/database';
 import { isOrgAdminRole } from '@/permissions/roles';
-import type { Booking, Instructor } from '@/types/database';
+import type { Booking, Instructor, Student } from '@/types/database';
 import type { Metadata } from 'next';
 import { formatPrice } from '@/lib/format';
 
@@ -97,6 +97,17 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
   const bookings = (bookingsRes.data ?? []) as Booking[];
   const instructors = (instructorsRes.data ?? []) as Instructor[];
   const instructorMap = new Map(instructors.map((i) => [i.id, i]));
+
+  // Fetch student names for bookings
+  const studentIds = [...new Set(bookings.map((b) => b.student_id).filter(Boolean))] as string[];
+  let studentMap = new Map<string, string>();
+  if (studentIds.length > 0) {
+    const { data: studentData } = await client
+      .from('students')
+      .select('id, display_name')
+      .in('id', studentIds);
+    studentMap = new Map((studentData ?? []).map((s: Pick<Student, 'id' | 'display_name'>) => [s.id, s.display_name]));
+  }
 
   // Navigation dates
   const prevDate = new Date(dayStart);
@@ -221,9 +232,9 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
 
       {/* Calendar content */}
       {view === 'day' ? (
-        <DayView bookings={bookings} instructorMap={instructorMap} currency={organization.currency} />
+        <DayView bookings={bookings} instructorMap={instructorMap} studentMap={studentMap} currency={organization.currency} />
       ) : (
-        <WeekView dayGroups={dayGroups} instructorMap={instructorMap} today={todayStr} />
+        <WeekView dayGroups={dayGroups} instructorMap={instructorMap} studentMap={studentMap} today={todayStr} />
       )}
     </div>
   );
@@ -232,15 +243,18 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
 function DayView({
   bookings,
   instructorMap,
+  studentMap,
   currency,
 }: {
   bookings: Booking[];
   instructorMap: Map<string, Instructor>;
+  studentMap: Map<string, string>;
   currency?: string | null;
 }) {
   if (bookings.length === 0) {
     return (
       <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-8 text-center">
+        <p className="text-2xl mb-2">📅</p>
         <p className="text-gray-500 dark:text-gray-400">No bookings for this day.</p>
       </div>
     );
@@ -253,6 +267,7 @@ function DayView({
           key={booking.id}
           booking={booking}
           instructor={instructorMap.get(booking.instructor_id)}
+          studentName={booking.student_id ? studentMap.get(booking.student_id) : undefined}
           currency={currency}
         />
       ))}
@@ -263,10 +278,12 @@ function DayView({
 function WeekView({
   dayGroups,
   instructorMap,
+  studentMap,
   today,
 }: {
   dayGroups: Map<string, Booking[]>;
   instructorMap: Map<string, Instructor>;
+  studentMap: Map<string, string>;
   today: string;
 }) {
   return (
@@ -295,6 +312,7 @@ function WeekView({
                   const colors = STATUS_COLORS[b.status] ?? STATUS_COLORS.confirmed;
                   const start = new Date(b.start_datetime);
                   const inst = instructorMap.get(b.instructor_id);
+                  const sName = b.student_id ? studentMap.get(b.student_id) : undefined;
 
                   return (
                     <div
@@ -304,7 +322,10 @@ function WeekView({
                       <p className={`text-[10px] font-medium ${colors.text}`}>
                         {start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                       </p>
-                      <p className="text-[10px] text-gray-600 dark:text-gray-400 truncate">
+                      <p className="text-[10px] font-medium text-gray-700 dark:text-gray-300 truncate">
+                        {sName ?? 'Walk-in'}
+                      </p>
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
                         {inst?.display_name ?? '—'}
                       </p>
                     </div>
@@ -322,10 +343,12 @@ function WeekView({
 function CalendarBookingCard({
   booking,
   instructor,
+  studentName,
   currency,
 }: {
   booking: Booking;
   instructor?: Instructor;
+  studentName?: string;
   currency?: string | null;
 }) {
   const colors = STATUS_COLORS[booking.status] ?? STATUS_COLORS.confirmed;
@@ -345,11 +368,14 @@ function CalendarBookingCard({
         </p>
       </div>
       <div className="min-w-0 flex-1">
-        <p className={`text-sm font-medium ${colors.text}`}>
+        <p className={`text-sm font-semibold text-gray-900 dark:text-white`}>
+          {studentName ?? 'Walk-in'}
+        </p>
+        <p className="text-xs text-gray-500 dark:text-gray-400">
           {instructor?.display_name ?? 'Unknown'}
         </p>
         {booking.pickup_address && (
-          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+          <p className="text-xs text-gray-400 dark:text-gray-500 truncate">
             📍 {booking.pickup_address}
           </p>
         )}

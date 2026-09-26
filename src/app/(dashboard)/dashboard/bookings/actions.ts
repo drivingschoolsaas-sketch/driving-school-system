@@ -86,7 +86,7 @@ export async function createBookingAction(
       start_datetime: new Date(startDatetime).toISOString(),
       end_datetime: new Date(endDatetime).toISOString(),
       pickup_address: formData.get('pickup_address') || null,
-      price_cents: parseInt(formData.get('price_cents') as string, 10) || 0,
+      price_cents: Math.round(parseFloat(formData.get('price_dollars') as string) * 100) || 0,
       notes: formData.get('notes') || null,
     });
 

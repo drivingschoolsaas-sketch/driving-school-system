@@ -56,6 +56,7 @@ export function BookingActions({ bookingId, currentStatus, confirmationSentAt, b
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showReschedule, setShowReschedule] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingDestructive, setPendingDestructive] = useState<string | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [rescheduleData, setRescheduleData] = useState({ date: '', start: '', end: '', reason: '' });
   const [error, setError] = useState<string | null>(null);
@@ -64,6 +65,8 @@ export function BookingActions({ bookingId, currentStatus, confirmationSentAt, b
   const isConfirmed = currentStatus === 'confirmed';
 
   if (transitions.length === 0 && !canReschedule) return null;
+
+  const DESTRUCTIVE_STATUSES = ['no_show', 'rejected', 'completed'];
 
   function handleTransition(newStatus: string) {
     if (newStatus === 'cancelled') {
@@ -74,11 +77,29 @@ export function BookingActions({ bookingId, currentStatus, confirmationSentAt, b
       setShowConfirmModal(true);
       return;
     }
+    if (DESTRUCTIVE_STATUSES.includes(newStatus)) {
+      setPendingDestructive(newStatus);
+      return;
+    }
 
     setError(null);
     setSuccessMsg(null);
     startTransition(async () => {
       const result = await transitionStatusAction(bookingId, newStatus);
+      if (!result.success) {
+        setError(result.error ?? 'Failed');
+      }
+    });
+  }
+
+  function confirmDestructive() {
+    if (!pendingDestructive) return;
+    const status = pendingDestructive;
+    setPendingDestructive(null);
+    setError(null);
+    setSuccessMsg(null);
+    startTransition(async () => {
+      const result = await transitionStatusAction(bookingId, status);
       if (!result.success) {
         setError(result.error ?? 'Failed');
       }
@@ -307,6 +328,31 @@ export function BookingActions({ bookingId, currentStatus, confirmationSentAt, b
             </button>
             <button
               onClick={() => { setShowCancelDialog(false); setCancelReason(''); }}
+              className="rounded-lg bg-gray-200 dark:bg-gray-600 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500"
+            >
+              Back
+            </button>
+          </div>
+        </div>
+      )}
+
+      {pendingDestructive && (
+        <div className="mt-2 rounded-lg border border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/20 p-3 space-y-2">
+          <p className="text-xs font-medium text-red-800 dark:text-red-200">
+            {pendingDestructive === 'no_show' && 'Mark this booking as No Show? This cannot be undone.'}
+            {pendingDestructive === 'rejected' && 'Reject this booking? This cannot be undone.'}
+            {pendingDestructive === 'completed' && 'Mark this booking as completed?'}
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={confirmDestructive}
+              disabled={isPending}
+              className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
+            >
+              {isPending ? 'Processing…' : `Yes, ${STATUS_LABELS[pendingDestructive]?.replace(/^[^\s]+\s/, '') ?? pendingDestructive}`}
+            </button>
+            <button
+              onClick={() => setPendingDestructive(null)}
               className="rounded-lg bg-gray-200 dark:bg-gray-600 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500"
             >
               Back

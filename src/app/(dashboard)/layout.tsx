@@ -16,6 +16,8 @@ import { SignOutButton } from './components/sign-out-button';
 import { MobileMoreMenu } from './components/mobile-more-menu';
 import { SidebarNav } from './components/sidebar-nav';
 import { MobileBottomNav } from './components/mobile-bottom-nav';
+import { getAdminClient } from '@/lib/database/supabase-admin';
+import { isFeatureFlagEnabled } from '@/services/platform-admin-service';
 
 export const metadata: Metadata = {
   title: 'Dashboard',
@@ -87,7 +89,12 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { auth, organization, settings } = await getDashboardContext();
-  const visibleNav = getVisibleNav(auth.role);
+  const adminClient = getAdminClient();
+  const paymentsEnabled = await isFeatureFlagEnabled(adminClient, 'payments', auth.organizationId);
+  let visibleNav = getVisibleNav(auth.role);
+  if (!paymentsEnabled) {
+    visibleNav = visibleNav.filter((item) => item.href !== '/dashboard/payments');
+  }
   const primaryColor = settings?.primary_color ?? '#2563eb';
 
   // Mobile: first N items in bottom bar, rest in "More" menu

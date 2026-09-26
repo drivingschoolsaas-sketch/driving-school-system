@@ -33,7 +33,7 @@ export async function recordPaymentAction(
   formData: FormData
 ): Promise<PaymentActionState> {
   try {
-    const { auth } = await getDashboardContext();
+    const { auth, organization } = await getDashboardContext();
     requirePermission(auth, PERMISSIONS.PAYMENT_MANAGE);
     const client = await createServerSupabaseClient();
 
@@ -45,7 +45,7 @@ export async function recordPaymentAction(
     const input = createPaymentSchema.parse({
       payment_type: formData.get('payment_type') || 'booking_full',
       amount_cents: Math.round(amountDollars * 100),
-      currency: 'AUD',
+      currency: organization.currency ?? 'AUD',
       student_id: formData.get('student_id') || null,
       booking_id: formData.get('booking_id') || null,
       description: formData.get('description') || null,

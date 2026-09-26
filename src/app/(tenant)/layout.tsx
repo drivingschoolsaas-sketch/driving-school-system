@@ -188,10 +188,9 @@ export default async function TenantLayout({
                 Quick Links
               </h3>
               <ul className="mt-3 space-y-2">
-                <FooterLink href="/lessons">Lessons</FooterLink>
-                <FooterLink href="/packages">Packages</FooterLink>
-                <FooterLink href="/instructors">Our Instructors</FooterLink>
-                <FooterLink href="/reviews">Reviews</FooterLink>
+                {navLinks.map((l) => (
+                  <FooterLink key={l.href} href={l.href}>{l.label}</FooterLink>
+                ))}
                 <FooterLink href="/book">Book Online</FooterLink>
               </ul>
             </div>
