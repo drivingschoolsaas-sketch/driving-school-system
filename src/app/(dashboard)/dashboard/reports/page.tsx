@@ -64,6 +64,13 @@ export default async function ReportsPage() {
         <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
           Revenue
         </h2>
+        {revenue.totalRevenueCents === 0 && revenue.periodRevenueCents === 0 && (
+          <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-blue-50 dark:bg-blue-900/20 p-4 mb-4">
+            <p className="text-sm text-blue-800 dark:text-blue-300">
+              💡 No payment data yet. Revenue will appear here once you record payments or enable online payments.
+            </p>
+          </div>
+        )}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
             <p className="text-sm text-gray-500 dark:text-gray-400">

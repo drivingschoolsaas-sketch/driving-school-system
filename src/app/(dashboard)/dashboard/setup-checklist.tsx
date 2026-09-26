@@ -1,10 +1,6 @@
-// ==================================================
-// School Setup Checklist
-// ==================================================
-// Shows on the dashboard when a school hasn't completed
-// initial configuration. Guides owners through the onboarding
-// steps from Section 35 — DOMAIN ONBOARDING.
+'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 
 export interface SetupStep {
@@ -24,9 +20,26 @@ export function SetupChecklist({ steps, primaryColor }: Props) {
   const totalSteps = steps.length;
   const allDone = completedCount === totalSteps;
 
-  if (allDone) return null;
+  const [dismissed, setDismissed] = useState(() => {
+    try {
+      return localStorage.getItem('driveflow_checklist_dismissed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  if (allDone || dismissed) return null;
 
   const progressPercent = Math.round((completedCount / totalSteps) * 100);
+
+  function handleDismiss() {
+    setDismissed(true);
+    try {
+      localStorage.setItem('driveflow_checklist_dismissed', 'true');
+    } catch {
+      // ignore
+    }
+  }
 
   return (
     <section className="rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 p-6">
@@ -39,9 +52,18 @@ export function SetupChecklist({ steps, primaryColor }: Props) {
             Complete these steps to set up your driving school
           </p>
         </div>
-        <span className="text-sm font-medium" style={{ color: primaryColor }}>
-          {completedCount}/{totalSteps}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium" style={{ color: primaryColor }}>
+            {completedCount}/{totalSteps}
+          </span>
+          <button
+            onClick={handleDismiss}
+            className="rounded-md p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            title="Dismiss checklist"
+          >
+            ✕
+          </button>
+        </div>
       </div>
 
       {/* Progress bar */}

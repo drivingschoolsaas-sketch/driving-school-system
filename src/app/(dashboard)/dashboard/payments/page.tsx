@@ -190,61 +190,109 @@ export default async function PaymentsPage(props: {
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                <th className="pb-3 pr-4">Date</th>
-                <th className="pb-3 pr-4">Type</th>
-                <th className="pb-3 pr-4">Amount</th>
-                <th className="pb-3 pr-4">Refunded</th>
-                <th className="pb-3 pr-4">Status</th>
-                <th className="pb-3">Description</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {payments.map((payment) => {
-                const statusInfo = STATUS_CONFIG[payment.status] ?? {
-                  label: payment.status,
-                  className: 'bg-gray-100 text-gray-800',
-                };
+        <>
+          {/* Mobile: Card layout */}
+          <div className="space-y-3 sm:hidden">
+            {payments.map((payment) => {
+              const statusInfo = STATUS_CONFIG[payment.status] ?? {
+                label: payment.status,
+                className: 'bg-gray-100 text-gray-800',
+              };
+              return (
+                <div
+                  key={payment.id}
+                  className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                        {formatCents(payment.amount_cents, payment.currency)}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        {TYPE_LABELS[payment.payment_type] ?? payment.payment_type}
+                      </p>
+                    </div>
+                    <span
+                      className={`shrink-0 inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusInfo.className}`}
+                    >
+                      {statusInfo.label}
+                    </span>
+                  </div>
+                  {payment.amount_refunded_cents > 0 && (
+                    <p className="mt-1 text-xs text-purple-600 dark:text-purple-400">
+                      Refunded: -{formatCents(payment.amount_refunded_cents, payment.currency)}
+                    </p>
+                  )}
+                  {payment.description && (
+                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
+                      {payment.description}
+                    </p>
+                  )}
+                  <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
+                    {new Date(payment.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
 
-                return (
-                  <tr key={payment.id} className="text-gray-700 dark:text-gray-300">
-                    <td className="py-3 pr-4 whitespace-nowrap">
-                      {new Date(payment.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    </td>
-                    <td className="py-3 pr-4 whitespace-nowrap">
-                      {TYPE_LABELS[payment.payment_type] ?? payment.payment_type}
-                    </td>
-                    <td className="py-3 pr-4 whitespace-nowrap font-medium">
-                      {formatCents(payment.amount_cents, payment.currency)}
-                    </td>
-                    <td className="py-3 pr-4 whitespace-nowrap">
-                      {payment.amount_refunded_cents > 0 ? (
-                        <span className="text-purple-600 dark:text-purple-400">
-                          -{formatCents(payment.amount_refunded_cents, payment.currency)}
+          {/* Desktop: Table layout */}
+          <div className="hidden sm:block overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  <th className="pb-3 pr-4">Date</th>
+                  <th className="pb-3 pr-4">Type</th>
+                  <th className="pb-3 pr-4">Amount</th>
+                  <th className="pb-3 pr-4">Refunded</th>
+                  <th className="pb-3 pr-4">Status</th>
+                  <th className="pb-3">Description</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                {payments.map((payment) => {
+                  const statusInfo = STATUS_CONFIG[payment.status] ?? {
+                    label: payment.status,
+                    className: 'bg-gray-100 text-gray-800',
+                  };
+
+                  return (
+                    <tr key={payment.id} className="text-gray-700 dark:text-gray-300">
+                      <td className="py-3 pr-4 whitespace-nowrap">
+                        {new Date(payment.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </td>
+                      <td className="py-3 pr-4 whitespace-nowrap">
+                        {TYPE_LABELS[payment.payment_type] ?? payment.payment_type}
+                      </td>
+                      <td className="py-3 pr-4 whitespace-nowrap font-medium">
+                        {formatCents(payment.amount_cents, payment.currency)}
+                      </td>
+                      <td className="py-3 pr-4 whitespace-nowrap">
+                        {payment.amount_refunded_cents > 0 ? (
+                          <span className="text-purple-600 dark:text-purple-400">
+                            -{formatCents(payment.amount_refunded_cents, payment.currency)}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+                      <td className="py-3 pr-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusInfo.className}`}
+                        >
+                          {statusInfo.label}
                         </span>
-                      ) : (
-                        <span className="text-gray-400">—</span>
-                      )}
-                    </td>
-                    <td className="py-3 pr-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusInfo.className}`}
-                      >
-                        {statusInfo.label}
-                      </span>
-                    </td>
-                    <td className="py-3 text-gray-500 dark:text-gray-400 truncate max-w-[200px]">
-                      {payment.description ?? '—'}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                      </td>
+                      <td className="py-3 text-gray-500 dark:text-gray-400 truncate max-w-[200px]">
+                        {payment.description ?? '—'}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   );

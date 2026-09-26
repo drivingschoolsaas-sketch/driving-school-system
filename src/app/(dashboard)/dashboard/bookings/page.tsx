@@ -211,17 +211,34 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
             const start = new Date(booking.start_datetime);
             const end = new Date(booking.end_datetime);
 
+            let studentName = student?.display_name ?? null;
+            if (!studentName && booking.notes) {
+              const match = booking.notes.match(/^Public booking by:\s*(.+)/m);
+              if (match) studentName = match[1].trim();
+            }
+
+            const isToday = start.toDateString() === new Date().toDateString();
+
             return (
               <div
                 key={booking.id}
-                className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 space-y-3"
+                className={`rounded-lg border bg-white dark:bg-gray-800 p-4 space-y-3 ${
+                  isToday
+                    ? 'border-blue-300 dark:border-blue-700 ring-1 ring-blue-200 dark:ring-blue-800'
+                    : 'border-gray-200 dark:border-gray-700'
+                }`}
               >
                 {/* Header row */}
                 <div className="flex flex-wrap items-start gap-4">
                   {/* Date/Time */}
                   <div className="shrink-0 w-24">
-                    <p className="text-sm font-bold text-gray-900 dark:text-white">
+                    <p className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
                       {start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      {isToday && (
+                        <span className="rounded-full bg-blue-100 dark:bg-blue-900 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700 dark:text-blue-300">
+                          TODAY
+                        </span>
+                      )}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
@@ -233,7 +250,7 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
                   {/* Details */}
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      {student?.display_name ?? 'Unknown student'}
+                      {studentName ?? 'Walk-in'}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {inst?.display_name ?? 'Unknown'} · {lt?.name ?? 'Unknown lesson'}

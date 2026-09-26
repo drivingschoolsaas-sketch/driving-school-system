@@ -168,70 +168,118 @@ export default async function NotificationsPage(props: {
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                <th className="pb-3 pr-4">Date</th>
-                <th className="pb-3 pr-4">Type</th>
-                <th className="pb-3 pr-4">Channel</th>
-                <th className="pb-3 pr-4">Recipient</th>
-                <th className="pb-3 pr-4">Subject</th>
-                <th className="pb-3">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {notifications.map((notif) => {
-                const statusInfo = STATUS_CONFIG[notif.status] ?? {
-                  label: notif.status,
-                  className: 'bg-gray-100 text-gray-800',
-                };
+        <>
+          {/* Mobile: Card layout */}
+          <div className="space-y-3 sm:hidden">
+            {notifications.map((notif) => {
+              const statusInfo = STATUS_CONFIG[notif.status] ?? {
+                label: notif.status,
+                className: 'bg-gray-100 text-gray-800',
+              };
+              return (
+                <div
+                  key={notif.id}
+                  className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        {TYPE_LABELS[notif.notification_type] ?? notif.notification_type}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+                        {notif.recipient_name ?? notif.recipient_email ?? notif.recipient_phone ?? '—'}
+                      </p>
+                    </div>
+                    <span
+                      className={`shrink-0 inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusInfo.className}`}
+                    >
+                      {statusInfo.label}
+                    </span>
+                  </div>
+                  {notif.subject && (
+                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
+                      {notif.subject}
+                    </p>
+                  )}
+                  <div className="mt-2 flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
+                    <span>{notif.channel === 'email' ? '✉️' : '📱'} {notif.channel.toUpperCase()}</span>
+                    <span>·</span>
+                    <span>{new Date(notif.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                  {notif.failure_reason && (
+                    <p className="mt-1 text-xs text-red-500">{notif.failure_reason}</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
 
-                return (
-                  <tr
-                    key={notif.id}
-                    className="text-gray-700 dark:text-gray-300"
-                  >
-                    <td className="py-3 pr-4 whitespace-nowrap text-xs">
-                      {new Date(notif.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                    </td>
-                    <td className="py-3 pr-4 whitespace-nowrap">
-                      {TYPE_LABELS[notif.notification_type] ??
-                        notif.notification_type}
-                    </td>
-                    <td className="py-3 pr-4 whitespace-nowrap">
-                      <span className="text-xs">
-                        {notif.channel === 'email' ? '✉️' : '📱'}{' '}
-                        {notif.channel.toUpperCase()}
-                      </span>
-                    </td>
-                    <td className="py-3 pr-4 whitespace-nowrap text-xs">
-                      {notif.recipient_name ??
-                        notif.recipient_email ??
-                        notif.recipient_phone ??
-                        '—'}
-                    </td>
-                    <td className="py-3 pr-4 truncate max-w-[200px] text-xs text-gray-500 dark:text-gray-400">
-                      {notif.subject ?? '—'}
-                    </td>
-                    <td className="py-3 whitespace-nowrap">
-                      <span
-                        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusInfo.className}`}
-                      >
-                        {statusInfo.label}
-                      </span>
-                      {notif.failure_reason && (
-                        <p className="mt-1 text-xs text-red-500 truncate max-w-[150px]">
-                          {notif.failure_reason}
-                        </p>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+          {/* Desktop: Table layout */}
+          <div className="hidden sm:block overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  <th className="pb-3 pr-4">Date</th>
+                  <th className="pb-3 pr-4">Type</th>
+                  <th className="pb-3 pr-4">Channel</th>
+                  <th className="pb-3 pr-4">Recipient</th>
+                  <th className="pb-3 pr-4">Subject</th>
+                  <th className="pb-3">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                {notifications.map((notif) => {
+                  const statusInfo = STATUS_CONFIG[notif.status] ?? {
+                    label: notif.status,
+                    className: 'bg-gray-100 text-gray-800',
+                  };
+
+                  return (
+                    <tr
+                      key={notif.id}
+                      className="text-gray-700 dark:text-gray-300"
+                    >
+                      <td className="py-3 pr-4 whitespace-nowrap text-xs">
+                        {new Date(notif.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                      </td>
+                      <td className="py-3 pr-4 whitespace-nowrap">
+                        {TYPE_LABELS[notif.notification_type] ??
+                          notif.notification_type}
+                      </td>
+                      <td className="py-3 pr-4 whitespace-nowrap">
+                        <span className="text-xs">
+                          {notif.channel === 'email' ? '✉️' : '📱'}{' '}
+                          {notif.channel.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="py-3 pr-4 whitespace-nowrap text-xs">
+                        {notif.recipient_name ??
+                          notif.recipient_email ??
+                          notif.recipient_phone ??
+                          '—'}
+                      </td>
+                      <td className="py-3 pr-4 truncate max-w-[200px] text-xs text-gray-500 dark:text-gray-400">
+                        {notif.subject ?? '—'}
+                      </td>
+                      <td className="py-3 whitespace-nowrap">
+                        <span
+                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusInfo.className}`}
+                        >
+                          {statusInfo.label}
+                        </span>
+                        {notif.failure_reason && (
+                          <p className="mt-1 text-xs text-red-500 truncate max-w-[150px]">
+                            {notif.failure_reason}
+                          </p>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   );
