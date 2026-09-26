@@ -10,7 +10,7 @@ import { createServerSupabaseClient } from '@/lib/database';
 import { isOrgAdminRole } from '@/permissions/roles';
 import type { Booking, Instructor, Student } from '@/types/database';
 import { SetupChecklist, type SetupStep } from './setup-checklist';
-import { formatPrice } from '@/lib/format';
+import { formatPrice, getTodayRange } from '@/lib/format';
 
 interface DashboardStats {
   todaysLessons: number;
@@ -24,9 +24,9 @@ export default async function DashboardOverviewPage() {
   const orgId = auth.organizationId;
   const primaryColor = settings?.primary_color ?? '#2563eb';
 
+  const tz = organization.timezone ?? 'UTC';
   const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
+  const { todayStart, todayEnd } = getTodayRange(tz);
 
   // Fetch today's data in parallel
   const [bookingsRes, instructorsRes, upcomingRes, studentsRes] = await Promise.all([
@@ -73,6 +73,7 @@ export default async function DashboardOverviewPage() {
     const { data: studentData } = await client
       .from('students')
       .select('id, display_name')
+      .eq('organization_id', orgId)
       .in('id', studentIds);
     studentsMap = new Map((studentData ?? []).map((s: Pick<Student, 'id' | 'display_name'>) => [s.id, s.display_name]));
   }
@@ -121,6 +122,7 @@ export default async function DashboardOverviewPage() {
             year: 'numeric',
             month: 'long',
             day: 'numeric',
+            timeZone: tz,
           })}
         </p>
       </div>
@@ -208,7 +210,7 @@ export default async function DashboardOverviewPage() {
         ) : (
           <div className="space-y-3">
             {upcomingBookings.map((booking) => (
-              <BookingCard key={booking.id} booking={booking} instructors={instructors} studentsMap={studentsMap} currency={organization.currency} />
+              <BookingCard key={booking.id} booking={booking} instructors={instructors} studentsMap={studentsMap} currency={organization.currency} timezone={tz} />
             ))}
           </div>
         )}
@@ -270,11 +272,13 @@ function BookingCard({
   instructors,
   studentsMap,
   currency,
+  timezone,
 }: {
   booking: Booking;
   instructors: Instructor[];
   studentsMap: Map<string, string>;
   currency: string;
+  timezone: string;
 }) {
   const instructor = instructors.find((i) => i.id === booking.instructor_id);
   const start = new Date(booking.start_datetime);
@@ -304,10 +308,10 @@ function BookingCard({
       {/* Time */}
       <div className="text-center shrink-0 w-16">
         <p className="text-sm font-bold text-gray-900 dark:text-white">
-          {start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+          {start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: timezone })}
         </p>
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          {end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+          {end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: timezone })}
         </p>
       </div>
       {/* Details */}

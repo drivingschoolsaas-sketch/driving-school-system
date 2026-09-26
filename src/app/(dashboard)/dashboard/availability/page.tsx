@@ -28,7 +28,8 @@ interface AvailabilityPageProps {
 }
 
 export default async function AvailabilityPage({ searchParams }: AvailabilityPageProps) {
-  const { auth, settings } = await getDashboardContext();
+  const { auth, organization, settings } = await getDashboardContext();
+  const tz = organization.timezone ?? 'UTC';
   const client = await createServerSupabaseClient();
   const orgId = auth.organizationId;
   const primaryColor = settings?.primary_color ?? '#2563eb';
@@ -80,7 +81,7 @@ export default async function AvailabilityPage({ searchParams }: AvailabilityPag
         .select('*')
         .eq('organization_id', orgId)
         .eq('instructor_id', instructorId)
-        .gte('exception_date', new Date().toISOString().split('T')[0])
+        .gte('exception_date', new Date().toLocaleDateString('en-CA', { timeZone: tz }))
         .order('exception_date')
         .limit(20),
       client
@@ -256,8 +257,8 @@ export default async function AvailabilityPage({ searchParams }: AvailabilityPag
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-gray-900 dark:text-white">
                           {bt.is_all_day
-                            ? start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-                            : `${start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} ${start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} – ${end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`}
+                            ? start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: tz })
+                            : `${start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: tz })} ${start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: tz })} – ${end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: tz })}`}
                         </p>
                         {bt.notes && (
                           <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{bt.notes}</p>

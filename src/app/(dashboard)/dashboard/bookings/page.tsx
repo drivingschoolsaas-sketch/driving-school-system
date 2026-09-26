@@ -217,7 +217,8 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
               if (match) studentName = match[1].trim();
             }
 
-            const isToday = start.toDateString() === new Date().toDateString();
+            const tz = organization.timezone ?? 'UTC';
+            const isToday = start.toLocaleDateString('en-CA', { timeZone: tz }) === new Date().toLocaleDateString('en-CA', { timeZone: tz });
 
             return (
               <div
@@ -233,7 +234,7 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
                   {/* Date/Time */}
                   <div className="shrink-0 w-24">
                     <p className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
-                      {start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      {start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: tz })}
                       {isToday && (
                         <span className="rounded-full bg-blue-100 dark:bg-blue-900 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700 dark:text-blue-300">
                           TODAY
@@ -241,9 +242,9 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
                       )}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                      {start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: tz })}
                       {' – '}
-                      {end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                      {end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: tz })}
                     </p>
                   </div>
 
@@ -284,8 +285,8 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
                     bookingReference={booking.booking_reference}
                     studentName={student?.display_name}
                     lessonType={lt?.name}
-                    date={start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                    time={`${start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} – ${end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`}
+                    date={start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: tz })}
+                    time={`${start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: tz })} – ${end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: tz })}`}
                   />
                 )}
               </div>

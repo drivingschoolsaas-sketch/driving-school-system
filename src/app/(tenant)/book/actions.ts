@@ -122,7 +122,7 @@ export async function getMonthAvailabilityAction(
 
   const [year, month] = yearMonth.split('-').map(Number);
   const daysInMonth = new Date(year, month, 0).getDate();
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: data.organization.timezone ?? 'UTC' });
 
   const result: Record<string, boolean> = {};
 

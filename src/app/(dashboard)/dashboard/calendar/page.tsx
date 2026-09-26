@@ -11,7 +11,7 @@ import { createServerSupabaseClient } from '@/lib/database';
 import { isOrgAdminRole } from '@/permissions/roles';
 import type { Booking, Instructor, Student } from '@/types/database';
 import type { Metadata } from 'next';
-import { formatPrice } from '@/lib/format';
+import { formatPrice, getLocalDateStr } from '@/lib/format';
 
 export const metadata: Metadata = {
   title: 'Calendar',
@@ -44,11 +44,12 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
 
   const isAdmin = isOrgAdminRole(auth.role);
   const view = params.view ?? 'day';
+  const tz = organization.timezone ?? 'UTC';
 
-  // Parse date (fallback to today if invalid)
-  const parsedDate = params.date ? new Date(params.date) : new Date();
-  const baseDate = isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
-  const dayStart = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
+  // Parse date — use org timezone for "today" fallback
+  const dateParam = params.date ?? getLocalDateStr(tz);
+  const parsedDate = new Date(dateParam + 'T00:00:00');
+  const dayStart = isNaN(parsedDate.getTime()) ? new Date(getLocalDateStr(tz) + 'T00:00:00') : parsedDate;
 
   let rangeStart: Date;
   let rangeEnd: Date;
@@ -105,6 +106,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
     const { data: studentData } = await client
       .from('students')
       .select('id, display_name')
+      .eq('organization_id', orgId)
       .in('id', studentIds);
     studentMap = new Map((studentData ?? []).map((s: Pick<Student, 'id' | 'display_name'>) => [s.id, s.display_name]));
   }
@@ -114,9 +116,14 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
   prevDate.setDate(dayStart.getDate() - (view === 'week' ? 7 : 1));
   const nextDate = new Date(dayStart);
   nextDate.setDate(dayStart.getDate() + (view === 'week' ? 7 : 1));
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalDateStr(tz);
 
-  const formatDateParam = (d: Date) => d.toISOString().split('T')[0];
+  const formatDateParam = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const dy = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${dy}`;
+  };
 
   // Group bookings by day for week view
   const dayGroups: Map<string, Booking[]> = new Map();
@@ -128,7 +135,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
     }
   }
   for (const b of bookings) {
-    const key = new Date(b.start_datetime).toISOString().split('T')[0];
+    const key = new Date(b.start_datetime).toLocaleDateString('en-CA', { timeZone: tz });
     const group = dayGroups.get(key);
     if (group) group.push(b);
     else dayGroups.set(key, [b]);
@@ -142,8 +149,8 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Calendar</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             {view === 'day'
-              ? dayStart.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
-              : `Week of ${rangeStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${new Date(rangeEnd.getTime() - 86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}
+              ? dayStart.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: tz })
+              : `Week of ${rangeStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: tz })} – ${new Date(rangeEnd.getTime() - 86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: tz })}`}
           </p>
         </div>
 
@@ -232,9 +239,9 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
 
       {/* Calendar content */}
       {view === 'day' ? (
-        <DayView bookings={bookings} instructorMap={instructorMap} studentMap={studentMap} currency={organization.currency} />
+        <DayView bookings={bookings} instructorMap={instructorMap} studentMap={studentMap} currency={organization.currency} timezone={tz} />
       ) : (
-        <WeekView dayGroups={dayGroups} instructorMap={instructorMap} studentMap={studentMap} today={todayStr} />
+        <WeekView dayGroups={dayGroups} instructorMap={instructorMap} studentMap={studentMap} today={todayStr} timezone={tz} />
       )}
     </div>
   );
@@ -245,11 +252,13 @@ function DayView({
   instructorMap,
   studentMap,
   currency,
+  timezone,
 }: {
   bookings: Booking[];
   instructorMap: Map<string, Instructor>;
   studentMap: Map<string, string>;
   currency?: string | null;
+  timezone: string;
 }) {
   if (bookings.length === 0) {
     return (
@@ -269,6 +278,7 @@ function DayView({
           instructor={instructorMap.get(booking.instructor_id)}
           studentName={booking.student_id ? studentMap.get(booking.student_id) : undefined}
           currency={currency}
+          timezone={timezone}
         />
       ))}
     </div>
@@ -280,11 +290,13 @@ function WeekView({
   instructorMap,
   studentMap,
   today,
+  timezone,
 }: {
   dayGroups: Map<string, Booking[]>;
   instructorMap: Map<string, Instructor>;
   studentMap: Map<string, string>;
   today: string;
+  timezone: string;
 }) {
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-7">
@@ -320,7 +332,7 @@ function WeekView({
                       className={`rounded-md px-2 py-1 border-l-2 ${colors.bg} ${colors.border}`}
                     >
                       <p className={`text-[10px] font-medium ${colors.text}`}>
-                        {start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                        {start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: timezone })}
                       </p>
                       <p className="text-[10px] font-medium text-gray-700 dark:text-gray-300 truncate">
                         {sName ?? 'Walk-in'}
@@ -345,11 +357,13 @@ function CalendarBookingCard({
   instructor,
   studentName,
   currency,
+  timezone,
 }: {
   booking: Booking;
   instructor?: Instructor;
   studentName?: string;
   currency?: string | null;
+  timezone: string;
 }) {
   const colors = STATUS_COLORS[booking.status] ?? STATUS_COLORS.confirmed;
   const start = new Date(booking.start_datetime);
@@ -361,10 +375,10 @@ function CalendarBookingCard({
     >
       <div className="text-center shrink-0 w-16">
         <p className={`text-sm font-bold ${colors.text}`}>
-          {start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+          {start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: timezone })}
         </p>
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          {end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+          {end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: timezone })}
         </p>
       </div>
       <div className="min-w-0 flex-1">

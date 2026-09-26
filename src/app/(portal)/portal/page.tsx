@@ -10,10 +10,11 @@ import { createServerSupabaseClient } from '@/lib/database';
 import type { Booking, Instructor, StudentPackagePurchase } from '@/types/database';
 
 export default async function PortalDashboardPage() {
-  const { auth, student, settings } = await getPortalContext();
+  const { auth, student, organization, settings } = await getPortalContext();
   const client = await createServerSupabaseClient();
   const orgId = auth.organizationId;
   const primaryColor = settings?.primary_color ?? '#2563eb';
+  const tz = organization.timezone ?? 'UTC';
 
   const now = new Date();
 
@@ -174,18 +175,18 @@ export default async function PortalDashboardPage() {
                 >
                   <div className="text-center shrink-0">
                     <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                      {start.toLocaleDateString('en-US', { weekday: 'short' })}
+                      {start.toLocaleDateString('en-US', { weekday: 'short', timeZone: tz })}
                     </p>
                     <p className="text-lg font-bold text-gray-900 dark:text-white">
-                      {start.getDate()}
+                      {start.toLocaleDateString('en-US', { day: 'numeric', timeZone: tz })}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {start.toLocaleDateString('en-US', { month: 'short' })}
+                      {start.toLocaleDateString('en-US', { month: 'short', timeZone: tz })}
                     </p>
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      {start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                      {start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: tz })}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {inst?.display_name ?? 'Instructor TBD'}

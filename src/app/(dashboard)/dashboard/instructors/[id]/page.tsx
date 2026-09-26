@@ -18,7 +18,7 @@ import type {
   Review,
 } from '@/types/database';
 import type { Metadata } from 'next';
-import { formatPrice } from '@/lib/format';
+import { formatPrice, getTodayRange } from '@/lib/format';
 
 export const metadata: Metadata = {
   title: 'Instructor Details',
@@ -44,6 +44,7 @@ export default async function InstructorDetailPage({ params }: PageProps) {
   const client = await createServerSupabaseClient();
   const orgId = auth.organizationId;
   const primaryColor = settings?.primary_color ?? '#2563eb';
+  const tz = organization.timezone ?? 'UTC';
 
   // Fetch instructor
   const { data: instData, error: instError } = await client
@@ -56,9 +57,8 @@ export default async function InstructorDetailPage({ params }: PageProps) {
   if (instError || !instData) notFound();
   const instructor = instData as Instructor;
 
-  const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-  const weekEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7).toISOString();
+  const { todayStart } = getTodayRange(tz);
+  const weekEnd = new Date(new Date(todayStart).getTime() + 7 * 86400000).toISOString();
 
   // Parallel data fetch
   const [upcomingRes, recentRes, allBookingsRes, lessonTypesRes, reviewsRes] = await Promise.all([
@@ -285,10 +285,10 @@ export default async function InstructorDetailPage({ params }: PageProps) {
                         >
                           <div className="text-center shrink-0 w-14">
                             <p className="text-xs font-bold text-gray-900 dark:text-white">
-                              {start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                              {start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: tz })}
                             </p>
                             <p className="text-[10px] text-gray-400">
-                              {end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                              {end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: tz })}
                             </p>
                           </div>
                           <div className="min-w-0 flex-1">
@@ -396,10 +396,10 @@ export default async function InstructorDetailPage({ params }: PageProps) {
                   return (
                     <tr key={b.id} className="text-gray-700 dark:text-gray-300">
                       <td className="py-2 pr-3 whitespace-nowrap text-xs">
-                        {start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        {start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: tz })}
                       </td>
                       <td className="py-2 pr-3 whitespace-nowrap text-xs">
-                        {start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                        {start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: tz })}
                       </td>
                       <td className="py-2 pr-3 whitespace-nowrap text-xs">
                         {lt?.name ?? '—'}

@@ -13,7 +13,7 @@ import { createServerSupabaseClient } from '@/lib/database';
 import type { Booking, Student, LessonType } from '@/types/database';
 import type { Metadata } from 'next';
 import { TodayLessonActions } from './today-actions-client';
-import { formatPrice } from '@/lib/format';
+import { formatPrice, getTodayRange } from '@/lib/format';
 
 export const metadata: Metadata = {
   title: 'Today',
@@ -26,9 +26,9 @@ export default async function TodayModePage() {
   const orgId = auth.organizationId;
   const primaryColor = settings?.primary_color ?? '#2563eb';
 
+  const tz = organization.timezone ?? 'UTC';
   const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
+  const { todayStart, todayEnd } = getTodayRange(tz);
 
   // If instructor, find their instructor record to filter
   let instructorId: string | null = null;
@@ -116,6 +116,7 @@ export default async function TodayModePage() {
             month: 'long',
             day: 'numeric',
             year: 'numeric',
+            timeZone: tz,
           })}
           {' · '}
           {bookings.length} lesson{bookings.length !== 1 ? 's' : ''} scheduled
@@ -157,6 +158,7 @@ export default async function TodayModePage() {
             statusColors={statusColors}
             primaryColor={primaryColor}
             currency={organization.currency}
+            timezone={tz}
             isNext
           />
         </section>
@@ -178,6 +180,7 @@ export default async function TodayModePage() {
                 statusColors={statusColors}
                 primaryColor={primaryColor}
                 currency={organization.currency}
+                timezone={tz}
               />
             ))}
           </div>
@@ -200,6 +203,7 @@ export default async function TodayModePage() {
                 statusColors={statusColors}
                 primaryColor={primaryColor}
                 currency={organization.currency}
+                timezone={tz}
                 isDone
               />
             ))}
@@ -232,6 +236,7 @@ function LessonCard({
   isNext,
   isDone,
   currency,
+  timezone,
 }: {
   booking: Booking;
   student?: Student;
@@ -241,6 +246,7 @@ function LessonCard({
   isNext?: boolean;
   isDone?: boolean;
   currency?: string | null;
+  timezone: string;
 }) {
   const start = new Date(booking.start_datetime);
   const end = new Date(booking.end_datetime);
@@ -258,11 +264,11 @@ function LessonCard({
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="text-sm font-bold text-gray-900 dark:text-white">
-            {start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+            {start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: timezone })}
           </span>
           <span className="text-xs text-gray-400 dark:text-gray-500">–</span>
           <span className="text-xs text-gray-500 dark:text-gray-400">
-            {end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+            {end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: timezone })}
           </span>
         </div>
         <span

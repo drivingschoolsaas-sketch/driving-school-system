@@ -23,6 +23,7 @@ export default async function PortalBookingsPage({ searchParams }: BookingsPageP
   const client = await createServerSupabaseClient();
   const orgId = auth.organizationId;
   const primaryColor = settings?.primary_color ?? '#2563eb';
+  const tz = organization.timezone ?? 'UTC';
   const params = await searchParams;
 
   const tab = params.tab ?? 'upcoming';
@@ -124,12 +125,13 @@ export default async function PortalBookingsPage({ searchParams }: BookingsPageP
                         weekday: 'short',
                         month: 'short',
                         day: 'numeric',
+                        timeZone: tz,
                       })}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                      {start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: tz })}
                       {' – '}
-                      {end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                      {end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: tz })}
                     </p>
                   </div>
                   <span
