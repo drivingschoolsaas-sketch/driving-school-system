@@ -107,85 +107,99 @@ export default async function WaitlistPage({ searchParams }: PageProps) {
         )}
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead className="bg-gray-50 dark:bg-gray-800">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-                Student
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-                Preferred Days
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-                Time
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-                Status
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-                Priority
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-                Created
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
-            {entries.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={6}
-                  className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400"
-                >
-                  No waitlist entries
-                </td>
-              </tr>
-            ) : (
-              entries.map((entry) => {
-                const statusInfo =
-                  STATUS_CONFIG[entry.status] ?? STATUS_CONFIG.waiting;
-                return (
-                  <tr key={entry.id}>
-                    <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
-                      {(entry as unknown as { students?: { display_name: string } | null }).students?.display_name ?? entry.student_id.substring(0, 8) + '…'}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
-                      {entry.preferred_days.length > 0
-                        ? entry.preferred_days
-                            .map(
-                              (d) =>
-                                d.charAt(0).toUpperCase() + d.slice(1, 3)
-                            )
-                            .join(', ')
-                        : 'Any day'}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                      {entry.preferred_time_start && entry.preferred_time_end
-                        ? `${entry.preferred_time_start}–${entry.preferred_time_end}`
-                        : 'Any time'}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3">
-                      <span
-                        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusInfo.className}`}
-                      >
-                        {statusInfo.label}
-                      </span>
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                      {entry.priority}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                      {new Date(entry.created_at).toLocaleDateString('en-AU')}
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+      {entries.length === 0 ? (
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-12 text-center">
+          <p className="text-gray-500 dark:text-gray-400">No waitlist entries</p>
+        </div>
+      ) : (
+        <>
+          {/* Mobile: Card layout */}
+          <div className="space-y-3 sm:hidden">
+            {entries.map((entry) => {
+              const statusInfo = STATUS_CONFIG[entry.status] ?? STATUS_CONFIG.waiting;
+              const studentName = (entry as unknown as { students?: { display_name: string } | null }).students?.display_name ?? entry.student_id.substring(0, 8) + '…';
+              const days = entry.preferred_days.length > 0
+                ? entry.preferred_days.map((d) => d.charAt(0).toUpperCase() + d.slice(1, 3)).join(', ')
+                : 'Any day';
+              const time = entry.preferred_time_start && entry.preferred_time_end
+                ? `${entry.preferred_time_start}–${entry.preferred_time_end}`
+                : 'Any time';
+              return (
+                <div key={entry.id} className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{studentName}</p>
+                    <span className={`shrink-0 inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusInfo.className}`}>
+                      {statusInfo.label}
+                    </span>
+                  </div>
+                  <div className="mt-2 space-y-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      📅 {days} · 🕐 {time}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-gray-400 dark:text-gray-500">
+                        Priority: {entry.priority}
+                      </p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">
+                        {new Date(entry.created_at).toLocaleDateString('en-AU')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop: Table layout */}
+          <div className="hidden sm:block overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-800">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Student</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Preferred Days</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Time</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Priority</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400">Created</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
+                {entries.map((entry) => {
+                  const statusInfo = STATUS_CONFIG[entry.status] ?? STATUS_CONFIG.waiting;
+                  return (
+                    <tr key={entry.id}>
+                      <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
+                        {(entry as unknown as { students?: { display_name: string } | null }).students?.display_name ?? entry.student_id.substring(0, 8) + '…'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                        {entry.preferred_days.length > 0
+                          ? entry.preferred_days.map((d) => d.charAt(0).toUpperCase() + d.slice(1, 3)).join(', ')
+                          : 'Any day'}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                        {entry.preferred_time_start && entry.preferred_time_end
+                          ? `${entry.preferred_time_start}–${entry.preferred_time_end}`
+                          : 'Any time'}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3">
+                        <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusInfo.className}`}>
+                          {statusInfo.label}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                        {entry.priority}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                        {new Date(entry.created_at).toLocaleDateString('en-AU')}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
     </div>
   );
 }

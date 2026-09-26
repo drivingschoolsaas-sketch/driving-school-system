@@ -124,14 +124,14 @@ export function SettingsEditor({ organization, settings }: Props) {
 
       {/* Draft Banner */}
       {hasDraft && (
-        <div className="rounded-lg border-2 border-amber-300 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 flex items-center justify-between gap-4">
+        <div className="rounded-lg border-2 border-amber-300 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-sm">
             <span className="text-amber-600 dark:text-amber-400 text-lg">📝</span>
             <span className="font-medium text-amber-800 dark:text-amber-300">
               You have unpublished content changes.
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={handleDiscard}
@@ -164,7 +164,7 @@ export function SettingsEditor({ organization, settings }: Props) {
             <Field label="Phone" name="phone" type="tel" defaultValue={organization.phone ?? ''} />
             <Field label="Email" name="email" type="email" defaultValue={organization.email ?? ''} />
           </div>
-          <div className="flex items-center gap-4 text-xs text-gray-500">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
             <span>Slug: <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">{organization.slug}</code></span>
             <span>Status: <span className="capitalize font-medium">{organization.status}</span></span>
             <span>Timezone: {organization.timezone}</span>
