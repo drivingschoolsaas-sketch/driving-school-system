@@ -24,6 +24,17 @@ export async function generateMetadata(): Promise<Metadata> {
       template: `%s | ${organization.name}`,
     },
     description,
+    openGraph: {
+      title,
+      description,
+      siteName: organization.name,
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary',
+      title,
+      description,
+    },
   };
 }
 

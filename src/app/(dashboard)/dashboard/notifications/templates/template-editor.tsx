@@ -221,6 +221,7 @@ function TemplateForm({
           </div>
 
           {/* Active toggle */}
+          <input type="hidden" name="is_active" value="false" />
           <label className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -233,7 +234,6 @@ function TemplateForm({
               Send this notification
             </span>
           </label>
-          {/* Hidden field to send false when unchecked */}
 
           {/* Messages */}
           {state.success && (

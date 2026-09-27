@@ -165,57 +165,54 @@ export async function getInstructorPerformanceReport(
 
   if (!instructors || instructors.length === 0) return [];
 
-  const results: InstructorPerformance[] = [];
+  const instList = instructors as Array<{ id: string; display_name: string }>;
+  const instIds = instList.map((i) => i.id);
 
-  for (const instructor of instructors) {
-    const inst = instructor as { id: string; display_name: string };
-
-    // Get bookings in period
-    const { data: bookings } = await client
+  // Batch: fetch all bookings and reviews for all instructors at once
+  const [allBookingsRes, allReviewsRes] = await Promise.all([
+    client
       .from('bookings')
-      .select('status, price_cents')
+      .select('instructor_id, status, price_cents')
       .eq('organization_id', orgId)
-      .eq('instructor_id', inst.id)
+      .in('instructor_id', instIds)
       .gte('start_datetime', startDate)
-      .lte('start_datetime', endDate);
+      .lte('start_datetime', endDate),
+    client
+      .from('reviews')
+      .select('instructor_id, rating')
+      .eq('organization_id', orgId)
+      .in('instructor_id', instIds)
+      .in('status', ['approved', 'featured']),
+  ]);
 
-    const bookingList = (bookings ?? []) as Array<{
-      status: string;
-      price_cents: number;
-    }>;
+  const allBookings = (allBookingsRes.data ?? []) as Array<{
+    instructor_id: string;
+    status: string;
+    price_cents: number;
+  }>;
+  const allReviews = (allReviewsRes.data ?? []) as Array<{
+    instructor_id: string;
+    rating: number;
+  }>;
 
+  const results: InstructorPerformance[] = instList.map((inst) => {
+    const bookingList = allBookings.filter((b) => b.instructor_id === inst.id);
     const totalBookings = bookingList.length;
-    const completedBookings = bookingList.filter(
-      (b) => b.status === 'completed'
-    ).length;
-    const cancelledBookings = bookingList.filter(
-      (b) => b.status === 'cancelled'
-    ).length;
-    const noShowBookings = bookingList.filter(
-      (b) => b.status === 'no_show'
-    ).length;
-    const completionRate =
-      totalBookings > 0 ? completedBookings / totalBookings : 0;
+    const completedBookings = bookingList.filter((b) => b.status === 'completed').length;
+    const cancelledBookings = bookingList.filter((b) => b.status === 'cancelled').length;
+    const noShowBookings = bookingList.filter((b) => b.status === 'no_show').length;
+    const completionRate = totalBookings > 0 ? completedBookings / totalBookings : 0;
     const totalRevenueCents = bookingList
       .filter((b) => b.status === 'completed')
       .reduce((sum, b) => sum + b.price_cents, 0);
 
-    // Get reviews
-    const { data: reviews } = await client
-      .from('reviews')
-      .select('rating')
-      .eq('organization_id', orgId)
-      .eq('instructor_id', inst.id)
-      .in('status', ['approved', 'featured']);
-
-    const reviewList = (reviews ?? []) as Array<{ rating: number }>;
+    const reviewList = allReviews.filter((r) => r.instructor_id === inst.id);
     const reviewCount = reviewList.length;
-    const averageRating =
-      reviewCount > 0
-        ? reviewList.reduce((sum, r) => sum + r.rating, 0) / reviewCount
-        : null;
+    const averageRating = reviewCount > 0
+      ? reviewList.reduce((sum, r) => sum + r.rating, 0) / reviewCount
+      : null;
 
-    results.push({
+    return {
       instructorId: inst.id,
       instructorName: inst.display_name,
       totalBookings,
@@ -226,8 +223,8 @@ export async function getInstructorPerformanceReport(
       totalRevenueCents,
       averageRating,
       reviewCount,
-    });
-  }
+    };
+  });
 
   // Sort by completed bookings (most active first)
   return results.sort((a, b) => b.completedBookings - a.completedBookings);
@@ -259,9 +256,10 @@ export interface BookingAnalytics {
 export async function getBookingAnalytics(
   client: SupabaseClient,
   context: AuthorizedContext,
-  options?: { startDate?: string; endDate?: string }
+  options?: { startDate?: string; endDate?: string; timezone?: string }
 ): Promise<BookingAnalytics> {
   const orgId = context.organizationId;
+  const tz = options?.timezone ?? 'UTC';
   const startDate = options?.startDate ?? getMonthsAgoISO(3);
   const endDate = options?.endDate ?? new Date().toISOString();
 
@@ -308,7 +306,7 @@ export async function getBookingAnalytics(
   const cancellationRate =
     totalBookings > 0 ? cancelledBookings / totalBookings : 0;
 
-  // Bookings by day of week
+  // Bookings by day of week (timezone-aware)
   const dayMap = new Map<string, number>();
   const days = [
     'sunday',
@@ -320,8 +318,8 @@ export async function getBookingAnalytics(
     'saturday',
   ];
   for (const b of bookingList) {
-    const dayIndex = new Date(b.start_datetime).getDay();
-    const day = days[dayIndex];
+    const localDay = new Date(b.start_datetime).toLocaleDateString('en-US', { weekday: 'long', timeZone: tz }).toLowerCase();
+    const day = days.includes(localDay) ? localDay : days[new Date(b.start_datetime).getDay()];
     dayMap.set(day, (dayMap.get(day) ?? 0) + 1);
   }
   const bookingsByDay = days.map((day) => ({
@@ -345,10 +343,10 @@ export async function getBookingAnalytics(
     }))
     .sort((a, b) => b.count - a.count);
 
-  // Peak hours
+  // Peak hours (timezone-aware)
   const hourMap = new Map<number, number>();
   for (const b of bookingList) {
-    const hour = new Date(b.start_datetime).getHours();
+    const hour = parseInt(new Date(b.start_datetime).toLocaleTimeString('en-US', { hour: 'numeric', hour12: false, timeZone: tz }), 10);
     hourMap.set(hour, (hourMap.get(hour) ?? 0) + 1);
   }
   const peakHours = Array.from(hourMap.entries())

@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 interface StudentsPageProps {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; page?: string }>;
 }
 
 export default async function StudentsPage({ searchParams }: StudentsPageProps) {
@@ -28,19 +28,25 @@ export default async function StudentsPage({ searchParams }: StudentsPageProps) 
   const params = await searchParams;
   const isAdmin = isOrgAdminRole(auth.role);
 
+  const PAGE_SIZE = 100;
+  const currentPage = Math.max(1, parseInt(params.page ?? '1', 10) || 1);
+  const offset = (currentPage - 1) * PAGE_SIZE;
+
   let query = client
     .from('students')
-    .select('*')
+    .select('*', { count: 'exact' })
     .eq('organization_id', orgId)
     .order('display_name')
-    .limit(100);
+    .range(offset, offset + PAGE_SIZE - 1);
 
   if (params.q) {
     query = query.ilike('display_name', `%${params.q}%`);
   }
 
-  const { data } = await query;
-  const students = (data ?? []) as Student[];
+  const result = await query;
+  const students = (result.data ?? []) as Student[];
+  const totalCount = result.count ?? 0;
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   return (
     <div className="space-y-6">
@@ -48,9 +54,8 @@ export default async function StudentsPage({ searchParams }: StudentsPageProps) 
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Students</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {students.length >= 100
-              ? 'Showing first 100 students — use search to find more'
-              : `${students.length} student${students.length !== 1 ? 's' : ''}`}
+            {totalCount} student{totalCount !== 1 ? 's' : ''}
+            {totalPages > 1 && ` — page ${currentPage} of ${totalPages}`}
           </p>
         </div>
         {isAdmin && <AddStudentForm primaryColor={primaryColor} />}
@@ -144,6 +149,31 @@ export default async function StudentsPage({ searchParams }: StudentsPageProps) 
               </div>
             </Link>
           ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          {currentPage > 1 && (
+            <a
+              href={`/dashboard/students?${new URLSearchParams({ ...(params.q ? { q: params.q } : {}), page: String(currentPage - 1) }).toString()}`}
+              className="rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              Previous
+            </a>
+          )}
+          <span className="text-sm text-gray-500 dark:text-gray-400">
+            Page {currentPage} of {totalPages}
+          </span>
+          {currentPage < totalPages && (
+            <a
+              href={`/dashboard/students?${new URLSearchParams({ ...(params.q ? { q: params.q } : {}), page: String(currentPage + 1) }).toString()}`}
+              className="rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              Next
+            </a>
+          )}
         </div>
       )}
     </div>

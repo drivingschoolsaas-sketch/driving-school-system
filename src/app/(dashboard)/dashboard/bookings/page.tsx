@@ -23,6 +23,7 @@ interface BookingsPageProps {
     instructor?: string;
     from?: string;
     to?: string;
+    page?: string;
   }>;
 }
 
@@ -35,13 +36,17 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
 
   const isAdmin = isOrgAdminRole(auth.role);
 
+  const PAGE_SIZE = 50;
+  const currentPage = Math.max(1, parseInt(params.page ?? '1', 10) || 1);
+  const offset = (currentPage - 1) * PAGE_SIZE;
+
   // Build query
   let query = client
     .from('bookings')
-    .select('*')
+    .select('*', { count: 'exact' })
     .eq('organization_id', orgId)
     .order('start_datetime', { ascending: false })
-    .limit(50);
+    .range(offset, offset + PAGE_SIZE - 1);
 
   // Status filter
   if (params.status && params.status !== 'all') {
@@ -86,6 +91,8 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
   ]);
 
   const bookings = (bookingsRes.data ?? []) as Booking[];
+  const totalCount = bookingsRes.count ?? 0;
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
   const instructors = (instructorsRes.data ?? []) as Instructor[];
   const students = (studentsRes.data ?? []) as Student[];
   const lessonTypes = (lessonTypesRes.data ?? []) as LessonType[];
@@ -112,9 +119,8 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Bookings</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {bookings.length >= 50
-              ? 'Showing latest 50 bookings — use filters to narrow results'
-              : `${bookings.length} booking${bookings.length !== 1 ? 's' : ''} found`}
+            {totalCount} booking{totalCount !== 1 ? 's' : ''} found
+            {totalPages > 1 && ` — page ${currentPage} of ${totalPages}`}
           </p>
         </div>
         {isAdmin && (
@@ -204,7 +210,7 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
         </div>
       ) : (
         <div className="space-y-3">
-          {bookings.map((booking) => {
+          {bookings.map((booking: Booking) => {
             const inst = instructorMap.get(booking.instructor_id);
             const student = booking.student_id ? studentMap.get(booking.student_id) : undefined;
             const lt = lessonTypeMap.get(booking.lesson_type_id);
@@ -292,6 +298,31 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          {currentPage > 1 && (
+            <a
+              href={`/dashboard/bookings?${new URLSearchParams({ ...(params.status ? { status: params.status } : {}), ...(params.instructor ? { instructor: params.instructor } : {}), ...(params.from ? { from: params.from } : {}), ...(params.to ? { to: params.to } : {}), page: String(currentPage - 1) }).toString()}`}
+              className="rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              Previous
+            </a>
+          )}
+          <span className="text-sm text-gray-500 dark:text-gray-400">
+            Page {currentPage} of {totalPages}
+          </span>
+          {currentPage < totalPages && (
+            <a
+              href={`/dashboard/bookings?${new URLSearchParams({ ...(params.status ? { status: params.status } : {}), ...(params.instructor ? { instructor: params.instructor } : {}), ...(params.from ? { from: params.from } : {}), ...(params.to ? { to: params.to } : {}), page: String(currentPage + 1) }).toString()}`}
+              className="rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              Next
+            </a>
+          )}
         </div>
       )}
     </div>

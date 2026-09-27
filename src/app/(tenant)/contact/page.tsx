@@ -11,8 +11,10 @@ export default async function ContactPage() {
   if (!data) return <PageNotConfigured />;
 
   const { organization, settings } = data;
-  const phone = settings?.contact_phone ?? organization.phone;
-  const email = settings?.contact_email ?? organization.email;
+  const rawPhone = settings?.contact_phone ?? organization.phone;
+  const rawEmail = settings?.contact_email ?? organization.email;
+  const phone = rawPhone && !/^0{4,}/.test(rawPhone) ? rawPhone : null;
+  const email = rawEmail && !/^0{4,}@/.test(rawEmail) ? rawEmail : null;
   const address = settings?.contact_address;
   const primaryColor = settings?.primary_color ?? '#2563eb';
 
@@ -160,17 +162,16 @@ function SocialButton({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-block rounded-lg border px-4 py-2 text-sm font-medium transition-colors"
-      style={{ borderColor: primaryColor, color: primaryColor }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = primaryColor;
-        e.currentTarget.style.color = '#fff';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = 'transparent';
-        e.currentTarget.style.color = primaryColor;
-      }}
+      className="social-btn inline-block rounded-lg border px-4 py-2 text-sm font-medium transition-colors hover:text-white"
+      style={
+        {
+          borderColor: primaryColor,
+          color: primaryColor,
+          '--btn-color': primaryColor,
+        } as React.CSSProperties
+      }
     >
+      <style>{`.social-btn:hover { background-color: var(--btn-color) !important; }`}</style>
       {label}
     </a>
   );

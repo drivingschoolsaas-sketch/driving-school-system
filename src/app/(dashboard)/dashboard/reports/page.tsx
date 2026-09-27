@@ -42,10 +42,11 @@ export default async function ReportsPage() {
   const currency = organization.currency ?? 'AUD';
   const client = await createServerSupabaseClient();
 
+  const tz = organization.timezone ?? 'UTC';
   const [revenue, instructors, bookingAnalytics] = await Promise.all([
     getRevenueReport(client, auth),
     getInstructorPerformanceReport(client, auth),
-    getBookingAnalytics(client, auth),
+    getBookingAnalytics(client, auth, { timezone: tz }),
   ]);
 
   return (

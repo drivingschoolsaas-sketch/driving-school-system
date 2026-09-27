@@ -153,9 +153,18 @@ export async function updateSchoolSettingsAction(formData: FormData) {
       'primary_color', 'secondary_color',
     ];
 
+    const urlFields = new Set(['social_facebook', 'social_instagram', 'social_tiktok', 'social_google_review']);
     for (const field of textFields) {
       if (formData.has(field)) {
         const val = (formData.get(field) as string).trim();
+        if (val && urlFields.has(field)) {
+          try { new URL(val); } catch {
+            return { success: false, error: `Invalid URL for ${field.replace('social_', '').replaceAll('_', ' ')}.` };
+          }
+        }
+        if (val && field === 'contact_email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+          return { success: false, error: 'Invalid contact email address.' };
+        }
         updates[field] = val || null;
       }
     }
@@ -168,16 +177,24 @@ export async function updateSchoolSettingsAction(formData: FormData) {
       updates.logo_url = null;
     }
 
-    // Number fields
-    const numberFields = [
-      'min_booking_notice_hours', 'max_advance_booking_days',
-      'cancellation_notice_hours', 'default_lesson_duration',
-      'default_travel_buffer_minutes',
+    // Number fields with validation
+    const numberFields: Array<{ name: string; min: number; max: number }> = [
+      { name: 'min_booking_notice_hours', min: 0, max: 720 },
+      { name: 'max_advance_booking_days', min: 1, max: 365 },
+      { name: 'cancellation_notice_hours', min: 0, max: 720 },
+      { name: 'default_lesson_duration', min: 15, max: 480 },
+      { name: 'default_travel_buffer_minutes', min: 0, max: 120 },
     ];
     for (const field of numberFields) {
-      if (formData.has(field)) {
-        const val = formData.get(field) as string;
-        if (val) updates[field] = parseInt(val, 10);
+      if (formData.has(field.name)) {
+        const val = formData.get(field.name) as string;
+        if (val) {
+          const num = parseInt(val, 10);
+          if (isNaN(num) || num < field.min || num > field.max) {
+            return { success: false, error: `${field.name.replaceAll('_', ' ')} must be between ${field.min} and ${field.max}.` };
+          }
+          updates[field.name] = num;
+        }
       }
     }
 

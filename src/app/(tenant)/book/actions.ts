@@ -8,11 +8,13 @@
 // submit booking requests that become new_request status.
 
 import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
 import { getTenantData } from '@/lib/tenant';
 import { getAdminClient } from '@/lib/database/supabase-admin';
 import { computeAvailableSlots, type AvailableSlot } from '@/services/availability-engine';
 import { notifyPublicBookingReceived } from '@/services/booking-notifications';
 import { logger } from '@/lib/logging';
+import { publicFormLimiter, RateLimitError } from '@/lib/rate-limit';
 import type { AvailabilityRule, AvailabilityException, BlockedTime, Booking } from '@/types/database';
 
 export interface BookingRequestState {
@@ -270,6 +272,18 @@ export async function submitBookingRequestAction(
   formData: FormData
 ): Promise<BookingRequestState> {
   try {
+    // Rate limit by IP
+    const headerStore = await headers();
+    const ip = headerStore.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+    try {
+      publicFormLimiter.check(ip);
+    } catch (e) {
+      if (e instanceof RateLimitError) {
+        return { success: false, error: 'Too many requests. Please wait a moment and try again.' };
+      }
+      throw e;
+    }
+
     const data = await getTenantData();
     if (!data) return { success: false, error: 'School not found.' };
 
@@ -315,6 +329,35 @@ export async function submitBookingRequestAction(
     const lessonType = lessonTypeRes.data as { price_cents: number; name: string } | null;
     const instructorData = instructorNameRes.data as { display_name: string } | null;
     const priceCents = lessonType?.price_cents ?? 0;
+
+    // Enforce minimum booking notice
+    const minNoticeHours = data.settings?.min_booking_notice_hours ?? 24;
+    const bookingStart = new Date(slotStart);
+    const hoursUntilBooking = (bookingStart.getTime() - Date.now()) / (1000 * 60 * 60);
+    if (hoursUntilBooking < minNoticeHours) {
+      return {
+        success: false,
+        error: `Bookings must be made at least ${minNoticeHours} hours in advance.`,
+      };
+    }
+
+    // Check for overlapping bookings (double-booking prevention)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: overlapping } = await (adminClient.from('bookings') as any)
+      .select('id')
+      .eq('organization_id', orgId)
+      .eq('instructor_id', instructorId)
+      .in('status', ['new_request', 'contacted', 'confirmed'])
+      .lt('start_datetime', slotEnd)
+      .gt('end_datetime', slotStart)
+      .limit(1);
+
+    if (overlapping && overlapping.length > 0) {
+      return {
+        success: false,
+        error: 'This time slot is no longer available. Please choose another time.',
+      };
+    }
 
     // Insert booking directly (no auth user for public visitors)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
