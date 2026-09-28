@@ -11,7 +11,7 @@ import type { Booking, Instructor, Student, LessonType, Vehicle } from '@/types/
 import type { Metadata } from 'next';
 import { BookingActions } from './booking-actions-client';
 import { CreateBookingForm } from './create-booking-form';
-import { formatPrice } from '@/lib/format';
+import { formatPrice, getDateBoundsUtc } from '@/lib/format';
 
 export const metadata: Metadata = {
   title: 'Bookings',
@@ -71,15 +71,15 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
     query = query.eq('instructor_id', params.instructor);
   }
 
-  // Date range filter
+  // Date range filter (timezone-aware)
+  const tz = organization.timezone ?? 'UTC';
   if (params.from) {
-    query = query.gte('start_datetime', params.from);
+    query = query.gte('start_datetime', getDateBoundsUtc(params.from, tz).start);
   }
   if (params.to) {
-    // Append end-of-day time so bookings ON the "to" date are included
-    const nextDay = new Date(params.to + 'T00:00:00');
-    nextDay.setDate(nextDay.getDate() + 1);
-    query = query.lt('start_datetime', nextDay.toISOString().split('T')[0] + 'T00:00:00');
+    const nextDay = new Date(params.to + 'T12:00:00Z');
+    nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+    query = query.lt('start_datetime', getDateBoundsUtc(nextDay.toISOString().split('T')[0], tz).start);
   }
 
   const [bookingsRes, instructorsRes, studentsRes, lessonTypesRes, vehiclesRes] = await Promise.all([

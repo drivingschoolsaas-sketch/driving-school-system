@@ -8,9 +8,11 @@
 // have no auth session.
 
 import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
 import { getTenantData } from '@/lib/tenant';
 import { getAdminClient } from '@/lib/database/supabase-admin';
 import { createReviewSchema } from '@/validators/review';
+import { publicFormLimiter, RateLimitError } from '@/lib/rate-limit';
 
 export interface PublicReviewActionState {
   success: boolean;
@@ -22,6 +24,13 @@ export async function submitPublicReviewAction(
   formData: FormData
 ): Promise<PublicReviewActionState> {
   try {
+    const headerStore = await headers();
+    const ip = headerStore.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+    try { publicFormLimiter.check(ip); } catch (e) {
+      if (e instanceof RateLimitError) return { success: false, error: 'Too many requests. Please try again later.' };
+      throw e;
+    }
+
     const data = await getTenantData();
     if (!data) {
       return { success: false, error: 'Could not identify the school. Please try again.' };

@@ -69,13 +69,11 @@ export async function middleware(request: NextRequest) {
   // Persist the tenant slug in a cookie so internal navigation
   // (Link clicks without ?tenant=) keeps the tenant context.
   const tenantFromUrl = request.nextUrl.searchParams.get('tenant');
-  if (tenantFromUrl) {
-    // User navigated with ?tenant=slug — persist it
+  if (tenantFromUrl && !isProduction) {
     response.cookies.set('x-tenant-slug', tenantFromUrl, {
       path: '/',
       httpOnly: false,
       sameSite: 'lax',
-      // 30 days; refreshed on each ?tenant= visit
       maxAge: 60 * 60 * 24 * 30,
     });
   }
@@ -112,7 +110,7 @@ export async function middleware(request: NextRequest) {
             classification.normalized
           );
           // Re-apply tenant cookie (lost when response was recreated)
-          if (tenantFromUrl) {
+          if (tenantFromUrl && !isProduction) {
             response.cookies.set('x-tenant-slug', tenantFromUrl, {
               path: '/',
               httpOnly: false,

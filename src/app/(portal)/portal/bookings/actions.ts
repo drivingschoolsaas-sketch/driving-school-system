@@ -64,6 +64,8 @@ export async function cancelOwnBookingAction(
       .from('bookings')
       .update({
         status: 'cancelled',
+        cancelled_by: auth.userId,
+        cancellation_reason: reason ?? 'Cancelled by student',
         notes: reason
           ? `Cancelled by student: ${reason}`
           : 'Cancelled by student',
@@ -73,6 +75,15 @@ export async function cancelOwnBookingAction(
       .eq('organization_id', auth.organizationId);
 
     if (updateError) throw updateError;
+
+    // Record status change in history for audit trail
+    await client.from('booking_status_history').insert({
+      booking_id: bookingId,
+      previous_status: booking.status,
+      new_status: 'cancelled',
+      changed_by: auth.userId,
+      reason: reason ?? 'Cancelled by student',
+    });
 
     // Notify student of cancellation (fire-and-forget, admin client survives after response)
     const ac = getAdminClient();

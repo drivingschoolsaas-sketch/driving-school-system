@@ -11,7 +11,7 @@ import { createServerSupabaseClient } from '@/lib/database';
 import { isOrgAdminRole } from '@/permissions/roles';
 import type { Booking, Instructor, Student } from '@/types/database';
 import type { Metadata } from 'next';
-import { formatPrice, getLocalDateStr } from '@/lib/format';
+import { formatPrice, getLocalDateStr, getDateBoundsUtc } from '@/lib/format';
 
 export const metadata: Metadata = {
   title: 'Calendar',
@@ -48,22 +48,30 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
 
   // Parse date — use org timezone for "today" fallback
   const dateParam = params.date ?? getLocalDateStr(tz);
-  const parsedDate = new Date(dateParam + 'T00:00:00');
-  const dayStart = isNaN(parsedDate.getTime()) ? new Date(getLocalDateStr(tz) + 'T00:00:00') : parsedDate;
+  const validDate = /^\d{4}-\d{2}-\d{2}$/.test(dateParam) && !isNaN(new Date(dateParam + 'T12:00:00Z').getTime());
+  const effectiveDate = validDate ? dateParam : getLocalDateStr(tz);
 
-  let rangeStart: Date;
-  let rangeEnd: Date;
+  // Navigation date (noon UTC avoids DST edge cases in date-only arithmetic)
+  const dayStart = new Date(effectiveDate + 'T12:00:00Z');
+
+  // Compute timezone-aware query bounds
+  let queryStart: string;
+  let queryEnd: string;
   if (view === 'week') {
-    const dayOfWeek = dayStart.getDay();
+    const dayOfWeek = dayStart.getUTCDay();
     const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-    rangeStart = new Date(dayStart);
-    rangeStart.setDate(dayStart.getDate() + mondayOffset);
-    rangeEnd = new Date(rangeStart);
-    rangeEnd.setDate(rangeStart.getDate() + 7);
+    const monday = new Date(dayStart);
+    monday.setUTCDate(dayStart.getUTCDate() + mondayOffset);
+    const mondayStr = monday.toISOString().split('T')[0];
+    const sunday = new Date(monday);
+    sunday.setUTCDate(monday.getUTCDate() + 7);
+    const sundayStr = sunday.toISOString().split('T')[0];
+    queryStart = getDateBoundsUtc(mondayStr, tz).start;
+    queryEnd = getDateBoundsUtc(sundayStr, tz).start;
   } else {
-    rangeStart = dayStart;
-    rangeEnd = new Date(dayStart);
-    rangeEnd.setDate(dayStart.getDate() + 1);
+    const bounds = getDateBoundsUtc(effectiveDate, tz);
+    queryStart = bounds.start;
+    queryEnd = bounds.end;
   }
 
   // Build query
@@ -71,8 +79,8 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
     .from('bookings')
     .select('*')
     .eq('organization_id', orgId)
-    .gte('start_datetime', rangeStart.toISOString())
-    .lt('start_datetime', rangeEnd.toISOString())
+    .gte('start_datetime', queryStart)
+    .lt('start_datetime', queryEnd)
     .order('start_datetime');
 
   // Instructor filter
@@ -113,25 +121,23 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
 
   // Navigation dates
   const prevDate = new Date(dayStart);
-  prevDate.setDate(dayStart.getDate() - (view === 'week' ? 7 : 1));
+  prevDate.setUTCDate(dayStart.getUTCDate() - (view === 'week' ? 7 : 1));
   const nextDate = new Date(dayStart);
-  nextDate.setDate(dayStart.getDate() + (view === 'week' ? 7 : 1));
+  nextDate.setUTCDate(dayStart.getUTCDate() + (view === 'week' ? 7 : 1));
   const todayStr = getLocalDateStr(tz);
 
-  const formatDateParam = (d: Date) => {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const dy = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${dy}`;
-  };
+  const formatDateParam = (d: Date) => d.toISOString().split('T')[0];
 
   // Group bookings by day for week view
   const dayGroups: Map<string, Booking[]> = new Map();
   if (view === 'week') {
+    const mondayOfWeek = new Date(dayStart);
+    const dow = dayStart.getUTCDay();
+    mondayOfWeek.setUTCDate(dayStart.getUTCDate() + (dow === 0 ? -6 : 1 - dow));
     for (let i = 0; i < 7; i++) {
-      const d = new Date(rangeStart);
-      d.setDate(rangeStart.getDate() + i);
-      dayGroups.set(formatDateParam(d), []);
+      const d = new Date(mondayOfWeek);
+      d.setUTCDate(mondayOfWeek.getUTCDate() + i);
+      dayGroups.set(d.toISOString().split('T')[0], []);
     }
   }
   for (const b of bookings) {
@@ -149,8 +155,13 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Calendar</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             {view === 'day'
-              ? dayStart.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: tz })
-              : `Week of ${rangeStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: tz })} – ${new Date(rangeEnd.getTime() - 86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: tz })}`}
+              ? new Date(effectiveDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+              : (() => {
+                  const keys = Array.from(dayGroups.keys());
+                  const firstDay = new Date(keys[0] + 'T00:00:00');
+                  const lastDay = new Date(keys[keys.length - 1] + 'T00:00:00');
+                  return `Week of ${firstDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${lastDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+                })()}
           </p>
         </div>
 

@@ -128,6 +128,7 @@ export default async function PortalPaymentsPage() {
                       month: 'short',
                       day: 'numeric',
                       year: 'numeric',
+                      timeZone: organization.timezone ?? 'UTC',
                     })}
                   </p>
                 </div>

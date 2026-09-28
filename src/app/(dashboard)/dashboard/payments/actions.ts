@@ -13,6 +13,7 @@ import {
   createPayment,
   markPaymentSucceeded,
   createRefund,
+  markRefundSucceeded,
 } from '@/services/payment-service';
 import { createPaymentSchema, createRefundSchema } from '@/validators/payment';
 import { audit } from '@/lib/audit';
@@ -135,6 +136,18 @@ export async function issueRefundAction(
     });
 
     const refund = await createRefund(client, auth, input);
+
+    // For manual payments (no Stripe), immediately mark the refund as succeeded
+    const { data: payment } = await client
+      .from('payments')
+      .select('stripe_payment_intent_id')
+      .eq('id', paymentId)
+      .eq('organization_id', auth.organizationId)
+      .single();
+    if (!payment?.stripe_payment_intent_id) {
+      await markRefundSucceeded(client, refund.id, auth.organizationId);
+    }
+
     audit(client, auth, {
       action: 'payment.refunded',
       resourceType: 'refund',

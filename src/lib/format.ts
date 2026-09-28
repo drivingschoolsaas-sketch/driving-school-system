@@ -42,3 +42,14 @@ export function getTodayRange(timezone: string): { todayStart: string; todayEnd:
 export function getLocalDateStr(timezone: string): string {
   return new Date().toLocaleDateString('en-CA', { timeZone: timezone });
 }
+
+export function getDateBoundsUtc(dateStr: string, timezone: string): { start: string; end: string } {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const ref = new Date(Date.UTC(year, month - 1, day, 12));
+  const local = new Date(ref.toLocaleString('en-US', { timeZone: timezone }));
+  const utc = new Date(ref.toLocaleString('en-US', { timeZone: 'UTC' }));
+  const offsetMs = local.getTime() - utc.getTime();
+  const start = new Date(Date.UTC(year, month - 1, day) - offsetMs).toISOString();
+  const end = new Date(new Date(start).getTime() + 86400000).toISOString();
+  return { start, end };
+}

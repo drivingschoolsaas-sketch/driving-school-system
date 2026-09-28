@@ -120,7 +120,7 @@ async function resolveTenantFromDatabase(
   const { data: domainRecord, error: domainError } = await client
     .from('organization_domains')
     .select('*')
-    .ilike('hostname', hostname)
+    .eq('hostname', hostname)
     .maybeSingle();
 
   if (domainError) {
